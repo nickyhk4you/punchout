@@ -1,0 +1,238 @@
+{
+  "info": {
+    "name": "Punchout API",
+    "description": "Collection for testing Punchout Session APIs",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Sessions API (MongoDB)",
+      "item": [
+        {
+          "name": "Get All Sessions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/sessions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "sessions"]
+            },
+            "description": "Retrieve all punchout sessions from MongoDB"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Session by Key",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/sessions/:sessionKey",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "sessions", ":sessionKey"],
+              "variable": [
+                {
+                  "key": "sessionKey",
+                  "value": "SESSION_001_ABC123",
+                  "description": "The session key to retrieve"
+                }
+              ]
+            },
+            "description": "Retrieve a specific punchout session by session key"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Session - Example 2",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/sessions/:sessionKey",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "sessions", ":sessionKey"],
+              "variable": [
+                {
+                  "key": "sessionKey",
+                  "value": "SESSION_002_DEF456",
+                  "description": "The session key to retrieve"
+                }
+              ]
+            },
+            "description": "Retrieve session 2"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Session - Example 3",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/sessions/:sessionKey",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "sessions", ":sessionKey"],
+              "variable": [
+                {
+                  "key": "sessionKey",
+                  "value": "SESSION_003_GHI789",
+                  "description": "The session key to retrieve"
+                }
+              ]
+            },
+            "description": "Retrieve session 3"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "PunchOut Sessions API (General)",
+      "item": [
+        {
+          "name": "Get All PunchOut Sessions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/punchout-sessions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "punchout-sessions"]
+            },
+            "description": "Retrieve all punchout sessions from the general API"
+          },
+          "response": []
+        },
+        {
+          "name": "Get PunchOut Session by Key",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/punchout-sessions/:sessionKey",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "punchout-sessions", ":sessionKey"],
+              "variable": [
+                {
+                  "key": "sessionKey",
+                  "value": "SESSION_001_ABC123",
+                  "description": "The session key to retrieve"
+                }
+              ]
+            },
+            "description": "Retrieve a specific punchout session by session key"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Order Object API",
+      "item": [
+        {
+          "name": "Get Order Object",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/punchout-sessions/:sessionKey/order-object",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "punchout-sessions", ":sessionKey", "order-object"],
+              "variable": [
+                {
+                  "key": "sessionKey",
+                  "value": "SESSION_001_ABC123",
+                  "description": "The session key"
+                }
+              ]
+            },
+            "description": "Get order object for a specific session"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Gateway Request API",
+      "item": [
+        {
+          "name": "Get Gateway Requests",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/punchout-sessions/:sessionKey/gateway-requests",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "punchout-sessions", ":sessionKey", "gateway-requests"],
+              "variable": [
+                {
+                  "key": "sessionKey",
+                  "value": "SESSION_001_ABC123",
+                  "description": "The session key"
+                }
+              ]
+            },
+            "description": "Get gateway requests for a specific session"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

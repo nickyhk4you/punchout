@@ -14,6 +14,7 @@ public class PunchOutSessionDTO {
     private String sessionKey;
     private String cartReturn;
     private String operation;
+    private String contact;
     private String contactEmail;
     private String routeName;
     private String environment;

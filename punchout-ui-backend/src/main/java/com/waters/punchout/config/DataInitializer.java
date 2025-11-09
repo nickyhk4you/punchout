@@ -18,6 +18,7 @@ import java.util.Arrays;
 @Component
 @RequiredArgsConstructor
 @Slf4j
+@org.springframework.context.annotation.Profile("!test")
 public class DataInitializer implements CommandLineRunner {
 
     private final PunchOutSessionRepository sessionRepository;
