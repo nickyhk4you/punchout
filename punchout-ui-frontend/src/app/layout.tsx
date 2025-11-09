@@ -29,12 +29,12 @@ export default function RootLayout({
           {typeof window === 'undefined' ? null : <NavBar />}
           {typeof window === 'undefined' ? null : <BootstrapClient />}
         </div>
-        <main className="min-h-screen bg-gray-50">
+        <main style={{minHeight: '100vh', backgroundColor: '#f8f9fa', paddingTop: '60px'}}>
           {children}
         </main>
-        <footer className="bg-primary text-white py-6 mt-12">
-          <div className="container mx-auto px-4 text-center">
-            <p>&copy; 2025 punchout B2B. All rights reserved.</p>
+        <footer className="bg-primary text-white py-4 mt-5">
+          <div className="container text-center">
+            <p className="mb-0">&copy; 2025 punchout B2B. All rights reserved.</p>
           </div>
         </footer>
       </body>

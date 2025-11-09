@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { sessionAPI } from '@/lib/api';
 import { PunchOutSession, SessionFilter } from '@/types';
 import Link from 'next/link';
+import Breadcrumb from '@/components/Breadcrumb';
 
 export default function SessionsPage() {
   const [sessions, setSessions] = useState<PunchOutSession[]>([]);
@@ -52,8 +53,14 @@ export default function SessionsPage() {
     }).format(value);
   };
 
+  const breadcrumbItems = [
+    { label: 'PunchOut Sessions' },
+  ];
+
   return (
     <div className="container mx-auto px-4 py-8">
+      <Breadcrumb items={breadcrumbItems} />
+      
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">PunchOut Sessions</h1>
         <p className="text-gray-600">View and manage all PunchOut sessions</p>

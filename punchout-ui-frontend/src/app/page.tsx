@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { sessionAPI } from '@/lib/api';
 import { PunchOutSession } from '@/types';
 import Link from 'next/link';
+import Breadcrumb from '@/components/Breadcrumb';
 
 export default function HomePage() {
   const [stats, setStats] = useState({
@@ -54,8 +55,14 @@ export default function HomePage() {
     return new Date(dateString).toLocaleString();
   };
 
+  const breadcrumbItems = [
+    { label: 'Dashboard' },
+  ];
+
   return (
     <div className="container mx-auto px-4 py-8">
+      <Breadcrumb items={breadcrumbItems} />
+      
       <div className="mb-8">
         <h1 className="text-4xl font-bold mb-2">PunchOut Session Manager</h1>
         <p className="text-gray-600">

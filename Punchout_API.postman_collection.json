@@ -233,6 +233,119 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Network Requests API",
+      "item": [
+        {
+          "name": "Get All Network Requests for Session",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/sessions/:sessionKey/network-requests",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "sessions", ":sessionKey", "network-requests"],
+              "variable": [
+                {
+                  "key": "sessionKey",
+                  "value": "SESSION_001_ABC123",
+                  "description": "The session key"
+                }
+              ]
+            },
+            "description": "Get all network requests (inbound and outbound) for a specific session"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Inbound Requests Only",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/sessions/:sessionKey/network-requests/inbound",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "sessions", ":sessionKey", "network-requests", "inbound"],
+              "variable": [
+                {
+                  "key": "sessionKey",
+                  "value": "SESSION_001_ABC123",
+                  "description": "The session key"
+                }
+              ]
+            },
+            "description": "Get only inbound network requests for a specific session"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Outbound Requests Only",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/sessions/:sessionKey/network-requests/outbound",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "sessions", ":sessionKey", "network-requests", "outbound"],
+              "variable": [
+                {
+                  "key": "sessionKey",
+                  "value": "SESSION_001_ABC123",
+                  "description": "The session key"
+                }
+              ]
+            },
+            "description": "Get only outbound network requests for a specific session"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Network Request by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/network-requests/:requestId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "network-requests", ":requestId"],
+              "variable": [
+                {
+                  "key": "requestId",
+                  "value": "",
+                  "description": "The network request ID from MongoDB"
+                }
+              ]
+            },
+            "description": "Get detailed information about a specific network request by its ID"
+          },
+          "response": []
+        }
+      ]
     }
   ]
 }

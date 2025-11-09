@@ -40,6 +40,7 @@ public class PunchOutSessionMongoService {
         dto.setCartReturn(document.getCartReturn());
         dto.setOperation(document.getOperation());
         dto.setContact(document.getContact());
+        dto.setContactEmail(document.getContact()); // Map contact to contactEmail for frontend compatibility
         dto.setRouteName(document.getRouteName());
         dto.setEnvironment(document.getEnvironment());
         dto.setFlags(document.getFlags());

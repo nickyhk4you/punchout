@@ -16,6 +16,7 @@ import java.util.Map;
 @RequestMapping("/api/punchout-sessions")
 @RequiredArgsConstructor
 @Slf4j
+@CrossOrigin(origins = "*")
 public class PunchOutSessionController {
     
     private final PunchOutSessionService sessionService;

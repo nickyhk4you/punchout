@@ -49,3 +49,24 @@ export interface SessionFilter {
   startDate?: string;
   endDate?: string;
 }
+
+export interface NetworkRequest {
+  id: string;
+  sessionKey: string;
+  requestId: string;
+  timestamp: string;
+  direction: 'INBOUND' | 'OUTBOUND';
+  source: string;
+  destination: string;
+  method: string;
+  url: string;
+  headers?: Record<string, string>;
+  requestBody?: string;
+  statusCode?: number;
+  responseHeaders?: Record<string, string>;
+  responseBody?: string;
+  duration?: number;
+  requestType: string;
+  success: boolean;
+  errorMessage?: string;
+}

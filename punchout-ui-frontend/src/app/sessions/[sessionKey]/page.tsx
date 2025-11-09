@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { sessionAPI, orderAPI, gatewayAPI } from '@/lib/api';
-import { PunchOutSession, OrderObject, GatewayRequest } from '@/types';
+import { sessionAPI, orderAPI, gatewayAPI, networkRequestAPI } from '@/lib/api';
+import { PunchOutSession, OrderObject, GatewayRequest, NetworkRequest } from '@/types';
 import Link from 'next/link';
+import Breadcrumb from '@/components/Breadcrumb';
 
 export default function SessionDetailsPage() {
   const params = useParams();
@@ -14,8 +15,10 @@ export default function SessionDetailsPage() {
   const [session, setSession] = useState<PunchOutSession | null>(null);
   const [orderObject, setOrderObject] = useState<OrderObject | null>(null);
   const [gatewayRequests, setGatewayRequests] = useState<GatewayRequest[]>([]);
+  const [networkRequests, setNetworkRequests] = useState<NetworkRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'all' | 'inbound' | 'outbound'>('all');
 
   useEffect(() => {
     if (sessionKey) {
@@ -28,15 +31,17 @@ export default function SessionDetailsPage() {
       setLoading(true);
       setError(null);
 
-      const [sessionData, orderData, gatewayData] = await Promise.all([
+      const [sessionData, orderData, gatewayData, networkData] = await Promise.all([
         sessionAPI.getSessionByKey(sessionKey),
-        orderAPI.getOrderObject(sessionKey),
-        gatewayAPI.getGatewayRequests(sessionKey),
+        orderAPI.getOrderObject(sessionKey).catch(() => null),
+        gatewayAPI.getGatewayRequests(sessionKey).catch(() => []),
+        networkRequestAPI.getNetworkRequests(sessionKey).catch(() => []),
       ]);
 
       setSession(sessionData);
       setOrderObject(orderData);
       setGatewayRequests(gatewayData);
+      setNetworkRequests(networkData);
     } catch (err: any) {
       setError(err.message || 'Failed to load session details');
     } finally {
@@ -84,16 +89,18 @@ export default function SessionDetailsPage() {
     );
   }
 
+  const breadcrumbItems = [
+    { label: 'PunchOut Sessions', href: '/sessions' },
+    { label: sessionKey },
+  ];
+
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* Breadcrumb */}
+      <Breadcrumb items={breadcrumbItems} />
+      
       {/* Header */}
       <div className="mb-6">
-        <Link
-          href="/sessions"
-          className="text-blue-600 hover:text-blue-800 mb-2 inline-block"
-        >
-          ← Back to Sessions
-        </Link>
         <h1 className="text-3xl font-bold mb-2">Session Details</h1>
         <p className="text-gray-600">{sessionKey}</p>
       </div>
@@ -229,6 +236,136 @@ export default function SessionDetailsPage() {
           </div>
         ) : (
           <p className="text-gray-500">No order object found for this session</p>
+        )}
+      </div>
+
+      {/* Network Requests */}
+      <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 className="text-xl font-semibold mb-4">Network Requests ({networkRequests.length})</h2>
+        
+        {/* Tabs */}
+        <div className="mb-4 border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8">
+            <button
+              onClick={() => setActiveTab('all')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'all'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              All ({networkRequests.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('inbound')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'inbound'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Inbound ({networkRequests.filter(r => r.direction === 'INBOUND').length})
+            </button>
+            <button
+              onClick={() => setActiveTab('outbound')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'outbound'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Outbound ({networkRequests.filter(r => r.direction === 'OUTBOUND').length})
+            </button>
+          </nav>
+        </div>
+
+        {/* Requests Table */}
+        {networkRequests.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Time
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Direction
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Method
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Type
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Source → Destination
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Duration
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {networkRequests
+                  .filter(req => activeTab === 'all' || req.direction === activeTab.toUpperCase())
+                  .map((request) => (
+                    <tr key={request.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {new Date(request.timestamp).toLocaleTimeString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          request.direction === 'INBOUND' 
+                            ? 'bg-blue-100 text-blue-800' 
+                            : 'bg-purple-100 text-purple-800'
+                        }`}>
+                          {request.direction}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {request.method}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {request.requestType}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        <div className="max-w-xs truncate">
+                          {request.source} → {request.destination}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          request.success 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {request.statusCode || '-'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {request.duration ? `${request.duration}ms` : '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <Link
+                          href={`/sessions/${sessionKey}/requests/${request.id}`}
+                          className="text-blue-600 hover:text-blue-800 font-medium"
+                        >
+                          View Details
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-gray-500">No network requests found for this session</p>
         )}
       </div>
 
