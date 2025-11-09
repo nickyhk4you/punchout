@@ -149,22 +149,34 @@ export default function HomePage() {
               href="/sessions"
               className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow-lg p-6 text-white hover:from-blue-600 hover:to-blue-700 transition-all transform hover:scale-105"
             >
-              <h3 className="text-xl font-semibold mb-2">View All Sessions</h3>
+              <div className="flex items-center mb-2">
+                <i className="fas fa-tasks text-2xl mr-3"></i>
+                <h3 className="text-xl font-semibold">View All Sessions</h3>
+              </div>
               <p className="text-blue-100">Browse and filter all PunchOut sessions</p>
+            </Link>
+
+            <Link
+              href="/developer/punchout"
+              className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg shadow-lg p-6 text-white hover:from-purple-600 hover:to-purple-700 transition-all transform hover:scale-105"
+            >
+              <div className="flex items-center mb-2">
+                <i className="fas fa-flask text-2xl mr-3"></i>
+                <h3 className="text-xl font-semibold">PunchOut Testing</h3>
+              </div>
+              <p className="text-purple-100">Test catalog integrations manually</p>
             </Link>
 
             <Link
               href="/sessions?environment=PRODUCTION"
               className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg shadow-lg p-6 text-white hover:from-green-600 hover:to-green-700 transition-all transform hover:scale-105"
             >
-              <h3 className="text-xl font-semibold mb-2">Production Sessions</h3>
+              <div className="flex items-center mb-2">
+                <i className="fas fa-check-circle text-2xl mr-3"></i>
+                <h3 className="text-xl font-semibold">Production Sessions</h3>
+              </div>
               <p className="text-green-100">View active production sessions</p>
             </Link>
-
-            <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg shadow-lg p-6 text-white">
-              <h3 className="text-xl font-semibold mb-2">Quick Stats</h3>
-              <p className="text-purple-100">Real-time session monitoring</p>
-            </div>
           </div>
 
           {/* Recent Sessions */}

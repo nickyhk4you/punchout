@@ -131,4 +131,56 @@ export const networkRequestAPI = {
   },
 };
 
+export const catalogRouteAPI = {
+  // Get all catalog routes
+  getAllRoutes: async (): Promise<import('@/types').CatalogRoute[]> => {
+    const response = await apiClient.get<import('@/types').CatalogRoute[]>('/v1/catalog-routes');
+    return response.data;
+  },
+
+  // Get active catalog routes only
+  getActiveRoutes: async (): Promise<import('@/types').CatalogRoute[]> => {
+    const response = await apiClient.get<import('@/types').CatalogRoute[]>('/v1/catalog-routes/active');
+    return response.data;
+  },
+
+  // Get catalog route by ID
+  getRouteById: async (id: string): Promise<import('@/types').CatalogRoute> => {
+    const response = await apiClient.get<import('@/types').CatalogRoute>(`/v1/catalog-routes/${id}`);
+    return response.data;
+  },
+};
+
+export const punchOutTestAPI = {
+  // Get all punchout tests
+  getAllTests: async (): Promise<import('@/types').PunchOutTest[]> => {
+    const response = await apiClient.get<import('@/types').PunchOutTest[]>('/v1/punchout-tests');
+    return response.data;
+  },
+
+  // Get punchout test by ID
+  getTestById: async (id: string): Promise<import('@/types').PunchOutTest> => {
+    const response = await apiClient.get<import('@/types').PunchOutTest>(`/v1/punchout-tests/${id}`);
+    return response.data;
+  },
+
+  // Get tests by catalog route ID
+  getTestsByCatalogRoute: async (routeId: string): Promise<import('@/types').PunchOutTest[]> => {
+    const response = await apiClient.get<import('@/types').PunchOutTest[]>(`/v1/catalog-routes/${routeId}/tests`);
+    return response.data;
+  },
+
+  // Create a new punchout test
+  createTest: async (test: Partial<import('@/types').PunchOutTest>): Promise<import('@/types').PunchOutTest> => {
+    const response = await apiClient.post<import('@/types').PunchOutTest>('/v1/punchout-tests', test);
+    return response.data;
+  },
+
+  // Update an existing punchout test
+  updateTest: async (id: string, test: Partial<import('@/types').PunchOutTest>): Promise<import('@/types').PunchOutTest> => {
+    const response = await apiClient.put<import('@/types').PunchOutTest>(`/v1/punchout-tests/${id}`, test);
+    return response.data;
+  },
+};
+
 export default apiClient;

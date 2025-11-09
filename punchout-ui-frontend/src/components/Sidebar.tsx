@@ -23,6 +23,10 @@ const Sidebar = () => {
     { href: '/reports', icon: 'chart-bar', label: 'Reports' },
   ];
 
+  const developerItems: NavItem[] = [
+    { href: '/developer/punchout', icon: 'code', label: 'PunchOut Testing' },
+  ];
+
   const isActive = (href: string) => {
     if (href === '/') {
       return pathname === '/';
@@ -74,6 +78,29 @@ const Sidebar = () => {
               )}
             </Link>
           ))}
+          
+          {/* Developer Section */}
+          <div className="border-top mt-3 pt-3">
+            <small className="text-muted px-2 d-block mb-2 text-uppercase" style={{fontSize: '0.7rem'}}>
+              Developer Tools
+            </small>
+            {developerItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`list-group-item list-group-item-action border-0 d-flex align-items-center ${
+                  isActive(item.href) ? 'active bg-primary text-white' : ''
+                }`}
+                style={{
+                  transition: 'all 0.2s ease',
+                  borderLeft: isActive(item.href) ? '4px solid #0d6efd' : '4px solid transparent',
+                }}
+              >
+                <i className={`fas fa-${item.icon} me-2`} style={{ width: '20px' }}></i>
+                <span className="flex-grow-1">{item.label}</span>
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
 

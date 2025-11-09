@@ -70,3 +70,49 @@ export interface NetworkRequest {
   success: boolean;
   errorMessage?: string;
 }
+
+export interface EnvironmentConfig {
+  environment: string;
+  url: string;
+  username: string;
+  password: string;
+  sharedSecret: string;
+  enabled: boolean;
+  notes?: string;
+}
+
+export interface CatalogRoute {
+  id: string;
+  routeName: string;
+  domain: string;
+  network: string;
+  type: string;
+  description?: string;
+  environments: EnvironmentConfig[];
+  active: boolean;
+  createdDate: string;
+  lastModified: string;
+}
+
+export interface PunchOutTest {
+  id: string;
+  testName: string;
+  catalogRouteId: string;
+  catalogRouteName?: string;
+  environment: string;
+  tester: string;
+  testDate: string;
+  status: string;
+  setupRequestSent?: string;
+  setupResponseReceived?: string;
+  catalogUrl?: string;
+  orderMessageSent?: string;
+  orderMessageReceived?: string;
+  totalDuration?: number;
+  setupRequest?: string;
+  setupResponse?: string;
+  orderMessage?: string;
+  orderResponse?: string;
+  errorMessage?: string;
+  notes?: string;
+}
