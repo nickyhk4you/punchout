@@ -2,7 +2,7 @@ package com.waters.punchout.gateway.service;
 
 import com.waters.punchout.gateway.client.AuthServiceClient;
 import com.waters.punchout.gateway.client.MuleServiceClient;
-import com.waters.punchout.gateway.converter.CxmlToJsonConverter;
+import com.waters.punchout.gateway.converter.CxmlConversionService;
 import com.waters.punchout.gateway.entity.PunchOutSessionDocument;
 import com.waters.punchout.gateway.logging.NetworkRequestLogger;
 import com.waters.punchout.gateway.model.PunchOutRequest;
@@ -21,20 +21,20 @@ import java.util.Map;
 public class PunchOutOrchestrationService {
 
     private final NetworkRequestLogger networkRequestLogger;
-    private final CxmlToJsonConverter cxmlToJsonConverter;
+    private final CxmlConversionService cxmlConversionService;
     private final AuthServiceClient authServiceClient;
     private final MuleServiceClient muleServiceClient;
     private final PunchOutSessionRepository sessionRepository;
 
     public PunchOutOrchestrationService(
             NetworkRequestLogger networkRequestLogger,
-            CxmlToJsonConverter cxmlToJsonConverter,
+            CxmlConversionService cxmlConversionService,
             AuthServiceClient authServiceClient,
             MuleServiceClient muleServiceClient,
             PunchOutSessionRepository sessionRepository
     ) {
         this.networkRequestLogger = networkRequestLogger;
-        this.cxmlToJsonConverter = cxmlToJsonConverter;
+        this.cxmlConversionService = cxmlConversionService;
         this.authServiceClient = authServiceClient;
         this.muleServiceClient = muleServiceClient;
         this.sessionRepository = sessionRepository;
@@ -93,10 +93,10 @@ public class PunchOutOrchestrationService {
 
     private PunchOutRequest convertCxmlToJson(String cxmlContent) {
         try {
-            log.debug("Converting cXML to JSON");
-            return cxmlToJsonConverter.convertCxmlToRequest(cxmlContent);
+            log.debug("Converting cXML using flexible conversion service");
+            return cxmlConversionService.convertCxmlToRequest(cxmlContent);
         } catch (Exception e) {
-            log.error("Failed to convert cXML to JSON: {}", e.getMessage(), e);
+            log.error("Failed to convert cXML: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to parse cXML request: " + e.getMessage(), e);
         }
     }
@@ -113,7 +113,21 @@ public class PunchOutOrchestrationService {
 
     private Map<String, Object> prepareMulePayload(PunchOutRequest request) {
         log.debug("Preparing Mule payload");
-        return cxmlToJsonConverter.convertToThirdPartyPayload(request);
+        
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("sessionKey", request.getSessionKey());
+        payload.put("operation", request.getOperation());
+        payload.put("buyerCookie", request.getBuyerCookie());
+        payload.put("contactEmail", request.getContactEmail());
+        payload.put("cartReturnUrl", request.getCartReturnUrl());
+        payload.put("timestamp", request.getTimestamp().toString());
+        
+        // Include extrinsics if present
+        if (request.getExtrinsics() != null) {
+            payload.put("extrinsics", request.getExtrinsics());
+        }
+        
+        return payload;
     }
 
     private Map<String, Object> getMuleResponse(Map<String, Object> payload, String token, String sessionKey) {

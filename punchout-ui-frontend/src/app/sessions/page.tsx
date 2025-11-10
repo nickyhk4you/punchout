@@ -69,17 +69,31 @@ export default function SessionsPage() {
   ];
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <Breadcrumb items={breadcrumbItems} />
-      
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">PunchOut Sessions</h1>
-        <p className="text-gray-600">View and manage all PunchOut sessions</p>
+    <div>
+      {/* Hero Section */}
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+        <div className="container mx-auto px-4 py-12">
+          <div className="max-w-4xl">
+            <h1 className="text-4xl font-bold mb-3">
+              <i className="fas fa-list mr-3"></i>
+              PunchOut Sessions
+            </h1>
+            <p className="text-xl text-blue-100">
+              View, filter, and analyze all PunchOut sessions with network request logs
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-lg font-semibold mb-4">Filters</h2>
+      <div className="container mx-auto px-4 py-8">
+        <Breadcrumb items={breadcrumbItems} />
+
+        {/* Filters */}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-6 mt-6">
+          <h2 className="text-lg font-semibold mb-4">
+            <i className="fas fa-filter text-blue-600 mr-2"></i>
+            Filters
+          </h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -129,8 +143,9 @@ export default function SessionsPage() {
           <div className="flex items-end">
             <button
               onClick={clearFilters}
-              className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
+              className="w-full px-4 py-2 bg-gradient-to-r from-gray-200 to-gray-300 text-gray-700 rounded-lg hover:from-gray-300 hover:to-gray-400 transition-all font-semibold"
             >
+              <i className="fas fa-times mr-2"></i>
               Clear Filters
             </button>
           </div>
@@ -138,25 +153,28 @@ export default function SessionsPage() {
       </div>
 
       {/* Sessions Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
         {loading ? (
           <div className="p-8 text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <p className="mt-2 text-gray-600">Loading sessions...</p>
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-4 border-blue-600"></div>
+            <p className="mt-4 text-gray-600 text-lg">Loading sessions...</p>
           </div>
         ) : error ? (
           <div className="p-8 text-center text-red-600">
-            <p>Error: {error}</p>
+            <i className="fas fa-exclamation-circle text-4xl mb-4"></i>
+            <p className="text-lg font-semibold">Error: {error}</p>
             <button
               onClick={loadSessions}
-              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              className="mt-4 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 font-semibold transition-all shadow-lg"
             >
+              <i className="fas fa-redo mr-2"></i>
               Retry
             </button>
           </div>
         ) : sessions.length === 0 ? (
-          <div className="p-8 text-center text-gray-600">
-            <p>No sessions found</p>
+          <div className="p-12 text-center text-gray-600">
+            <i className="fas fa-inbox text-gray-300 text-5xl mb-4"></i>
+            <p className="text-lg">No sessions found</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -196,11 +214,11 @@ export default function SessionsPage() {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {sortedSessions.map((session) => (
-                  <tr key={session.sessionKey} className="hover:bg-gray-50">
+                  <tr key={session.sessionKey} className="hover:bg-blue-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Link
                         href={`/sessions/${session.sessionKey}`}
-                        className="text-sm font-medium text-blue-600 hover:text-blue-900 hover:underline cursor-pointer"
+                        className="text-sm font-semibold text-blue-600 hover:text-blue-900 hover:underline cursor-pointer"
                       >
                         {session.sessionKey}
                       </Link>
@@ -235,9 +253,10 @@ export default function SessionsPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <Link
                         href={`/sessions/${session.sessionKey}`}
-                        className="text-blue-600 hover:text-blue-900"
+                        className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all font-semibold"
                       >
-                        View Details
+                        <i className="fas fa-eye mr-1"></i>
+                        View
                       </Link>
                     </td>
                   </tr>
@@ -250,10 +269,12 @@ export default function SessionsPage() {
 
       {/* Summary */}
       {!loading && !error && sessions.length > 0 && (
-        <div className="mt-4 text-sm text-gray-600">
+        <div className="mt-4 text-sm text-gray-600 flex items-center">
+          <i className="fas fa-info-circle text-blue-600 mr-2"></i>
           Showing {sessions.length} session{sessions.length !== 1 ? 's' : ''}
         </div>
       )}
+      </div>
     </div>
   );
 }

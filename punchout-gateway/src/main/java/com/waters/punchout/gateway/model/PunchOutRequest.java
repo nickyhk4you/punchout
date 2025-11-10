@@ -21,4 +21,7 @@ public class PunchOutRequest {
     private String senderIdentity;
     private Map<String, String> additionalFields;
     private LocalDateTime timestamp;
+    
+    // Customer-specific extrinsics (e.g., CostCenter, Department, Region)
+    private Map<String, String> extrinsics;
 }

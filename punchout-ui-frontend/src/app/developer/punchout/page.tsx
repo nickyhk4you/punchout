@@ -205,40 +205,50 @@ export default function DeveloperPunchOutPage() {
 
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <Breadcrumb items={breadcrumbItems} />
-
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">
-          <i className="fas fa-rocket mr-2 text-purple-600"></i>
-          Developer PunchOut Testing
-        </h1>
-        <p className="text-gray-600">Select a customer and environment to execute a live punchout test</p>
+    <div>
+      {/* Hero Section */}
+      <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white">
+        <div className="container mx-auto px-4 py-12">
+          <div className="max-w-4xl">
+            <h1 className="text-4xl font-bold mb-3">
+              <i className="fas fa-rocket mr-3"></i>
+              Developer PunchOut Testing
+            </h1>
+            <p className="text-xl text-purple-100">
+              Execute live PunchOut tests across DEV, STAGE, PROD, and S4-DEV environments
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* Environment Selector & Customers */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4">Select Customer & Environment</h2>
+      <div className="container mx-auto px-4 py-8">
+        <Breadcrumb items={breadcrumbItems} />
+
+        {/* Environment Selector & Customers */}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-6 mt-6">
+          <h2 className="text-xl font-semibold mb-4">
+            <i className="fas fa-users text-purple-600 mr-2"></i>
+            Select Customer & Environment
+          </h2>
         
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 mb-2">Environment</label>
           <div className="flex gap-2">
             {['dev', 'stage', 'prod', 's4-dev'].map(env => (
-              <button
-                key={env}
-                onClick={() => {
-                  setSelectedEnvironment(env);
-                  setTestResult(null);
-                }}
-                className={`px-6 py-3 rounded-lg font-semibold transition ${
-                  selectedEnvironment === env
-                    ? 'bg-blue-600 text-white shadow-lg'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                {env.toUpperCase()}
-              </button>
+            <button
+            key={env}
+            onClick={() => {
+            setSelectedEnvironment(env);
+            setTestResult(null);
+            }}
+            className={`px-6 py-3 rounded-lg font-semibold transition-all transform hover:scale-105 ${
+            selectedEnvironment === env
+            ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+            >
+            {env.toUpperCase()}
+            </button>
             ))}
           </div>
         </div>
@@ -264,7 +274,7 @@ export default function DeveloperPunchOutPage() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {CUSTOMERS.map((customer) => (
-                <tr key={customer.id} className="hover:bg-gray-50">
+                <tr key={customer.id} className="hover:bg-purple-50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="font-medium text-gray-900">{customer.name}</div>
                     <div className="text-xs text-gray-500">{customer.id}</div>
@@ -279,7 +289,7 @@ export default function DeveloperPunchOutPage() {
                     <button
                       onClick={() => handlePunchOut(customer, false)}
                       disabled={executing === customer.id}
-                      className="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 disabled:bg-gray-300 transition"
+                      className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-blue-700 disabled:bg-gray-300 transition-all shadow-md transform hover:scale-105"
                     >
                       {executing === customer.id ? (
                         <>
@@ -296,7 +306,7 @@ export default function DeveloperPunchOutPage() {
                     <button
                       onClick={() => handleEditPayload(customer)}
                       disabled={executing === customer.id}
-                      className="text-blue-600 hover:text-blue-800 font-medium disabled:text-gray-400"
+                      className="text-purple-600 hover:text-purple-800 font-semibold disabled:text-gray-400"
                     >
                       <i className="fas fa-edit mr-1"></i>
                       Edit Payload
@@ -385,7 +395,7 @@ export default function DeveloperPunchOutPage() {
 
       {/* Test Results */}
       {testResult && (
-        <div className={`rounded-lg shadow p-6 mb-6 ${testResult.success ? 'bg-green-50 border-2 border-green-200' : 'bg-red-50 border-2 border-red-200'}`}>
+        <div className={`rounded-xl shadow-lg p-6 mb-6 ${testResult.success ? 'bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300' : 'bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-300'}`}>
           <h2 className="text-xl font-semibold mb-4">
             {testResult.success ? (
               <><i className="fas fa-check-circle mr-2 text-green-600"></i>PunchOut Successful</>
@@ -468,8 +478,11 @@ export default function DeveloperPunchOutPage() {
       )}
 
       {/* Recent Sessions */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-semibold mb-4">Recent PunchOut Sessions</h2>
+      <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+        <h2 className="text-xl font-semibold mb-4">
+          <i className="fas fa-history text-blue-600 mr-2"></i>
+          Recent PunchOut Sessions
+        </h2>
         {sessions.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -497,7 +510,7 @@ export default function DeveloperPunchOutPage() {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {sessions.map((session) => (
-                  <tr key={session.sessionKey} className="hover:bg-gray-50">
+                  <tr key={session.sessionKey} className="hover:bg-blue-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <code className="text-xs bg-gray-100 px-2 py-1 rounded">{session.sessionKey}</code>
                     </td>
@@ -520,10 +533,10 @@ export default function DeveloperPunchOutPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <Link
                         href={`/sessions/${session.sessionKey}`}
-                        className="text-blue-600 hover:text-blue-800 font-medium"
+                        className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all font-semibold"
                       >
-                        <i className="fas fa-external-link-alt mr-1"></i>
-                        View Details
+                        <i className="fas fa-eye mr-1"></i>
+                        View
                       </Link>
                     </td>
                   </tr>
@@ -537,6 +550,7 @@ export default function DeveloperPunchOutPage() {
             <p className="text-gray-500">No sessions yet. Click PunchOut on a customer to start!</p>
           </div>
         )}
+      </div>
       </div>
     </div>
   );

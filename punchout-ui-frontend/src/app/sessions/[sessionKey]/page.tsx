@@ -95,19 +95,32 @@ export default function SessionDetailsPage() {
   ];
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Breadcrumb */}
-      <Breadcrumb items={breadcrumbItems} />
-      
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">Session Details</h1>
-        <p className="text-gray-600">{sessionKey}</p>
+    <div>
+      {/* Hero Section */}
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+        <div className="container mx-auto px-4 py-12">
+          <div className="max-w-4xl">
+            <h1 className="text-4xl font-bold mb-3">
+              <i className="fas fa-file-alt mr-3"></i>
+              Session Details
+            </h1>
+            <p className="text-xl text-blue-100">
+              {sessionKey}
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* Session Information */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4">Session Information</h2>
+      <div className="container mx-auto px-4 py-8">
+        {/* Breadcrumb */}
+        <Breadcrumb items={breadcrumbItems} />
+
+        {/* Session Information */}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-6 mt-6">
+          <h2 className="text-xl font-semibold mb-4">
+            <i className="fas fa-info-circle text-blue-600 mr-2"></i>
+            Session Information
+          </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
             <label className="text-sm font-medium text-gray-500">Session Key</label>
@@ -193,8 +206,11 @@ export default function SessionDetailsPage() {
       </div>
 
       {/* Order Object */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4">Order Object</h2>
+      <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-6">
+        <h2 className="text-xl font-semibold mb-4">
+          <i className="fas fa-shopping-cart text-green-600 mr-2"></i>
+          Order Object
+        </h2>
         {orderObject ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
@@ -240,8 +256,11 @@ export default function SessionDetailsPage() {
       </div>
 
       {/* Network Requests */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4">Network Requests ({networkRequests.length})</h2>
+      <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-6">
+        <h2 className="text-xl font-semibold mb-4">
+          <i className="fas fa-network-wired text-purple-600 mr-2"></i>
+          Network Requests ({networkRequests.length})
+        </h2>
         
         {/* Tabs */}
         <div className="mb-4 border-b border-gray-200">
@@ -315,7 +334,7 @@ export default function SessionDetailsPage() {
                 {networkRequests
                   .filter(req => activeTab === 'all' || req.direction === activeTab.toUpperCase())
                   .map((request) => (
-                    <tr key={request.id} className="hover:bg-gray-50">
+                    <tr key={request.id} className="hover:bg-blue-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {new Date(request.timestamp).toLocaleTimeString()}
                       </td>
@@ -354,9 +373,10 @@ export default function SessionDetailsPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <Link
                           href={`/sessions/${sessionKey}/requests/${request.id}`}
-                          className="text-blue-600 hover:text-blue-800 font-medium"
+                          className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all font-semibold"
                         >
-                          View Details
+                          <i className="fas fa-eye mr-1"></i>
+                          View
                         </Link>
                       </td>
                     </tr>
@@ -370,8 +390,11 @@ export default function SessionDetailsPage() {
       </div>
 
       {/* Gateway Requests */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-semibold mb-4">Gateway Requests ({gatewayRequests.length})</h2>
+      <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+        <h2 className="text-xl font-semibold mb-4">
+          <i className="fas fa-server text-orange-600 mr-2"></i>
+          Gateway Requests ({gatewayRequests.length})
+        </h2>
         {gatewayRequests.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -393,7 +416,7 @@ export default function SessionDetailsPage() {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {gatewayRequests.map((request) => (
-                  <tr key={request.id} className="hover:bg-gray-50">
+                  <tr key={request.id} className="hover:bg-blue-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {request.id}
                     </td>
@@ -425,6 +448,7 @@ export default function SessionDetailsPage() {
         ) : (
           <p className="text-gray-500">No gateway requests found for this session</p>
         )}
+      </div>
       </div>
     </div>
   );

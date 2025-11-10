@@ -200,21 +200,31 @@ export default function NewTestPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <Breadcrumb items={breadcrumbItems} />
-
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">
-          <i className="fas fa-flask mr-2 text-purple-600"></i>
-          New PunchOut Test
-        </h1>
-        <p className="text-gray-600">Configure and execute a manual PunchOut test</p>
+    <div>
+      {/* Hero Section */}
+      <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white">
+        <div className="container mx-auto px-4 py-12">
+          <div className="max-w-4xl">
+            <h1 className="text-4xl font-bold mb-3">
+              <i className="fas fa-flask mr-3"></i>
+              New PunchOut Test
+            </h1>
+            <p className="text-xl text-purple-100">
+              Configure and execute a manual PunchOut test with customizable payload
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* Test Configuration */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4">Test Configuration</h2>
+      <div className="container mx-auto px-4 py-8">
+        <Breadcrumb items={breadcrumbItems} />
+
+        {/* Test Configuration */}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-6 mt-6">
+          <h2 className="text-xl font-semibold mb-4">
+            <i className="fas fa-cog text-purple-600 mr-2"></i>
+            Test Configuration
+          </h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           {/* Route Information */}
@@ -251,9 +261,9 @@ export default function NewTestPage() {
                   key={envConfig.environment}
                   onClick={() => setSelectedEnvironment(envConfig.environment)}
                   disabled={!envConfig.enabled}
-                  className={`px-4 py-3 rounded-lg font-medium transition ${
+                  className={`px-4 py-3 rounded-lg font-semibold transition-all transform hover:scale-105 ${
                     selectedEnvironment === envConfig.environment
-                      ? 'bg-blue-600 text-white shadow-lg'
+                      ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
                       : envConfig.enabled
                       ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       : 'bg-gray-50 text-gray-400 cursor-not-allowed'
@@ -349,7 +359,7 @@ export default function NewTestPage() {
           <button
             onClick={handleStartTest}
             disabled={!testName || !testerEmail || !selectedEnvConfig?.enabled || executing}
-            className="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition flex items-center"
+            className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold rounded-lg hover:from-green-700 hover:to-green-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all shadow-lg transform hover:scale-105 flex items-center"
           >
             {executing ? (
               <>
@@ -365,7 +375,7 @@ export default function NewTestPage() {
           </button>
           <Link
             href="/developer/punchout"
-            className="px-6 py-3 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition"
+            className="px-6 py-3 bg-gradient-to-r from-gray-200 to-gray-300 text-gray-700 font-semibold rounded-lg hover:from-gray-300 hover:to-gray-400 transition-all"
           >
             <i className="fas fa-times mr-2"></i>
             Cancel
@@ -375,7 +385,7 @@ export default function NewTestPage() {
 
       {/* Test Results */}
       {testResult && (
-        <div className={`rounded-lg shadow p-6 mb-6 ${testResult.success ? 'bg-green-50 border-2 border-green-200' : 'bg-red-50 border-2 border-red-200'}`}>
+        <div className={`rounded-xl shadow-lg p-6 mb-6 ${testResult.success ? 'bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300' : 'bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-300'}`}>
           <h2 className="text-xl font-semibold mb-4">
             {testResult.success ? (
               <><i className="fas fa-check-circle mr-2 text-green-600"></i>Test Completed Successfully</>
@@ -456,9 +466,9 @@ export default function NewTestPage() {
       )}
 
       {/* Test Process Information */}
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
         <h2 className="text-xl font-semibold mb-4">
-          <i className="fas fa-info-circle mr-2 text-blue-600"></i>
+          <i className="fas fa-info-circle mr-2 text-purple-600"></i>
           Test Process
         </h2>
         <div className="space-y-4">
@@ -499,6 +509,7 @@ export default function NewTestPage() {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
