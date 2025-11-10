@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import dynamic from 'next/dynamic';
 
-// Dynamically import TradeCentricLogo to avoid SSR issues
 const TradeCentricLogo = dynamic(() => import('./TradeCentricLogo'), { ssr: false });
 
 const NavBar = () => {
@@ -13,7 +12,6 @@ const NavBar = () => {
   const pathname = usePathname();
 
   useEffect(() => {
-    // Check if user is logged in
     const loggedInStatus = localStorage.getItem('isLoggedIn') === 'true';
     setIsLoggedIn(loggedInStatus);
   }, []);
@@ -39,6 +37,7 @@ const NavBar = () => {
         {isLoggedIn ? (
           <div className="collapse navbar-collapse" id="navbarCollapse2">
             <ul className="navbar-nav ms-auto mb-2 mb-lg-0">
+              {/* Dashboard */}
               <li className="nav-item">
                 <Link 
                   className="btn nav-link d-flex align-items-center" 
@@ -52,104 +51,63 @@ const NavBar = () => {
                 </Link>
               </li>
               
-              <li className="nav-item dropdown">
+              {/* Sessions */}
+              <li className="nav-item">
                 <Link 
-                  id="navbarDropdown" 
-                  className="btn nav-link d-flex align-items-center dropdown-toggle" 
-                  role="button" 
-                  data-bs-toggle="dropdown" 
-                  aria-expanded="false" 
+                  className="btn nav-link d-flex align-items-center" 
                   href="/sessions"
                 >
                   <span className="fa-stack">
                     <i className="fas fa-circle fa-stack-1x text-light"></i>
-                    <i className="fal fa-tasks fa-stack-1x"></i>
+                    <i className="fal fa-plug fa-stack-1x"></i>
                   </span>
-                  <span className="d-inline d-lg-none d-xl-inline">Activity</span>
+                  <span className="d-inline d-lg-none d-xl-inline">Sessions</span>
                 </Link>
-                <ul className="depth_2 dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                  <li><Link className="dropdown-item" href="/sessions">PunchOut Sessions</Link></li>
-                  <li><Link className="dropdown-item" href="/order-requests">Order Requests</Link></li>
-                  <li><Link className="dropdown-item" href="/order-notices">Order Notices</Link></li>
-                  <li><Link className="dropdown-item" href="/order-invoices">Order Invoices</Link></li>
-                </ul>
               </li>
               
-              <li className="nav-item dropdown">
+              {/* Orders */}
+              <li className="nav-item">
                 <Link 
-                  id="navbarDropdown" 
-                  className="btn nav-link d-flex align-items-center dropdown-toggle" 
-                  role="button" 
-                  data-bs-toggle="dropdown" 
-                  aria-expanded="false" 
-                  href="/configuration"
+                  className="btn nav-link d-flex align-items-center" 
+                  href="/orders"
                 >
                   <span className="fa-stack">
                     <i className="fas fa-circle fa-stack-1x text-light"></i>
-                    <i className="fal fa-cog fa-stack-1x"></i>
+                    <i className="fal fa-shopping-cart fa-stack-1x"></i>
                   </span>
-                  <span className="d-inline d-lg-none d-xl-inline">Configuration</span>
+                  <span className="d-inline d-lg-none d-xl-inline">Orders</span>
                 </Link>
-                <ul className="depth_2 dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                  <li><Link className="dropdown-item" href="/domains">Domains</Link></li>
-                  <li><Link className="dropdown-item" href="/suppliers">Supplier Accounts</Link></li>
-                  <li><Link className="dropdown-item" href="/catalog-route">Catalog Routes</Link></li>
-                  <li><Link className="dropdown-item" href="/datastore">Data Stores</Link></li>
-                  <li><Link className="dropdown-item" href="/order-route">Purchase Order Routes</Link></li>
-                </ul>
               </li>
               
-              <li className="nav-item dropdown">
+              {/* Developer */}
+              <li className="nav-item">
                 <Link 
-                  id="navbarDropdown" 
-                  className="btn nav-link d-flex align-items-center dropdown-toggle" 
-                  role="button" 
-                  data-bs-toggle="dropdown" 
-                  aria-expanded="false" 
-                  href="/reports"
+                  className="btn nav-link d-flex align-items-center" 
+                  href="/developer/punchout"
                 >
                   <span className="fa-stack">
                     <i className="fas fa-circle fa-stack-1x text-light"></i>
-                    <i className="fal fa-chart-bar fa-stack-1x"></i>
-                  </span>
-                  <span className="d-inline d-lg-none d-xl-inline">Reports</span>
-                </Link>
-                <ul className="depth_2 dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                  <li><Link className="dropdown-item" href="/reports/overview">Overview</Link></li>
-                  <li><Link className="dropdown-item" href="/reports/punchout">PunchOut Sessions</Link></li>
-                  <li><Link className="dropdown-item" href="/reports/order">Order Requests</Link></li>
-                  <li><Link className="dropdown-item" href="/reports/invoice">Order Invoices</Link></li>
-                  <li><Link className="dropdown-item" href="/reports/notice">Order Notices</Link></li>
-                </ul>
-              </li>
-              
-              <li className="nav-item dropdown">
-                <Link 
-                  id="navbarDropdown" 
-                  className="btn nav-link d-flex align-items-center dropdown-toggle" 
-                  role="button" 
-                  data-bs-toggle="dropdown" 
-                  aria-expanded="false" 
-                  href="/developer"
-                >
-                  <span className="fa-stack">
-                    <i className="fas fa-circle fa-stack-1x text-light"></i>
-                    <i className="fal fa-code fa-stack-1x"></i>
+                    <i className="fal fa-flask fa-stack-1x"></i>
                   </span>
                   <span className="d-inline d-lg-none d-xl-inline">Developer</span>
                 </Link>
-                <ul className="depth_2 dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                  <li><Link className="dropdown-item" href="/developer/punchout"><i className="fas fa-flask me-2 text-purple-600"></i><strong>PunchOut Testing</strong></Link></li>
-                  <li><hr className="dropdown-divider"/></li>
-                  <li><Link className="dropdown-item" href="/tools/punchout">PunchOut</Link></li>
-                  <li><Link className="dropdown-item" href="/tools/punchoutaddress">PunchOut Addresses</Link></li>
-                  <li><Link className="dropdown-item" href="/tools/orderrequest">Purchase Order Requests</Link></li>
-                  <li><Link className="dropdown-item" href="/tools/orderprofile">Purchase Order Profiles</Link></li>
-                  <li><Link className="dropdown-item" href="/tools/setuprequest">Setup Request</Link></li>
-                  <li><Link className="dropdown-item" href="/tools/orderparse">Document Decoding and Validation</Link></li>
-                </ul>
               </li>
               
+              {/* Converter */}
+              <li className="nav-item">
+                <Link 
+                  className="btn nav-link d-flex align-items-center" 
+                  href="/converter"
+                >
+                  <span className="fa-stack">
+                    <i className="fas fa-circle fa-stack-1x text-light"></i>
+                    <i className="fal fa-exchange-alt fa-stack-1x"></i>
+                  </span>
+                  <span className="d-inline d-lg-none d-xl-inline">Converter</span>
+                </Link>
+              </li>
+              
+              {/* Logout */}
               <li className="nav-item">
                 <button 
                   className="btn nav-link d-flex align-items-center" 
@@ -171,13 +129,29 @@ const NavBar = () => {
           <div className="collapse navbar-collapse" id="navbarCollapse2">
             <ul className="navbar-nav ms-auto mb-2 mb-lg-0">
               <li className="nav-item">
-                <Link className="nav-link" href="/">Home</Link>
+                <Link className="nav-link" href="/">
+                  <i className="fas fa-home me-2"></i>Home
+                </Link>
               </li>
               <li className="nav-item">
-                <Link className="nav-link" href="/converter">Converter</Link>
+                <Link className="nav-link" href="/sessions">
+                  <i className="fas fa-plug me-2"></i>Sessions
+                </Link>
               </li>
               <li className="nav-item">
-                <Link className="nav-link" href="/login">Login</Link>
+                <Link className="nav-link" href="/orders">
+                  <i className="fas fa-shopping-cart me-2"></i>Orders
+                </Link>
+              </li>
+              <li className="nav-item">
+                <Link className="nav-link" href="/converter">
+                  <i className="fas fa-exchange-alt me-2"></i>Converter
+                </Link>
+              </li>
+              <li className="nav-item">
+                <Link className="nav-link" href="/login">
+                  <i className="fas fa-sign-in me-2"></i>Login
+                </Link>
               </li>
             </ul>
           </div>

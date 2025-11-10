@@ -53,6 +53,7 @@ export interface SessionFilter {
 export interface NetworkRequest {
   id: string;
   sessionKey: string;
+  orderId?: string;
   requestId: string;
   timestamp: string;
   direction: 'INBOUND' | 'OUTBOUND';
@@ -69,6 +70,60 @@ export interface NetworkRequest {
   requestType: string;
   success: boolean;
   errorMessage?: string;
+}
+
+export interface Order {
+  id: string;
+  orderId: string;
+  sessionKey?: string;
+  orderDate: string;
+  orderType: string;
+  orderVersion: string;
+  customerId: string;
+  customerName: string;
+  total: number;
+  currency: string;
+  taxAmount?: number;
+  shipTo?: OrderAddress;
+  billTo?: OrderAddress;
+  items: OrderItem[];
+  extrinsics?: Record<string, string>;
+  comments?: string;
+  status: string;
+  receivedAt: string;
+  processedAt?: string;
+  muleOrderId?: string;
+  environment?: string;
+  source?: string;
+  dialect?: string;
+}
+
+export interface OrderAddress {
+  addressId?: string;
+  name: string;
+  deliverTo?: string;
+  street: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+  email?: string;
+  phone?: string;
+}
+
+export interface OrderItem {
+  lineNumber: number;
+  quantity: number;
+  supplierPartId: string;
+  supplierPartAuxiliaryId?: string;
+  description: string;
+  unitPrice: number;
+  extendedAmount: number;
+  currency: string;
+  unitOfMeasure?: string;
+  unspsc?: string;
+  url?: string;
+  extrinsics?: Record<string, string>;
 }
 
 export interface EnvironmentConfig {

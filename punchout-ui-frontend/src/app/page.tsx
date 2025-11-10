@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { sessionAPI } from '@/lib/api';
-import { PunchOutSession } from '@/types';
+import { sessionAPI, orderAPIv2 } from '@/lib/api';
+import { PunchOutSession, Order } from '@/types';
 import Link from 'next/link';
 
 export default function HomePage() {
@@ -12,6 +12,9 @@ export default function HomePage() {
     stageSessions: 0,
     prodSessions: 0,
     recentSessions: [] as PunchOutSession[],
+    totalOrders: 0,
+    totalOrderValue: 0,
+    recentOrders: [] as Order[],
   });
   const [loading, setLoading] = useState(true);
 
@@ -22,13 +25,21 @@ export default function HomePage() {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      const allSessions = await sessionAPI.getAllSessions();
+      const [allSessions, orderStats, allOrders] = await Promise.all([
+        sessionAPI.getAllSessions(),
+        orderAPIv2.getOrderStats().catch(() => ({ totalOrders: 0, totalValue: 0 })),
+        orderAPIv2.getAllOrders().catch(() => [])
+      ]);
       
       const devSessions = allSessions.filter(s => s.environment === 'DEVELOPMENT');
       const stageSessions = allSessions.filter(s => s.environment === 'STAGING');
       const prodSessions = allSessions.filter(s => s.environment === 'PRODUCTION');
       const recentSessions = allSessions
         .sort((a, b) => new Date(b.sessionDate).getTime() - new Date(a.sessionDate).getTime())
+        .slice(0, 5);
+      
+      const recentOrders = allOrders
+        .sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime())
         .slice(0, 5);
 
       setStats({
@@ -37,6 +48,9 @@ export default function HomePage() {
         stageSessions: stageSessions.length,
         prodSessions: prodSessions.length,
         recentSessions,
+        totalOrders: orderStats.totalOrders || 0,
+        totalOrderValue: orderStats.totalValue || 0,
+        recentOrders,
       });
     } catch (err) {
       console.error('Failed to load dashboard data:', err);
@@ -100,7 +114,7 @@ export default function HomePage() {
           <div className="bg-white border-b shadow-sm">
             <div className="container mx-auto px-4 py-8">
               <h2 className="text-2xl font-bold mb-6 text-gray-800">Overview</h2>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
                 <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
                   <div className="flex items-center justify-between">
                     <div>
@@ -109,6 +123,18 @@ export default function HomePage() {
                     </div>
                     <div className="bg-blue-500 rounded-full p-4 shadow-lg">
                       <i className="fas fa-database text-2xl text-white"></i>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-gradient-to-br from-teal-50 to-teal-100 rounded-xl p-6 border border-teal-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-teal-600 uppercase">Total Orders</p>
+                      <p className="text-4xl font-bold text-teal-900 mt-2">{stats.totalOrders}</p>
+                    </div>
+                    <div className="bg-teal-500 rounded-full p-4 shadow-lg">
+                      <i className="fas fa-shopping-cart text-2xl text-white"></i>
                     </div>
                   </div>
                 </div>
@@ -217,6 +243,70 @@ export default function HomePage() {
               </div>
             </div>
 
+            {/* Recent Orders */}
+            {stats.recentOrders.length > 0 && (
+              <div className="bg-white rounded-xl shadow-lg border border-gray-200 mb-8">
+                <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
+                  <h2 className="text-2xl font-bold text-gray-800">
+                    <i className="fas fa-shopping-cart text-green-600 mr-3"></i>
+                    Recent Orders
+                  </h2>
+                  <Link
+                    href="/orders"
+                    className="text-green-600 hover:text-green-800 font-semibold text-sm"
+                  >
+                    View All →
+                  </Link>
+                </div>
+                <div className="divide-y divide-gray-100">
+                  {stats.recentOrders.map((order) => (
+                    <Link
+                      key={order.id}
+                      href={`/orders/${order.orderId}`}
+                      className="block px-6 py-4 hover:bg-green-50 transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <code className="text-sm font-semibold bg-gray-100 px-3 py-1 rounded">
+                              {order.orderId}
+                            </code>
+                            <span className="text-sm text-gray-700">{order.customerName}</span>
+                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                              order.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' :
+                              order.status === 'RECEIVED' ? 'bg-blue-100 text-blue-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {order.status}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-4 text-sm text-gray-600">
+                            <span>
+                              <i className="fas fa-calendar mr-1 text-gray-400"></i>
+                              {formatDate(order.orderDate)}
+                            </span>
+                            <span className="font-semibold text-green-600">
+                              {new Intl.NumberFormat('en-US', {
+                                style: 'currency',
+                                currency: order.currency || 'USD'
+                              }).format(order.total)}
+                            </span>
+                            <span>
+                              <i className="fas fa-box mr-1 text-gray-400"></i>
+                              {order.items?.length || 0} items
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-green-600 group-hover:translate-x-1 transition-transform">
+                          <i className="fas fa-chevron-right"></i>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+            
             {/* Recent Sessions */}
             <div className="bg-white rounded-xl shadow-lg border border-gray-200">
               <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">

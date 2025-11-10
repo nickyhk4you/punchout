@@ -22,6 +22,9 @@ public class NetworkRequestDocument {
     @Field("sessionKey")
     private String sessionKey;
     
+    @Field("orderId")
+    private String orderId;
+    
     @Field("requestId")
     private String requestId;
     
