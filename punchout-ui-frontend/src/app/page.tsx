@@ -71,7 +71,7 @@ export default function HomePage() {
               <div className="max-w-4xl">
                 <h1 className="text-5xl font-bold mb-4">
                   <i className="fas fa-rocket mr-4"></i>
-                  PunchOut Testing Platform
+                  Waters Punchout Platform
                 </h1>
                 <p className="text-xl text-blue-100 mb-8">
                   Test, monitor, and debug your PunchOut integrations across all environments

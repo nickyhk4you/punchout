@@ -19,9 +19,19 @@ public class PunchOutGatewayController {
     
     private final PunchOutOrchestrationService orchestrationService;
     
-    @PostMapping(value = "/setup", consumes = MediaType.TEXT_XML_VALUE, produces = MediaType.TEXT_XML_VALUE)
+    @PostMapping(value = "/setup", 
+                 consumes = {MediaType.TEXT_XML_VALUE, MediaType.APPLICATION_XML_VALUE}, 
+                 produces = MediaType.TEXT_XML_VALUE)
     public ResponseEntity<String> handlePunchOutSetup(@RequestBody String cxmlContent) {
-        log.info("Received PunchOut setup request");
+        log.info("Received PunchOut setup request, content length: {}", cxmlContent != null ? cxmlContent.length() : 0);
+        
+        if (cxmlContent == null || cxmlContent.trim().isEmpty()) {
+            log.error("Empty cXML content received");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(buildCxmlErrorResponse("Empty cXML content"));
+        }
+        
+        log.debug("cXML Content preview: {}", cxmlContent.substring(0, Math.min(100, cxmlContent.length())));
         
         try {
             Map<String, Object> result = orchestrationService.processPunchOutRequest(cxmlContent, null);

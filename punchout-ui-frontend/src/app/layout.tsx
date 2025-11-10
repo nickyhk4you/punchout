@@ -11,8 +11,8 @@ const BootstrapClient = dynamic(() => import('@/components/BootstrapClient'), { 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'punchout B2B',
-  description: 'Convert cXML documents to JSON format',
+  title: 'Waters Punchout Platform',
+  description: 'Test, monitor, and debug your PunchOut integrations across all environments',
 }
 
 export default function RootLayout({
@@ -34,7 +34,7 @@ export default function RootLayout({
         </main>
         <footer className="bg-primary text-white py-4 mt-5">
           <div className="container text-center">
-            <p className="mb-0">&copy; 2025 punchout B2B. All rights reserved.</p>
+            <p className="mb-0">&copy; 2025 Waters Corporation - Punchout Platform. All rights reserved.</p>
           </div>
         </footer>
       </body>

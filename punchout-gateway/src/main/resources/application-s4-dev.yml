@@ -11,7 +11,7 @@ thirdparty:
   auth:
     url: https://s4-dev-auth.punchout.waters.com/api/v1/token
     timeout: 5000
-  catalog:
+  mule:
     url: https://s4-dev-catalog.punchout.waters.com/api/v1/catalog
     timeout: 10000
 

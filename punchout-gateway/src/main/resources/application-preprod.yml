@@ -11,7 +11,7 @@ thirdparty:
   auth:
     url: https://preprod-auth.punchout.waters.com/api/v1/token
     timeout: 5000
-  catalog:
+  mule:
     url: https://preprod-catalog.punchout.waters.com/api/v1/catalog
     timeout: 10000
 

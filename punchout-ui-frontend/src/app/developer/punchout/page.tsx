@@ -118,11 +118,11 @@ export default function DeveloperPunchOutPage() {
     
     try {
       const gatewayUrl = 'http://localhost:9090/punchout/setup';
-      const payload = useCustomPayload ? cxmlPayload : generateCxmlPayload(customer, selectedEnvironment);
+      const payload = useCustomPayload ? cxmlPayload : await generateCxmlPayload(customer, selectedEnvironment);
       
       const response = await fetch(gatewayUrl, {
         method: 'POST',
-        headers: {
+        headers:  {
           'Content-Type': 'text/xml',
         },
         body: payload,

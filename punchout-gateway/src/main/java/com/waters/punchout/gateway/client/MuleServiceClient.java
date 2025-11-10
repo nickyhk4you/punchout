@@ -2,7 +2,6 @@ package com.waters.punchout.gateway.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.waters.punchout.gateway.logging.NetworkRequestLogger;
-import com.waters.punchout.gateway.model.PunchOutRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -16,27 +15,27 @@ import java.util.Map;
 
 @Service
 @Slf4j
-public class AuthServiceClient {
+public class MuleServiceClient {
 
     private final WebClient webClient;
     private final NetworkRequestLogger networkRequestLogger;
     private final ObjectMapper objectMapper;
-    private final String authUrl;
+    private final String muleUrl;
 
-    public AuthServiceClient(
+    public MuleServiceClient(
             WebClient.Builder webClientBuilder,
             NetworkRequestLogger networkRequestLogger,
             ObjectMapper objectMapper,
-            @Value("${thirdparty.auth.url}") String authUrl
+            @Value("${thirdparty.mule.url}") String muleUrl
     ) {
         this.webClient = webClientBuilder.build();
         this.networkRequestLogger = networkRequestLogger;
         this.objectMapper = objectMapper;
-        this.authUrl = authUrl;
+        this.muleUrl = muleUrl;
     }
 
-    public String getAuthToken(PunchOutRequest request) {
-        log.info("Requesting auth token for sessionKey={}", request.getSessionKey());
+    public Map<String, Object> sendMuleRequest(Map<String, Object> payload, String token, String sessionKey) {
+        log.info("Sending Mule request for sessionKey={}", sessionKey);
         
         long startTime = System.currentTimeMillis();
         String requestBody = null;
@@ -45,62 +44,63 @@ public class AuthServiceClient {
         boolean success = false;
         String errorMessage = null;
         
+        // Prepare request headers (outside try block for use in catch)
+        Map<String, String> requestHeaders = new HashMap<>();
+        requestHeaders.put(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
+        requestHeaders.put(HttpHeaders.AUTHORIZATION, "Bearer " + token);
+        requestHeaders.put(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
+        
         try {
-            Map<String, Object> payload = buildAuthPayload(request);
             requestBody = objectMapper.writeValueAsString(payload);
-            
-            Map<String, String> requestHeaders = new HashMap<>();
-            requestHeaders.put(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
-            requestHeaders.put(HttpHeaders.ACCEPT, MediaType.TEXT_PLAIN_VALUE);
             
             Map<String, String> responseHeadersMap = new HashMap<>();
             
             var responseEntity = webClient.post()
-                    .uri(authUrl)
+                    .uri(muleUrl)
                     .contentType(MediaType.APPLICATION_JSON)
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
                     .bodyValue(payload)
                     .retrieve()
-                    .toEntity(String.class)
+                    .toEntity(Map.class)
                     .block();
             
-            String token = responseEntity.getBody();
+            Map<String, Object> response = responseEntity.getBody();
             statusCode = responseEntity.getStatusCode().value();
             
-            // Capture all response headers
+            // Capture response headers
             responseEntity.getHeaders().forEach((name, values) -> {
                 responseHeadersMap.put(name, String.join(", ", values));
             });
             
-            responseBody = token;
+            responseBody = objectMapper.writeValueAsString(response);
             success = true;
             
-            log.info("Successfully obtained auth token for sessionKey={}", request.getSessionKey());
+            log.info("Successfully received catalog response for sessionKey={}", sessionKey);
             
-            // Log successful request with complete headers
-            long duration = System.currentTimeMillis() - startTime;
+            // Log with response headers
             networkRequestLogger.logOutboundRequest(
-                    request.getSessionKey(),
+                    sessionKey,
                     "Punchout Gateway",
-                    "Auth Service",
+                    "Catalog Service",
                     "POST",
-                    authUrl,
+                    muleUrl,
                     requestHeaders,
                     requestBody,
                     statusCode,
                     responseHeadersMap,
                     responseBody,
-                    duration,
+                    System.currentTimeMillis() - startTime,
                     "REST",
                     success,
                     errorMessage
             );
             
-            return token;
+            return response;
             
         } catch (WebClientResponseException e) {
             statusCode = e.getStatusCode().value();
             responseBody = e.getResponseBodyAsString();
-            errorMessage = "Auth service error: " + e.getMessage();
+            errorMessage = "Mule service error: " + e.getMessage();
             
             // Capture error response headers
             Map<String, String> errorResponseHeaders = new HashMap<>();
@@ -109,17 +109,12 @@ public class AuthServiceClient {
             });
             
             long duration = System.currentTimeMillis() - startTime;
-            
-            Map<String, String> requestHeaders = new HashMap<>();
-            requestHeaders.put(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
-            requestHeaders.put(HttpHeaders.ACCEPT, MediaType.TEXT_PLAIN_VALUE);
-            
             networkRequestLogger.logOutboundRequest(
-                    request.getSessionKey(),
+                    sessionKey,
                     "Punchout Gateway",
-                    "Auth Service",
+                    "Mule Service",
                     "POST",
-                    authUrl,
+                    muleUrl,
                     requestHeaders,
                     requestBody,
                     statusCode,
@@ -131,24 +126,19 @@ public class AuthServiceClient {
                     errorMessage
             );
             
-            log.error("Failed to get auth token: statusCode={}, error={}", statusCode, errorMessage);
-            throw new RuntimeException("Failed to get auth token: " + e.getMessage(), e);
+            log.error("Failed to get Mule response: statusCode={}, error={}", statusCode, errorMessage);
+            throw new RuntimeException("Failed to get Mule response: " + e.getMessage(), e);
             
         } catch (Exception e) {
             errorMessage = "Unexpected error: " + e.getMessage();
             
             long duration = System.currentTimeMillis() - startTime;
-            
-            Map<String, String> requestHeaders = new HashMap<>();
-            requestHeaders.put(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
-            requestHeaders.put(HttpHeaders.ACCEPT, MediaType.TEXT_PLAIN_VALUE);
-            
             networkRequestLogger.logOutboundRequest(
-                    request.getSessionKey(),
+                    sessionKey,
                     "Punchout Gateway",
-                    "Auth Service",
+                    "Mule Service",
                     "POST",
-                    authUrl,
+                    muleUrl,
                     requestHeaders,
                     requestBody,
                     statusCode,
@@ -160,19 +150,8 @@ public class AuthServiceClient {
                     errorMessage
             );
             
-            log.error("Unexpected error while getting auth token: {}", errorMessage, e);
-            throw new RuntimeException("Failed to get auth token: " + e.getMessage(), e);
+            log.error("Unexpected error while getting Mule response: {}", errorMessage, e);
+            throw new RuntimeException("Failed to get Mule response: " + e.getMessage(), e);
         }
-    }
-
-    private Map<String, Object> buildAuthPayload(PunchOutRequest request) {
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("sessionKey", request.getSessionKey());
-        payload.put("operation", request.getOperation());
-        payload.put("buyerCookie", request.getBuyerCookie());
-        payload.put("fromIdentity", request.getFromIdentity());
-        payload.put("toIdentity", request.getToIdentity());
-        payload.put("senderIdentity", request.getSenderIdentity());
-        return payload;
     }
 }

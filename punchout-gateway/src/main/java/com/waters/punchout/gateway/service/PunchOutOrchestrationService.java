@@ -1,7 +1,7 @@
 package com.waters.punchout.gateway.service;
 
 import com.waters.punchout.gateway.client.AuthServiceClient;
-import com.waters.punchout.gateway.client.CatalogServiceClient;
+import com.waters.punchout.gateway.client.MuleServiceClient;
 import com.waters.punchout.gateway.converter.CxmlToJsonConverter;
 import com.waters.punchout.gateway.entity.PunchOutSessionDocument;
 import com.waters.punchout.gateway.logging.NetworkRequestLogger;
@@ -23,20 +23,20 @@ public class PunchOutOrchestrationService {
     private final NetworkRequestLogger networkRequestLogger;
     private final CxmlToJsonConverter cxmlToJsonConverter;
     private final AuthServiceClient authServiceClient;
-    private final CatalogServiceClient catalogServiceClient;
+    private final MuleServiceClient muleServiceClient;
     private final PunchOutSessionRepository sessionRepository;
 
     public PunchOutOrchestrationService(
             NetworkRequestLogger networkRequestLogger,
             CxmlToJsonConverter cxmlToJsonConverter,
             AuthServiceClient authServiceClient,
-            CatalogServiceClient catalogServiceClient,
+            MuleServiceClient muleServiceClient,
             PunchOutSessionRepository sessionRepository
     ) {
         this.networkRequestLogger = networkRequestLogger;
         this.cxmlToJsonConverter = cxmlToJsonConverter;
         this.authServiceClient = authServiceClient;
-        this.catalogServiceClient = catalogServiceClient;
+        this.muleServiceClient = muleServiceClient;
         this.sessionRepository = sessionRepository;
     }
 
@@ -55,14 +55,14 @@ public class PunchOutOrchestrationService {
             
             String authToken = getAuthenticationToken(request);
             
-            Map<String, Object> catalogPayload = prepareCatalogPayload(request);
+            Map<String, Object> mulePayload = prepareMulePayload(request);
             
-            Map<String, Object> catalogResponse = getCatalogResponse(catalogPayload, authToken, request.getSessionKey());
+            Map<String, Object> muleResponse = getMuleResponse(mulePayload, authToken, request.getSessionKey());
             
-            savePunchOutSession(request, catalogResponse);
+            savePunchOutSession(request, muleResponse);
             
             log.info("Successfully processed PunchOut request for sessionKey={}", request.getSessionKey());
-            return buildSuccessResponse(request, catalogResponse);
+            return buildSuccessResponse(request, muleResponse);
             
         } catch (Exception e) {
             log.error("Error processing PunchOut request for sessionKey={}: {}", sessionKey, e.getMessage(), e);
@@ -75,6 +75,9 @@ public class PunchOutOrchestrationService {
         
         Map<String, String> headers = new HashMap<>();
         headers.put(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_XML_VALUE);
+        headers.put(HttpHeaders.ACCEPT, MediaType.APPLICATION_XML_VALUE);
+        headers.put(HttpHeaders.USER_AGENT, "B2B PunchOut Client");
+        headers.put(HttpHeaders.CONTENT_LENGTH, String.valueOf(cxmlContent != null ? cxmlContent.length() : 0));
         
         networkRequestLogger.logInboundRequest(
                 sessionKey != null ? sessionKey : "UNKNOWN",
@@ -108,22 +111,22 @@ public class PunchOutOrchestrationService {
         }
     }
 
-    private Map<String, Object> prepareCatalogPayload(PunchOutRequest request) {
-        log.debug("Preparing catalog payload");
+    private Map<String, Object> prepareMulePayload(PunchOutRequest request) {
+        log.debug("Preparing Mule payload");
         return cxmlToJsonConverter.convertToThirdPartyPayload(request);
     }
 
-    private Map<String, Object> getCatalogResponse(Map<String, Object> payload, String token, String sessionKey) {
+    private Map<String, Object> getMuleResponse(Map<String, Object> payload, String token, String sessionKey) {
         try {
-            log.debug("Fetching catalog response for sessionKey={}", sessionKey);
-            return catalogServiceClient.sendCatalogRequest(payload, token, sessionKey);
+            log.debug("Fetching Mule response for sessionKey={}", sessionKey);
+            return muleServiceClient.sendMuleRequest(payload, token, sessionKey);
         } catch (Exception e) {
-            log.error("Failed to get catalog response: {}", e.getMessage(), e);
-            throw new RuntimeException("Catalog request failed: " + e.getMessage(), e);
+            log.error("Failed to get Mule response: {}", e.getMessage(), e);
+            throw new RuntimeException("Mule request failed: " + e.getMessage(), e);
         }
     }
 
-    private void savePunchOutSession(PunchOutRequest request, Map<String, Object> catalogResponse) {
+    private void savePunchOutSession(PunchOutRequest request, Map<String, Object> muleResponse) {
         log.debug("Saving PunchOut session for sessionKey={}", request.getSessionKey());
         
         PunchOutSessionDocument session = new PunchOutSessionDocument();
@@ -162,17 +165,17 @@ public class PunchOutOrchestrationService {
             }
         }
         session.setEnvironment(environment);
-        session.setCatalog((String) catalogResponse.get("catalogUrl"));
+        session.setCatalog((String) muleResponse.get("catalogUrl"));
         
         sessionRepository.save(session);
         log.info("Saved PunchOut session: sessionKey={}, environment={}", request.getSessionKey(), environment);
     }
 
-    private Map<String, Object> buildSuccessResponse(PunchOutRequest request, Map<String, Object> catalogResponse) {
+    private Map<String, Object> buildSuccessResponse(PunchOutRequest request, Map<String, Object> muleResponse) {
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
         response.put("sessionKey", request.getSessionKey());
-        response.put("catalogUrl", catalogResponse.get("catalogUrl"));
+        response.put("catalogUrl", muleResponse.get("catalogUrl"));
         response.put("message", "PunchOut session established successfully");
         return response;
     }

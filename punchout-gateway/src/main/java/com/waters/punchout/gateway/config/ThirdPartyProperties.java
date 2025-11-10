@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Configuration;
 public class ThirdPartyProperties {
     
     private AuthConfig auth = new AuthConfig();
-    private CatalogConfig catalog = new CatalogConfig();
+    private MuleConfig mule = new MuleConfig();
     
     @Data
     public static class AuthConfig {
@@ -18,7 +18,7 @@ public class ThirdPartyProperties {
     }
     
     @Data
-    public static class CatalogConfig {
+    public static class MuleConfig {
         private String url = "http://localhost:8082/api/v1/catalog";
     }
 }
