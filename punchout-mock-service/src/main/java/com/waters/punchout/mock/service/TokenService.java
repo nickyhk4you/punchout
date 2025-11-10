@@ -16,7 +16,9 @@ public class TokenService {
     private final Map<String, TokenInfo> tokens = new ConcurrentHashMap<>();
     
     public String generateOneTimeToken(String sessionKey, String operation) {
-        String token = "OTT_" + UUID.randomUUID().toString().replace("-", "").substring(0, 16).toUpperCase();
+        // Generate a full UUID-based one-time token
+        String uuid = UUID.randomUUID().toString();
+        String token = "OTT-" + uuid;
         
         TokenInfo tokenInfo = new TokenInfo(
             sessionKey,

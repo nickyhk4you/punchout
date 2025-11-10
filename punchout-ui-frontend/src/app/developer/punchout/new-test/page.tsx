@@ -20,6 +20,9 @@ export default function NewTestPage() {
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(true);
   const [executing, setExecuting] = useState(false);
+  const [cxmlPayload, setCxmlPayload] = useState('');
+  const [showPayloadEditor, setShowPayloadEditor] = useState(false);
+  const [testResult, setTestResult] = useState<any>(null);
 
   useEffect(() => {
     if (routeId) {
@@ -34,6 +37,10 @@ export default function NewTestPage() {
       const route = await catalogRouteAPI.getRouteById(routeId!);
       setCatalogRoute(route);
       setTestName(`${route.routeName} - ${selectedEnvironment} - ${new Date().toLocaleDateString()}`);
+      
+      // Initialize default cXML payload
+      const defaultPayload = generateDefaultCxmlPayload(route, selectedEnvironment);
+      setCxmlPayload(defaultPayload);
     } catch (err) {
       console.error('Failed to load catalog route:', err);
     } finally {
@@ -41,26 +48,117 @@ export default function NewTestPage() {
     }
   };
 
+  const generateDefaultCxmlPayload = (route: CatalogRoute, environment: string) => {
+    const timestamp = new Date().toISOString();
+    const sessionKey = `SESSION_TEST_${Date.now()}`;
+    
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<cXML payloadID="${Math.floor(Math.random() * 1000000)}" timestamp="${timestamp}">
+  <Header>
+    <From>
+      <Credential domain="NetworkID">
+        <Identity>buyer123</Identity>
+      </Credential>
+    </From>
+    <To>
+      <Credential domain="NetworkID">
+        <Identity>supplier456</Identity>
+      </Credential>
+    </To>
+    <Sender>
+      <Credential domain="NetworkID">
+        <Identity>buyerApp</Identity>
+        <SharedSecret>secret123</SharedSecret>
+      </Credential>
+      <UserAgent>BuyerApp 1.0</UserAgent>
+    </Sender>
+  </Header>
+  <Request>
+    <PunchOutSetupRequest operation="create">
+      <BuyerCookie>${sessionKey}</BuyerCookie>
+      <Extrinsic name="User">${testerEmail || 'test@waters.com'}</Extrinsic>
+      <Extrinsic name="Environment">${environment}</Extrinsic>
+      <Extrinsic name="RouteName">${route.routeName}</Extrinsic>
+      <BrowserFormPost>
+        <URL>https://buyer.example.com/punchout/return</URL>
+      </BrowserFormPost>
+      <Contact role="buyer">
+        <Name xml:lang="en">Test User</Name>
+        <Email>${testerEmail || 'test@waters.com'}</Email>
+      </Contact>
+    </PunchOutSetupRequest>
+  </Request>
+</cXML>`;
+  };
+
   const handleStartTest = async () => {
     if (!catalogRoute || !testerEmail) return;
 
     setExecuting(true);
+    setTestResult(null);
+    
     try {
-      const test = await punchOutTestAPI.createTest({
+      // Send cXML to Gateway
+      const gatewayUrl = 'http://localhost:9090/punchout/setup';
+      
+      const response = await fetch(gatewayUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/xml',
+        },
+        body: cxmlPayload,
+      });
+
+      const responseText = await response.text();
+      
+      // Extract session key from response
+      const sessionKeyMatch = responseText.match(/<BuyerCookie>([^<]+)<\/BuyerCookie>/);
+      const sessionKey = sessionKeyMatch ? sessionKeyMatch[1] : null;
+      
+      // Wait 1 second for MongoDB to save
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Fetch network requests
+      let networkRequests = [];
+      if (sessionKey) {
+        try {
+          const requestsResponse = await fetch(`http://localhost:8080/api/v1/sessions/${sessionKey}/network-requests`);
+          networkRequests = await requestsResponse.json();
+        } catch (err) {
+          console.error('Failed to fetch network requests:', err);
+        }
+      }
+      
+      setTestResult({
+        success: response.ok,
+        status: response.status,
+        sessionKey,
+        responseXml: responseText,
+        networkRequests,
+        timestamp: new Date().toISOString(),
+      });
+      
+      // Save test to MongoDB
+      await punchOutTestAPI.createTest({
         testName,
         catalogRouteId: catalogRoute.id,
         catalogRouteName: catalogRoute.routeName,
         environment: selectedEnvironment,
         tester: testerEmail,
         testDate: new Date().toISOString(),
-        status: 'RUNNING',
+        status: response.ok ? 'SUCCESS' : 'FAILED',
         notes,
+        sessionKey,
       });
-
-      // Redirect to test execution page
-      router.push(`/developer/punchout/tests/${test.id}`);
-    } catch (err) {
-      console.error('Failed to start test:', err);
+      
+    } catch (err: any) {
+      console.error('Failed to execute test:', err);
+      setTestResult({
+        success: false,
+        error: err.message,
+        timestamp: new Date().toISOString(),
+      });
+    } finally {
       setExecuting(false);
     }
   };
@@ -215,6 +313,35 @@ export default function NewTestPage() {
               placeholder="Add any notes about this test..."
             />
           </div>
+
+          {/* cXML Payload Editor */}
+          <div className="col-span-2">
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-700">
+                cXML Request Payload
+              </label>
+              <button
+                onClick={() => setShowPayloadEditor(!showPayloadEditor)}
+                className="text-sm text-blue-600 hover:text-blue-800"
+              >
+                {showPayloadEditor ? 'Hide' : 'Edit'} Payload
+              </button>
+            </div>
+            {showPayloadEditor && (
+              <textarea
+                value={cxmlPayload}
+                onChange={(e) => setCxmlPayload(e.target.value)}
+                rows={15}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                placeholder="cXML payload..."
+              />
+            )}
+            {!showPayloadEditor && (
+              <div className="text-sm text-gray-500 bg-gray-50 p-3 rounded border">
+                Click "Edit Payload" to customize the cXML request
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Action Buttons */}
@@ -246,6 +373,88 @@ export default function NewTestPage() {
         </div>
       </div>
 
+      {/* Test Results */}
+      {testResult && (
+        <div className={`rounded-lg shadow p-6 mb-6 ${testResult.success ? 'bg-green-50 border-2 border-green-200' : 'bg-red-50 border-2 border-red-200'}`}>
+          <h2 className="text-xl font-semibold mb-4">
+            {testResult.success ? (
+              <><i className="fas fa-check-circle mr-2 text-green-600"></i>Test Completed Successfully</>
+            ) : (
+              <><i className="fas fa-times-circle mr-2 text-red-600"></i>Test Failed</>
+            )}
+          </h2>
+          
+          <div className="space-y-4">
+            {/* Session Key */}
+            {testResult.sessionKey && (
+              <div className="bg-white rounded p-4">
+                <h3 className="font-semibold mb-2">Session Created</h3>
+                <div className="flex items-center gap-2">
+                  <code className="bg-gray-100 px-3 py-1 rounded">{testResult.sessionKey}</code>
+                  <Link
+                    href={`/sessions/${testResult.sessionKey}`}
+                    className="text-blue-600 hover:text-blue-800 font-medium"
+                  >
+                    <i className="fas fa-external-link-alt mr-1"></i>
+                    View Session Dashboard
+                  </Link>
+                </div>
+              </div>
+            )}
+
+            {/* Network Requests */}
+            {testResult.networkRequests && testResult.networkRequests.length > 0 && (
+              <div className="bg-white rounded p-4">
+                <h3 className="font-semibold mb-3">Network Requests Logged ({testResult.networkRequests.length})</h3>
+                <div className="space-y-2">
+                  {testResult.networkRequests.map((req: any, index: number) => (
+                    <div key={index} className="border-l-4 border-blue-500 pl-3 py-2 bg-gray-50">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className={`px-2 py-1 text-xs font-semibold rounded mr-2 ${
+                            req.direction === 'INBOUND' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
+                          }`}>
+                            {req.direction}
+                          </span>
+                          <span className="font-medium">{req.method}</span>
+                          <span className="text-gray-600 ml-2">{req.url || req.endpoint}</span>
+                        </div>
+                        <span className={`px-2 py-1 text-xs font-semibold rounded ${
+                          req.statusCode === 200 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        }`}>
+                          {req.statusCode}
+                        </span>
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {req.source} → {req.destination} | {req.duration}ms
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Error Message */}
+            {testResult.error && (
+              <div className="bg-white rounded p-4">
+                <h3 className="font-semibold text-red-600 mb-2">Error</h3>
+                <code className="text-sm text-red-600">{testResult.error}</code>
+              </div>
+            )}
+
+            {/* Response XML */}
+            {testResult.responseXml && (
+              <div className="bg-white rounded p-4">
+                <h3 className="font-semibold mb-2">Gateway Response</h3>
+                <pre className="bg-gray-100 p-3 rounded text-xs overflow-x-auto">
+                  {testResult.responseXml}
+                </pre>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Test Process Information */}
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-xl font-semibold mb-4">
@@ -259,7 +468,7 @@ export default function NewTestPage() {
             </div>
             <div>
               <h3 className="font-semibold">PunchOut Setup Request</h3>
-              <p className="text-sm text-gray-600">Send setup request to {catalogRoute.network} with buyer credentials</p>
+              <p className="text-sm text-gray-600">Send cXML setup request to Gateway with customizable payload</p>
             </div>
           </div>
           <div className="flex items-start">
@@ -267,8 +476,8 @@ export default function NewTestPage() {
               <span className="text-blue-600 font-bold">2</span>
             </div>
             <div>
-              <h3 className="font-semibold">Catalog Access</h3>
-              <p className="text-sm text-gray-600">Receive catalog URL and verify access</p>
+              <h3 className="font-semibold">Gateway Processing</h3>
+              <p className="text-sm text-gray-600">Gateway authenticates and calls Mock Service to get catalog URL</p>
             </div>
           </div>
           <div className="flex items-start">
@@ -276,8 +485,8 @@ export default function NewTestPage() {
               <span className="text-blue-600 font-bold">3</span>
             </div>
             <div>
-              <h3 className="font-semibold">Order Message</h3>
-              <p className="text-sm text-gray-600">Send test order back to buyer system</p>
+              <h3 className="font-semibold">Network Logging</h3>
+              <p className="text-sm text-gray-600">All INBOUND and OUTBOUND requests are logged to MongoDB</p>
             </div>
           </div>
           <div className="flex items-start">
@@ -285,8 +494,8 @@ export default function NewTestPage() {
               <i className="fas fa-check text-green-600"></i>
             </div>
             <div>
-              <h3 className="font-semibold">Verification</h3>
-              <p className="text-sm text-gray-600">Validate responses and record results</p>
+              <h3 className="font-semibold">View Dashboard</h3>
+              <p className="text-sm text-gray-600">See all network requests with payloads in the UI Dashboard</p>
             </div>
           </div>
         </div>

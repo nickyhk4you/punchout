@@ -115,4 +115,19 @@ export interface PunchOutTest {
   orderResponse?: string;
   errorMessage?: string;
   notes?: string;
+  sessionKey?: string;
+}
+
+export interface CxmlTemplate {
+  id?: string;
+  templateName: string;
+  environment: string;
+  customerId: string;
+  customerName: string;
+  cxmlTemplate: string;
+  description?: string;
+  isDefault?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  createdBy?: string;
 }

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { PunchOutSession, OrderObject, GatewayRequest, SessionFilter } from '@/types';
+import { PunchOutSession, OrderObject, GatewayRequest, SessionFilter, CxmlTemplate } from '@/types';
 
 // API Base URL - configurable via environment variable
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
@@ -179,6 +179,46 @@ export const punchOutTestAPI = {
   // Update an existing punchout test
   updateTest: async (id: string, test: Partial<import('@/types').PunchOutTest>): Promise<import('@/types').PunchOutTest> => {
     const response = await apiClient.put<import('@/types').PunchOutTest>(`/v1/punchout-tests/${id}`, test);
+    return response.data;
+  },
+};
+
+export const cxmlTemplateAPI = {
+  // Get all cXML templates
+  getAllTemplates: async (): Promise<CxmlTemplate[]> => {
+    const response = await apiClient.get<CxmlTemplate[]>('/v1/cxml-templates');
+    return response.data;
+  },
+
+  // Get templates by environment
+  getTemplatesByEnvironment: async (environment: string): Promise<CxmlTemplate[]> => {
+    const response = await apiClient.get<CxmlTemplate[]>(`/v1/cxml-templates/environment/${environment}`);
+    return response.data;
+  },
+
+  // Get template for specific environment and customer
+  getTemplateByEnvironmentAndCustomer: async (environment: string, customerId: string): Promise<CxmlTemplate | null> => {
+    try {
+      const response = await apiClient.get<CxmlTemplate>(`/v1/cxml-templates/environment/${environment}/customer/${customerId}`);
+      return response.data;
+    } catch (error) {
+      return null;
+    }
+  },
+
+  // Get default template for environment
+  getDefaultTemplate: async (environment: string): Promise<CxmlTemplate | null> => {
+    try {
+      const response = await apiClient.get<CxmlTemplate>(`/v1/cxml-templates/environment/${environment}/default`);
+      return response.data;
+    } catch (error) {
+      return null;
+    }
+  },
+
+  // Save template
+  saveTemplate: async (template: Partial<CxmlTemplate>): Promise<CxmlTemplate> => {
+    const response = await apiClient.post<CxmlTemplate>('/v1/cxml-templates', template);
     return response.data;
   },
 };

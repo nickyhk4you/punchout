@@ -131,16 +131,43 @@ public class PunchOutOrchestrationService {
         PunchOutSessionDocument session = new PunchOutSessionDocument();
         session.setSessionKey(request.getSessionKey());
         session.setBuyerCookie(request.getBuyerCookie());
-        session.setOperation(request.getOperation());
+        session.setOperation(request.getOperation() != null ? request.getOperation().toUpperCase() : "CREATE");
         session.setContact(request.getContactEmail());
         session.setCartReturn(request.getCartReturnUrl());
         session.setSessionDate(LocalDateTime.now());
         session.setPunchedIn(LocalDateTime.now());
-        session.setEnvironment("DEVELOPMENT");
+        
+        // Extract environment from session key if available (e.g., SESSION_DEV_CUST001_123456)
+        String environment = "DEVELOPMENT";
+        if (request.getSessionKey() != null) {
+            String[] parts = request.getSessionKey().split("_");
+            if (parts.length > 1) {
+                String envPart = parts[1];
+                // Map to expected values: dev -> DEVELOPMENT, prod -> PRODUCTION, etc.
+                switch (envPart.toLowerCase()) {
+                    case "dev":
+                        environment = "DEVELOPMENT";
+                        break;
+                    case "stage":
+                        environment = "STAGING";
+                        break;
+                    case "prod":
+                        environment = "PRODUCTION";
+                        break;
+                    case "s4":
+                    case "s4-dev":
+                        environment = "S4_DEVELOPMENT";
+                        break;
+                    default:
+                        environment = "DEVELOPMENT";
+                }
+            }
+        }
+        session.setEnvironment(environment);
         session.setCatalog((String) catalogResponse.get("catalogUrl"));
         
         sessionRepository.save(session);
-        log.info("Saved PunchOut session: sessionKey={}", request.getSessionKey());
+        log.info("Saved PunchOut session: sessionKey={}, environment={}", request.getSessionKey(), environment);
     }
 
     private Map<String, Object> buildSuccessResponse(PunchOutRequest request, Map<String, Object> catalogResponse) {
