@@ -1,0 +1,120 @@
+version: '3.8'
+
+services:
+  # Local Development
+  punchout-ui-local:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        ENVIRONMENT: local
+    container_name: punchout-ui-local
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_ENV=local
+      - NEXT_PUBLIC_API_URL=http://localhost:8080/api
+      - NEXT_PUBLIC_GATEWAY_URL=http://localhost:9090
+    networks:
+      - punchout-network
+    profiles:
+      - local
+
+  # Development Environment
+  punchout-ui-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        ENVIRONMENT: dev
+    container_name: punchout-ui-dev
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_ENV=dev
+      - NEXT_PUBLIC_API_URL=https://dev-api.punchout.waters.com/api
+      - NEXT_PUBLIC_GATEWAY_URL=https://dev-gateway.punchout.waters.com
+    networks:
+      - punchout-network
+    profiles:
+      - dev
+
+  # Staging Environment
+  punchout-ui-stage:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        ENVIRONMENT: stage
+    container_name: punchout-ui-stage
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_ENV=stage
+      - NEXT_PUBLIC_API_URL=https://stage-api.punchout.waters.com/api
+      - NEXT_PUBLIC_GATEWAY_URL=https://stage-gateway.punchout.waters.com
+    networks:
+      - punchout-network
+    profiles:
+      - stage
+
+  # Pre-Production Environment
+  punchout-ui-preprod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        ENVIRONMENT: preprod
+    container_name: punchout-ui-preprod
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_ENV=preprod
+      - NEXT_PUBLIC_API_URL=https://preprod-api.punchout.waters.com/api
+      - NEXT_PUBLIC_GATEWAY_URL=https://preprod-gateway.punchout.waters.com
+    networks:
+      - punchout-network
+    profiles:
+      - preprod
+
+  # S4 Development Environment
+  punchout-ui-s4-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        ENVIRONMENT: s4-dev
+    container_name: punchout-ui-s4-dev
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_ENV=s4-dev
+      - NEXT_PUBLIC_API_URL=https://s4-dev-api.punchout.waters.com/api
+      - NEXT_PUBLIC_GATEWAY_URL=https://s4-dev-gateway.punchout.waters.com
+    networks:
+      - punchout-network
+    profiles:
+      - s4-dev
+
+  # Production Environment
+  punchout-ui-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        ENVIRONMENT: production
+    container_name: punchout-ui-prod
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_ENV=production
+      - NEXT_PUBLIC_API_URL=https://api.punchout.waters.com/api
+      - NEXT_PUBLIC_GATEWAY_URL=https://gateway.punchout.waters.com
+    networks:
+      - punchout-network
+    profiles:
+      - prod
+
+networks:
+  punchout-network:
+    driver: bridge

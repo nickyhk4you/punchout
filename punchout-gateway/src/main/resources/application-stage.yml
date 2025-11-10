@@ -1,0 +1,30 @@
+# Staging Environment
+spring:
+  data:
+    mongodb:
+      uri: mongodb://stage-mongodb.punchout.waters.com:27017/punchout
+
+server:
+  port: 9090
+
+thirdparty:
+  auth:
+    url: https://stage-auth.punchout.waters.com/api/v1/token
+    timeout: 5000
+  catalog:
+    url: https://stage-catalog.punchout.waters.com/api/v1/catalog
+    timeout: 10000
+
+logging:
+  level:
+    com.waters.punchout.gateway: INFO
+    org.springframework.web: INFO
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized

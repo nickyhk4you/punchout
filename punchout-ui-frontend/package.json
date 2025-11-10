@@ -6,7 +6,17 @@
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "next build",
+    "build:dev": "env-cmd -f .env.dev next build",
+    "build:stage": "env-cmd -f .env.stage next build",
+    "build:preprod": "env-cmd -f .env.preprod next build",
+    "build:s4-dev": "env-cmd -f .env.s4-dev next build",
+    "build:prod": "env-cmd -f .env.production next build",
     "start": "next start -p 3000",
+    "start:dev": "env-cmd -f .env.dev next start -p 3000",
+    "start:stage": "env-cmd -f .env.stage next start -p 3000",
+    "start:preprod": "env-cmd -f .env.preprod next start -p 3000",
+    "start:s4-dev": "env-cmd -f .env.s4-dev next start -p 3000",
+    "start:prod": "env-cmd -f .env.production next start -p 3000",
     "lint": "next lint"
   },
   "dependencies": {
@@ -24,6 +34,7 @@
     "@types/react": "^18.2.38",
     "@types/react-dom": "^18.2.17",
     "autoprefixer": "^10.4.16",
+    "env-cmd": "^10.1.0",
     "eslint": "^8.54.0",
     "eslint-config-next": "14.0.3",
     "postcss": "^8.4.31",

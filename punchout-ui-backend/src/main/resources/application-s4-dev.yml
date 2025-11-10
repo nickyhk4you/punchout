@@ -1,13 +1,11 @@
-# Development Environment
+# S4 Development Environment
 spring:
   data:
     mongodb:
-      uri: mongodb://dev-mongodb.punchout.waters.com:27017/punchout
-      # Or for MongoDB Atlas:
-      # uri: mongodb+srv://user:password@dev-cluster.mongodb.net/punchout
+      uri: mongodb://s4-dev-mongodb.punchout.waters.com:27017/punchout
   
   datasource:
-    url: jdbc:postgresql://dev-postgres.punchout.waters.com:5432/punchout
+    url: jdbc:postgresql://s4-dev-postgres.punchout.waters.com:5432/punchout
     username: ${DB_USERNAME:punchout_user}
     password: ${DB_PASSWORD:changeme}
     driver-class-name: org.postgresql.Driver
@@ -25,7 +23,7 @@ logging:
     com.waters.punchout: DEBUG
     org.springframework.web: INFO
   file:
-    name: /var/log/punchout/ui-backend.log
+    name: /var/log/punchout/ui-backend-s4.log
 
 management:
   endpoints:

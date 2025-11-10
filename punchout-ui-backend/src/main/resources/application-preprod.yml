@@ -1,13 +1,11 @@
-# Development Environment
+# Pre-Production Environment
 spring:
   data:
     mongodb:
-      uri: mongodb://dev-mongodb.punchout.waters.com:27017/punchout
-      # Or for MongoDB Atlas:
-      # uri: mongodb+srv://user:password@dev-cluster.mongodb.net/punchout
+      uri: mongodb://preprod-mongodb.punchout.waters.com:27017/punchout
   
   datasource:
-    url: jdbc:postgresql://dev-postgres.punchout.waters.com:5432/punchout
+    url: jdbc:postgresql://preprod-postgres.punchout.waters.com:5432/punchout
     username: ${DB_USERNAME:punchout_user}
     password: ${DB_PASSWORD:changeme}
     driver-class-name: org.postgresql.Driver
@@ -22,8 +20,8 @@ server:
 
 logging:
   level:
-    com.waters.punchout: DEBUG
-    org.springframework.web: INFO
+    com.waters.punchout: INFO
+    org.springframework.web: WARN
   file:
     name: /var/log/punchout/ui-backend.log
 
@@ -31,4 +29,4 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info

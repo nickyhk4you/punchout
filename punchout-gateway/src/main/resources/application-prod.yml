@@ -1,0 +1,36 @@
+# Production Environment
+spring:
+  data:
+    mongodb:
+      uri: mongodb://prod-mongodb.punchout.waters.com:27017/punchout
+      # For production, use authenticated connection:
+      # uri: mongodb://username:password@prod-mongodb.punchout.waters.com:27017/punchout?authSource=admin
+
+server:
+  port: 9090
+
+thirdparty:
+  auth:
+    url: https://auth.punchout.waters.com/api/v1/token
+    timeout: 5000
+  catalog:
+    url: https://catalog.punchout.waters.com/api/v1/catalog
+    timeout: 10000
+
+logging:
+  level:
+    com.waters.punchout.gateway: INFO
+    org.springframework.web: WARN
+  file:
+    name: /var/log/punchout/gateway.log
+    max-size: 100MB
+    max-history: 30
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never

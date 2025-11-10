@@ -1,0 +1,32 @@
+# Development Environment
+spring:
+  data:
+    mongodb:
+      uri: mongodb://dev-mongodb.punchout.waters.com:27017/punchout
+      # Or for MongoDB Atlas:
+      # uri: mongodb+srv://user:password@dev-cluster.mongodb.net/punchout
+
+server:
+  port: 9090
+
+thirdparty:
+  auth:
+    url: https://dev-auth.punchout.waters.com/api/v1/token
+    timeout: 5000
+  catalog:
+    url: https://dev-catalog.punchout.waters.com/api/v1/catalog
+    timeout: 10000
+
+logging:
+  level:
+    com.waters.punchout.gateway: DEBUG
+    org.springframework.web: INFO
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized

@@ -1,13 +1,11 @@
-# Development Environment
+# Staging Environment
 spring:
   data:
     mongodb:
-      uri: mongodb://dev-mongodb.punchout.waters.com:27017/punchout
-      # Or for MongoDB Atlas:
-      # uri: mongodb+srv://user:password@dev-cluster.mongodb.net/punchout
+      uri: mongodb://stage-mongodb.punchout.waters.com:27017/punchout
   
   datasource:
-    url: jdbc:postgresql://dev-postgres.punchout.waters.com:5432/punchout
+    url: jdbc:postgresql://stage-postgres.punchout.waters.com:5432/punchout
     username: ${DB_USERNAME:punchout_user}
     password: ${DB_PASSWORD:changeme}
     driver-class-name: org.postgresql.Driver
@@ -22,7 +20,7 @@ server:
 
 logging:
   level:
-    com.waters.punchout: DEBUG
+    com.waters.punchout: INFO
     org.springframework.web: INFO
   file:
     name: /var/log/punchout/ui-backend.log
