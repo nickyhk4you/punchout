@@ -23,6 +23,7 @@
         <module>punchout-common</module>
         <module>punchout-order</module>
         <module>punchout-invoice</module>
+        <module>punchout-gateway</module>
         <module>punchout-ui-backend</module>
         <module>punchout-ui-frontend</module>
     </modules>
