@@ -1,8 +1,16 @@
 package com.waters.punchout.mock.service;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
+import java.util.Date;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -12,78 +20,113 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class TokenService {
     
-    // Store one-time tokens in memory
-    private final Map<String, TokenInfo> tokens = new ConcurrentHashMap<>();
+    @Value("${jwt.secret:punchout-mock-service-secret-key-for-jwt-token-generation-minimum-32-chars}")
+    private String jwtSecret;
+    
+    @Value("${jwt.expiration:1800000}")
+    private long jwtExpiration; // 30 minutes in milliseconds
+    
+    // Store used token JTIs to prevent reuse
+    private final Set<String> usedTokens = ConcurrentHashMap.newKeySet();
     
     public String generateOneTimeToken(String sessionKey, String operation) {
-        // Generate a full UUID-based one-time token
-        String uuid = UUID.randomUUID().toString();
-        String token = "OTT-" + uuid;
+        String jti = UUID.randomUUID().toString();
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + jwtExpiration);
         
-        TokenInfo tokenInfo = new TokenInfo(
-            sessionKey,
-            operation,
-            System.currentTimeMillis(),
-            false
-        );
+        SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
         
-        tokens.put(token, tokenInfo);
+        String token = Jwts.builder()
+                .setId(jti)
+                .setSubject(sessionKey)
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .claim("operation", operation)
+                .claim("type", "one-time-token")
+                .claim("sessionKey", sessionKey)
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
         
-        log.info("Generated one-time token: {} for sessionKey: {}", token, sessionKey);
+        log.info("Generated JWT one-time token for sessionKey: {}, jti: {}, expires: {}", 
+                sessionKey, jti, expiryDate);
         
         return token;
     }
     
     public boolean validateAndConsumeToken(String token) {
-        TokenInfo tokenInfo = tokens.get(token);
-        
-        if (tokenInfo == null) {
-            log.warn("Token not found: {}", token);
+        try {
+            SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+            
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+            
+            String jti = claims.getId();
+            String sessionKey = claims.getSubject();
+            String type = claims.get("type", String.class);
+            
+            // Verify it's a one-time token
+            if (!"one-time-token".equals(type)) {
+                log.warn("Invalid token type: {}", type);
+                return false;
+            }
+            
+            // Check if token already used
+            if (usedTokens.contains(jti)) {
+                log.warn("Token already used: jti={}, sessionKey={}", jti, sessionKey);
+                return false;
+            }
+            
+            // Check expiration (JWT library already validates this)
+            Date expiration = claims.getExpiration();
+            if (expiration.before(new Date())) {
+                log.warn("Token expired: jti={}, expired at: {}", jti, expiration);
+                return false;
+            }
+            
+            // Mark as used
+            usedTokens.add(jti);
+            log.info("JWT token validated and consumed: jti={}, sessionKey={}", jti, sessionKey);
+            
+            return true;
+            
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            log.warn("JWT token expired: {}", e.getMessage());
+            return false;
+        } catch (io.jsonwebtoken.JwtException e) {
+            log.warn("Invalid JWT token: {}", e.getMessage());
+            return false;
+        } catch (Exception e) {
+            log.error("Error validating JWT token: {}", e.getMessage(), e);
             return false;
         }
-        
-        if (tokenInfo.used) {
-            log.warn("Token already used: {}", token);
-            return false;
-        }
-        
-        // Check if token expired (30 minutes)
-        long tokenAge = System.currentTimeMillis() - tokenInfo.createdAt;
-        if (tokenAge > 30 * 60 * 1000) {
-            log.warn("Token expired: {}", token);
-            tokens.remove(token);
-            return false;
-        }
-        
-        // Mark as used
-        tokenInfo.used = true;
-        log.info("Token validated and consumed: {}", token);
-        
-        return true;
     }
     
     public int getActiveTokenCount() {
-        return (int) tokens.values().stream().filter(t -> !t.used).count();
+        return usedTokens.size();
     }
     
     public void clearExpiredTokens() {
-        long now = System.currentTimeMillis();
-        tokens.entrySet().removeIf(entry -> 
-            now - entry.getValue().createdAt > 30 * 60 * 1000
-        );
+        // JWT tokens are self-expiring, just clear the used tokens set periodically
+        if (usedTokens.size() > 10000) {
+            usedTokens.clear();
+            log.info("Cleared used tokens cache");
+        }
     }
     
-    private static class TokenInfo {
-        final String sessionKey;
-        final String operation;
-        final long createdAt;
-        boolean used;
-        
-        TokenInfo(String sessionKey, String operation, long createdAt, boolean used) {
-            this.sessionKey = sessionKey;
-            this.operation = operation;
-            this.createdAt = createdAt;
-            this.used = used;
+    public Claims getTokenClaims(String token) {
+        try {
+            SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+            return Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+        } catch (Exception e) {
+            log.error("Error parsing JWT token: {}", e.getMessage());
+            return null;
         }
     }
 }

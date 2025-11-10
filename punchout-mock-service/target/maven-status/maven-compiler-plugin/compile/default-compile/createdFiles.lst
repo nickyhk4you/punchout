@@ -1,5 +1,4 @@
 com/waters/punchout/mock/MockServiceApplication.class
-com/waters/punchout/mock/service/TokenService$TokenInfo.class
 com/waters/punchout/mock/controller/MockServiceController.class
 com/waters/punchout/mock/controller/MockMuleController.class
 com/waters/punchout/mock/service/TokenService.class
