@@ -1,0 +1,191 @@
+[
+  {
+    "routeName": "Ariba Proxy",
+    "domain": "prod-pebblejet-app.commerzedge.com",
+    "network": "Ariba, Inc.",
+    "type": "cxml",
+    "description": "Ariba Network PunchOut catalog integration for enterprise customers",
+    "environments": [
+      {
+        "environment": "production",
+        "url": "https://prod-pebblejet-app.commerzedge.com/ariba/punchout",
+        "username": "waters_prod",
+        "password": "prod_pass_123",
+        "sharedSecret": "ariba_prod_secret_xyz",
+        "enabled": true,
+        "notes": "Production environment - handle with care"
+      },
+      {
+        "environment": "staging",
+        "url": "https://staging-pebblejet-app.commerzedge.com/ariba/punchout",
+        "username": "waters_staging",
+        "password": "staging_pass_456",
+        "sharedSecret": "ariba_staging_secret_abc",
+        "enabled": true,
+        "notes": "Staging environment for pre-production testing"
+      },
+      {
+        "environment": "test",
+        "url": "https://test-pebblejet-app.commerzedge.com/ariba/punchout",
+        "username": "waters_test",
+        "password": "test_pass_789",
+        "sharedSecret": "ariba_test_secret_def",
+        "enabled": true,
+        "notes": "Test environment for development"
+      }
+    ],
+    "active": true,
+    "createdDate": {"$date": "2024-01-15T10:00:00.000Z"},
+    "lastModified": {"$date": "2025-10-01T14:30:00.000Z"}
+  },
+  {
+    "routeName": "SAP SRM Integration",
+    "domain": "sap-srm.clientportal.com",
+    "network": "SAP",
+    "type": "oci",
+    "description": "SAP SRM OCI punchout for manufacturing clients",
+    "environments": [
+      {
+        "environment": "production",
+        "url": "https://sap-srm.clientportal.com/oci/hook",
+        "username": "waters_sap_prod",
+        "password": "sap_prod_pass",
+        "sharedSecret": null,
+        "enabled": true,
+        "notes": "SAP production - critical customers"
+      },
+      {
+        "environment": "staging",
+        "url": "https://staging-sap-srm.clientportal.com/oci/hook",
+        "username": "waters_sap_staging",
+        "password": "sap_staging_pass",
+        "sharedSecret": null,
+        "enabled": true,
+        "notes": "SAP staging environment"
+      },
+      {
+        "environment": "development",
+        "url": "https://dev-sap-srm.clientportal.com/oci/hook",
+        "username": "waters_sap_dev",
+        "password": "sap_dev_pass",
+        "sharedSecret": null,
+        "enabled": false,
+        "notes": "Development - not currently active"
+      }
+    ],
+    "active": true,
+    "createdDate": {"$date": "2024-03-20T09:15:00.000Z"},
+    "lastModified": {"$date": "2025-09-15T11:20:00.000Z"}
+  },
+  {
+    "routeName": "Coupa Direct",
+    "domain": "coupa-supplier.cloudapp.net",
+    "network": "Coupa",
+    "type": "cxml",
+    "description": "Coupa procurement platform integration",
+    "environments": [
+      {
+        "environment": "production",
+        "url": "https://coupa-supplier.cloudapp.net/punchout/setup",
+        "username": "waters_coupa_prod",
+        "password": "coupa_prod_xyz",
+        "sharedSecret": "coupa_secret_prod",
+        "enabled": true,
+        "notes": "Coupa production environment"
+      },
+      {
+        "environment": "test",
+        "url": "https://test-coupa-supplier.cloudapp.net/punchout/setup",
+        "username": "waters_coupa_test",
+        "password": "coupa_test_abc",
+        "sharedSecret": "coupa_secret_test",
+        "enabled": true,
+        "notes": "Coupa test environment"
+      }
+    ],
+    "active": true,
+    "createdDate": {"$date": "2024-05-10T13:45:00.000Z"},
+    "lastModified": {"$date": "2025-11-01T09:00:00.000Z"}
+  },
+  {
+    "routeName": "Oracle iProcurement",
+    "domain": "oracle-procurement.enterprise.com",
+    "network": "Oracle",
+    "type": "cxml",
+    "description": "Oracle iProcurement catalog integration for enterprise ERP customers",
+    "environments": [
+      {
+        "environment": "production",
+        "url": "https://oracle-procurement.enterprise.com/cxml/punchout",
+        "username": "waters_oracle_prod",
+        "password": "oracle_prod_pass",
+        "sharedSecret": "oracle_prod_secret",
+        "enabled": true,
+        "notes": "Oracle production - high-volume customers"
+      },
+      {
+        "environment": "staging",
+        "url": "https://staging-oracle-procurement.enterprise.com/cxml/punchout",
+        "username": "waters_oracle_staging",
+        "password": "oracle_staging_pass",
+        "sharedSecret": "oracle_staging_secret",
+        "enabled": true,
+        "notes": "Oracle staging for testing"
+      }
+    ],
+    "active": true,
+    "createdDate": {"$date": "2024-02-28T11:30:00.000Z"},
+    "lastModified": {"$date": "2025-10-20T15:45:00.000Z"}
+  },
+  {
+    "routeName": "Jaggaer Direct",
+    "domain": "jaggaer-network.supplier.com",
+    "network": "Jaggaer",
+    "type": "cxml",
+    "description": "Jaggaer (SciQuest) procurement network integration",
+    "environments": [
+      {
+        "environment": "production",
+        "url": "https://jaggaer-network.supplier.com/punchout",
+        "username": "waters_jaggaer",
+        "password": "jaggaer_prod_123",
+        "sharedSecret": "jaggaer_secret",
+        "enabled": true,
+        "notes": "Jaggaer production environment"
+      },
+      {
+        "environment": "test",
+        "url": "https://test-jaggaer-network.supplier.com/punchout",
+        "username": "waters_jaggaer_test",
+        "password": "jaggaer_test_456",
+        "sharedSecret": "jaggaer_test_secret",
+        "enabled": true,
+        "notes": "Test environment"
+      }
+    ],
+    "active": true,
+    "createdDate": {"$date": "2024-06-12T08:00:00.000Z"},
+    "lastModified": {"$date": "2025-10-25T10:15:00.000Z"}
+  },
+  {
+    "routeName": "Legacy OCI Gateway",
+    "domain": "legacy-oci.waters-internal.com",
+    "network": "SAP",
+    "type": "oci",
+    "description": "Legacy OCI gateway for backward compatibility",
+    "environments": [
+      {
+        "environment": "production",
+        "url": "https://legacy-oci.waters-internal.com/oci",
+        "username": "legacy_user",
+        "password": "legacy_pass",
+        "sharedSecret": null,
+        "enabled": false,
+        "notes": "Deprecated - use SAP SRM Integration instead"
+      }
+    ],
+    "active": false,
+    "createdDate": {"$date": "2022-08-01T12:00:00.000Z"},
+    "lastModified": {"$date": "2024-12-01T16:00:00.000Z"}
+  }
+]

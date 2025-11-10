@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<cXML payloadID="12345678" timestamp="2025-11-10T08:00:00+00:00">
+  <Header>
+    <From>
+      <Credential domain="DUNS">
+        <Identity>123456789</Identity>
+      </Credential>
+    </From>
+    <To>
+      <Credential domain="NetworkId">
+        <Identity>AN01000000001</Identity>
+      </Credential>
+    </To>
+    <Sender>
+      <Credential domain="NetworkId">
+        <Identity>AN01000000001</Identity>
+        <SharedSecret>secret123</SharedSecret>
+      </Credential>
+    </Sender>
+  </Header>
+  <Request>
+    <PunchOutSetupRequest operation="create">
+      <BuyerCookie>BUYER_COOKIE_TEST_001</BuyerCookie>
+      <Extrinsic name="UniqueName">test_user_001</Extrinsic>
+      <Extrinsic name="UserEmail">test.user@example.com</Extrinsic>
+      <BrowserFormPost>
+        <URL>https://buyer.example.com/cart/return</URL>
+      </BrowserFormPost>
+      <Contact>
+        <Name xml:lang="en">Test User</Name>
+        <Email>test.user@example.com</Email>
+      </Contact>
+    </PunchOutSetupRequest>
+  </Request>
+</cXML>

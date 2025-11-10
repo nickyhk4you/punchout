@@ -8,9 +8,10 @@ import Link from 'next/link';
 export default function HomePage() {
   const [stats, setStats] = useState({
     totalSessions: 0,
-    productionSessions: 0,
+    devSessions: 0,
+    stageSessions: 0,
+    prodSessions: 0,
     recentSessions: [] as PunchOutSession[],
-    totalOrderValue: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -23,18 +24,19 @@ export default function HomePage() {
       setLoading(true);
       const allSessions = await sessionAPI.getAllSessions();
       
-      const productionSessions = allSessions.filter(s => s.environment === 'PRODUCTION');
+      const devSessions = allSessions.filter(s => s.environment === 'DEVELOPMENT');
+      const stageSessions = allSessions.filter(s => s.environment === 'STAGING');
+      const prodSessions = allSessions.filter(s => s.environment === 'PRODUCTION');
       const recentSessions = allSessions
         .sort((a, b) => new Date(b.sessionDate).getTime() - new Date(a.sessionDate).getTime())
         .slice(0, 5);
-      
-      const totalOrderValue = allSessions.reduce((sum, s) => sum + (s.orderValue || 0), 0);
 
       setStats({
         totalSessions: allSessions.length,
-        productionSessions: productionSessions.length,
+        devSessions: devSessions.length,
+        stageSessions: stageSessions.length,
+        prodSessions: prodSessions.length,
         recentSessions,
-        totalOrderValue,
       });
     } catch (err) {
       console.error('Failed to load dashboard data:', err);
@@ -43,202 +45,284 @@ export default function HomePage() {
     }
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(value);
-  };
-
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString();
+    return new Date(dateString).toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-2">PunchOut Session Manager</h1>
-        <p className="text-gray-600">
-          Monitor and manage your PunchOut sessions, orders, and gateway requests
-        </p>
-      </div>
-
+    <div>
       {loading ? (
-        <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600"></div>
+            <p className="mt-4 text-gray-600 text-lg">Loading dashboard...</p>
+          </div>
         </div>
       ) : (
         <>
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Sessions</p>
-                  <p className="text-3xl font-bold text-gray-900">{stats.totalSessions}</p>
-                </div>
-                <div className="bg-blue-100 rounded-full p-3">
-                  <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Production Sessions</p>
-                  <p className="text-3xl font-bold text-gray-900">{stats.productionSessions}</p>
-                </div>
-                <div className="bg-green-100 rounded-full p-3">
-                  <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Order Value</p>
-                  <p className="text-3xl font-bold text-gray-900">
-                    {formatCurrency(stats.totalOrderValue)}
-                  </p>
-                </div>
-                <div className="bg-yellow-100 rounded-full p-3">
-                  <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Avg Order Value</p>
-                  <p className="text-3xl font-bold text-gray-900">
-                    {stats.totalSessions > 0 
-                      ? formatCurrency(stats.totalOrderValue / stats.totalSessions)
-                      : formatCurrency(0)
-                    }
-                  </p>
-                </div>
-                <div className="bg-purple-100 rounded-full p-3">
-                  <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                  </svg>
+          {/* Hero Section */}
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+            <div className="container mx-auto px-4 py-16">
+              <div className="max-w-4xl">
+                <h1 className="text-5xl font-bold mb-4">
+                  <i className="fas fa-rocket mr-4"></i>
+                  PunchOut Testing Platform
+                </h1>
+                <p className="text-xl text-blue-100 mb-8">
+                  Test, monitor, and debug your PunchOut integrations across all environments
+                </p>
+                <div className="flex gap-4">
+                  <Link
+                    href="/developer/punchout"
+                    className="inline-flex items-center px-6 py-3 bg-white text-blue-600 font-semibold rounded-lg shadow-lg hover:bg-blue-50 transition transform hover:scale-105"
+                  >
+                    <i className="fas fa-play mr-2"></i>
+                    Start Testing
+                  </Link>
+                  <Link
+                    href="/sessions"
+                    className="inline-flex items-center px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg shadow-lg hover:bg-blue-400 transition transform hover:scale-105"
+                  >
+                    <i className="fas fa-list mr-2"></i>
+                    View Sessions
+                  </Link>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Quick Actions */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <Link
-              href="/sessions"
-              className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow-lg p-6 text-white hover:from-blue-600 hover:to-blue-700 transition-all transform hover:scale-105"
-            >
-              <h3 className="text-xl font-semibold mb-2">View All Sessions</h3>
-              <p className="text-blue-100">Browse and filter all PunchOut sessions</p>
-            </Link>
+          {/* Stats Overview */}
+          <div className="bg-white border-b shadow-sm">
+            <div className="container mx-auto px-4 py-8">
+              <h2 className="text-2xl font-bold mb-6 text-gray-800">Overview</h2>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-blue-600 uppercase">Total Sessions</p>
+                      <p className="text-4xl font-bold text-blue-900 mt-2">{stats.totalSessions}</p>
+                    </div>
+                    <div className="bg-blue-500 rounded-full p-4 shadow-lg">
+                      <i className="fas fa-database text-2xl text-white"></i>
+                    </div>
+                  </div>
+                </div>
 
-            <Link
-              href="/sessions?environment=PRODUCTION"
-              className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg shadow-lg p-6 text-white hover:from-green-600 hover:to-green-700 transition-all transform hover:scale-105"
-            >
-              <h3 className="text-xl font-semibold mb-2">Production Sessions</h3>
-              <p className="text-green-100">View active production sessions</p>
-            </Link>
+                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 border border-green-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-green-600 uppercase">DEV</p>
+                      <p className="text-4xl font-bold text-green-900 mt-2">{stats.devSessions}</p>
+                    </div>
+                    <div className="bg-green-500 rounded-full p-4 shadow-lg">
+                      <i className="fas fa-code text-2xl text-white"></i>
+                    </div>
+                  </div>
+                </div>
 
-            <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg shadow-lg p-6 text-white">
-              <h3 className="text-xl font-semibold mb-2">Quick Stats</h3>
-              <p className="text-purple-100">Real-time session monitoring</p>
+                <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 border border-orange-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-orange-600 uppercase">STAGE</p>
+                      <p className="text-4xl font-bold text-orange-900 mt-2">{stats.stageSessions}</p>
+                    </div>
+                    <div className="bg-orange-500 rounded-full p-4 shadow-lg">
+                      <i className="fas fa-vial text-2xl text-white"></i>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-6 border border-red-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-red-600 uppercase">PROD</p>
+                      <p className="text-4xl font-bold text-red-900 mt-2">{stats.prodSessions}</p>
+                    </div>
+                    <div className="bg-red-500 rounded-full p-4 shadow-lg">
+                      <i className="fas fa-check-circle text-2xl text-white"></i>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Recent Sessions */}
-          <div className="bg-white rounded-lg shadow">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-xl font-semibold">Recent Sessions</h2>
+          {/* Main Content */}
+          <div className="container mx-auto px-4 py-8">
+            {/* Quick Actions */}
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold mb-6 text-gray-800">Quick Actions</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <Link
+                  href="/developer/punchout"
+                  className="group bg-white rounded-xl shadow-lg hover:shadow-xl transition-all border border-gray-200 overflow-hidden"
+                >
+                  <div className="bg-gradient-to-r from-purple-500 to-purple-600 p-6">
+                    <i className="fas fa-rocket text-4xl text-white mb-2"></i>
+                    <h3 className="text-2xl font-bold text-white">Start Testing</h3>
+                  </div>
+                  <div className="p-6">
+                    <p className="text-gray-600 mb-4">
+                      Execute PunchOut tests across DEV, STAGE, PROD, and S4-DEV environments
+                    </p>
+                    <div className="flex items-center text-purple-600 font-semibold group-hover:translate-x-2 transition-transform">
+                      Launch Developer Testing
+                      <i className="fas fa-arrow-right ml-2"></i>
+                    </div>
+                  </div>
+                </Link>
+
+                <Link
+                  href="/sessions"
+                  className="group bg-white rounded-xl shadow-lg hover:shadow-xl transition-all border border-gray-200 overflow-hidden"
+                >
+                  <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-6">
+                    <i className="fas fa-list text-4xl text-white mb-2"></i>
+                    <h3 className="text-2xl font-bold text-white">All Sessions</h3>
+                  </div>
+                  <div className="p-6">
+                    <p className="text-gray-600 mb-4">
+                      View, filter, and analyze all PunchOut sessions with network request logs
+                    </p>
+                    <div className="flex items-center text-blue-600 font-semibold group-hover:translate-x-2 transition-transform">
+                      Browse Sessions
+                      <i className="fas fa-arrow-right ml-2"></i>
+                    </div>
+                  </div>
+                </Link>
+
+                <Link
+                  href="/converter"
+                  className="group bg-white rounded-xl shadow-lg hover:shadow-xl transition-all border border-gray-200 overflow-hidden"
+                >
+                  <div className="bg-gradient-to-r from-green-500 to-green-600 p-6">
+                    <i className="fas fa-exchange-alt text-4xl text-white mb-2"></i>
+                    <h3 className="text-2xl font-bold text-white">Converter</h3>
+                  </div>
+                  <div className="p-6">
+                    <p className="text-gray-600 mb-4">
+                      Convert between cXML and JSON formats for development and testing
+                    </p>
+                    <div className="flex items-center text-green-600 font-semibold group-hover:translate-x-2 transition-transform">
+                      Open Converter
+                      <i className="fas fa-arrow-right ml-2"></i>
+                    </div>
+                  </div>
+                </Link>
+              </div>
             </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Session Key
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Operation
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Environment
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Order Value
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+
+            {/* Recent Sessions */}
+            <div className="bg-white rounded-xl shadow-lg border border-gray-200">
+              <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-gray-800">
+                  <i className="fas fa-clock text-blue-600 mr-3"></i>
+                  Recent Sessions
+                </h2>
+                <Link
+                  href="/sessions"
+                  className="text-blue-600 hover:text-blue-800 font-semibold text-sm"
+                >
+                  View All →
+                </Link>
+              </div>
+              {stats.recentSessions.length > 0 ? (
+                <div className="divide-y divide-gray-100">
                   {stats.recentSessions.map((session) => (
-                    <tr key={session.sessionKey} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
-                        {session.sessionKey}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          session.operation === 'CREATE' ? 'bg-green-100 text-green-800' :
-                          session.operation === 'EDIT' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-blue-100 text-blue-800'
-                        }`}>
-                          {session.operation}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          session.environment === 'PRODUCTION' ? 'bg-red-100 text-red-800' :
-                          session.environment === 'STAGING' ? 'bg-orange-100 text-orange-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {session.environment}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatCurrency(session.orderValue || 0)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatDate(session.sessionDate)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <Link
-                          href={`/sessions/${session.sessionKey}`}
-                          className="text-blue-600 hover:text-blue-900"
-                        >
-                          View
-                        </Link>
-                      </td>
-                    </tr>
+                    <Link
+                      key={session.sessionKey}
+                      href={`/sessions/${session.sessionKey}`}
+                      className="block px-6 py-4 hover:bg-blue-50 transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <code className="text-sm font-semibold bg-gray-100 px-3 py-1 rounded">
+                              {session.sessionKey}
+                            </code>
+                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                              session.operation === 'CREATE' ? 'bg-green-100 text-green-800' :
+                              session.operation === 'EDIT' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-blue-100 text-blue-800'
+                            }`}>
+                              {session.operation}
+                            </span>
+                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                              session.environment === 'PRODUCTION' ? 'bg-red-100 text-red-800' :
+                              session.environment === 'STAGING' ? 'bg-orange-100 text-orange-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {session.environment}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-4 text-sm text-gray-600">
+                            <span>
+                              <i className="fas fa-envelope mr-1 text-gray-400"></i>
+                              {session.contactEmail || 'No contact'}
+                            </span>
+                            <span>
+                              <i className="fas fa-clock mr-1 text-gray-400"></i>
+                              {formatDate(session.sessionDate)}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-blue-600 group-hover:translate-x-1 transition-transform">
+                          <i className="fas fa-chevron-right"></i>
+                        </div>
+                      </div>
+                    </Link>
                   ))}
-                </tbody>
-              </table>
+                </div>
+              ) : (
+                <div className="px-6 py-12 text-center">
+                  <i className="fas fa-inbox text-gray-300 text-5xl mb-4"></i>
+                  <p className="text-gray-500 text-lg">No sessions yet</p>
+                  <Link
+                    href="/developer/punchout"
+                    className="inline-block mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold"
+                  >
+                    Start Your First Test
+                  </Link>
+                </div>
+              )}
             </div>
-            <div className="px-6 py-4 border-t border-gray-200">
-              <Link
-                href="/sessions"
-                className="text-blue-600 hover:text-blue-800 font-medium"
-              >
-                View all sessions →
-              </Link>
+
+            {/* Features */}
+            <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-white rounded-xl p-6 shadow border border-gray-200">
+                <div className="bg-blue-100 rounded-full w-12 h-12 flex items-center justify-center mb-4">
+                  <i className="fas fa-network-wired text-blue-600 text-xl"></i>
+                </div>
+                <h3 className="text-lg font-bold mb-2">Network Request Logging</h3>
+                <p className="text-gray-600 text-sm">
+                  Track all INBOUND and OUTBOUND requests with full payloads, headers, and timing
+                </p>
+              </div>
+
+              <div className="bg-white rounded-xl p-6 shadow border border-gray-200">
+                <div className="bg-purple-100 rounded-full w-12 h-12 flex items-center justify-center mb-4">
+                  <i className="fas fa-layer-group text-purple-600 text-xl"></i>
+                </div>
+                <h3 className="text-lg font-bold mb-2">Multi-Environment</h3>
+                <p className="text-gray-600 text-sm">
+                  Test across DEV, STAGE, PROD, and S4-DEV with environment-specific templates
+                </p>
+              </div>
+
+              <div className="bg-white rounded-xl p-6 shadow border border-gray-200">
+                <div className="bg-green-100 rounded-full w-12 h-12 flex items-center justify-center mb-4">
+                  <i className="fas fa-file-code text-green-600 text-xl"></i>
+                </div>
+                <h3 className="text-lg font-bold mb-2">Custom Templates</h3>
+                <p className="text-gray-600 text-sm">
+                  Edit cXML payloads with customer-specific templates stored in MongoDB
+                </p>
+              </div>
             </div>
           </div>
         </>

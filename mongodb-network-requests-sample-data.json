@@ -1,0 +1,291 @@
+[
+  {
+    "sessionKey": "SESSION_001_ABC123",
+    "requestId": "REQ_001_001",
+    "timestamp": {"$date": "2025-11-09T08:30:15.123Z"},
+    "direction": "INBOUND",
+    "source": "B2B Customer (Ariba)",
+    "destination": "Punchout Website",
+    "method": "POST",
+    "url": "https://punchout.waters.com/setup",
+    "headers": {
+      "Content-Type": "text/xml",
+      "User-Agent": "Ariba Procurement",
+      "Authorization": "Bearer eyJhbGc..."
+    },
+    "requestBody": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<cXML>\n  <Header>\n    <From><Credential domain=\"DUNS\"><Identity>123456789</Identity></Credential></From>\n    <To><Credential domain=\"NetworkId\"><Identity>AN01000000001</Identity></Credential></To>\n    <Sender><Credential domain=\"NetworkId\"><Identity>AN01000000001</Identity></Credential></Sender>\n  </Header>\n  <Request>\n    <PunchOutSetupRequest operation=\"create\">\n      <BuyerCookie>BUYER_COOKIE_XYZ789</BuyerCookie>\n      <BrowserFormPost><URL>https://example.com/cart/return/001</URL></BrowserFormPost>\n      <Contact><Email>john.doe@waterscorp.com</Email></Contact>\n    </PunchOutSetupRequest>\n  </Request>\n</cXML>",
+    "statusCode": 200,
+    "responseHeaders": {
+      "Content-Type": "text/xml",
+      "Server": "Punchout-Gateway/1.0"
+    },
+    "responseBody": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<cXML>\n  <Response>\n    <Status code=\"200\" text=\"success\"/>\n    <PunchOutSetupResponse>\n      <StartPage><URL>https://catalog.waters.com/session/SESSION_001_ABC123</URL></StartPage>\n    </PunchOutSetupResponse>\n  </Response>\n</cXML>",
+    "duration": 245,
+    "requestType": "cXML",
+    "success": true,
+    "errorMessage": null
+  },
+  {
+    "sessionKey": "SESSION_001_ABC123",
+    "requestId": "REQ_001_002",
+    "timestamp": {"$date": "2025-11-09T08:30:20.456Z"},
+    "direction": "OUTBOUND",
+    "source": "Punchout Website",
+    "destination": "3rd Party Catalog API",
+    "method": "GET",
+    "url": "https://api.catalog-provider.com/v1/products?category=instruments",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "ApiKey sk_prod_abc123",
+      "X-Session-Id": "SESSION_001_ABC123"
+    },
+    "requestBody": null,
+    "statusCode": 200,
+    "responseHeaders": {
+      "Content-Type": "application/json",
+      "X-RateLimit-Remaining": "99"
+    },
+    "responseBody": "{\"products\":[{\"id\":\"PROD_001\",\"name\":\"HPLC System 2000\",\"price\":12500.00,\"category\":\"instruments\"},{\"id\":\"PROD_002\",\"name\":\"Mass Spectrometer X500\",\"price\":45000.00,\"category\":\"instruments\"}],\"total\":2}",
+    "duration": 156,
+    "requestType": "REST",
+    "success": true,
+    "errorMessage": null
+  },
+  {
+    "sessionKey": "SESSION_001_ABC123",
+    "requestId": "REQ_001_003",
+    "timestamp": {"$date": "2025-11-09T09:45:30.789Z"},
+    "direction": "INBOUND",
+    "source": "B2B Customer (Ariba)",
+    "destination": "Punchout Website",
+    "method": "POST",
+    "url": "https://punchout.waters.com/orderMessage",
+    "headers": {
+      "Content-Type": "text/xml",
+      "User-Agent": "Ariba Procurement"
+    },
+    "requestBody": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<cXML>\n  <Message>\n    <PunchOutOrderMessage>\n      <BuyerCookie>BUYER_COOKIE_XYZ789</BuyerCookie>\n      <PunchOutOrderMessageHeader operationAllowed=\"create\">\n        <Total><Money currency=\"USD\">1250.50</Money></Total>\n      </PunchOutOrderMessageHeader>\n      <ItemIn quantity=\"5\"><ItemID><SupplierPartID>PROD_001</SupplierPartID></ItemID><ItemDetail><UnitPrice><Money currency=\"USD\">250.10</Money></UnitPrice></ItemDetail></ItemIn>\n    </PunchOutOrderMessage>\n  </Message>\n</cXML>",
+    "statusCode": 200,
+    "responseHeaders": {
+      "Content-Type": "text/xml"
+    },
+    "responseBody": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<cXML><Response><Status code=\"200\" text=\"success\"/></Response></cXML>",
+    "duration": 312,
+    "requestType": "cXML",
+    "success": true,
+    "errorMessage": null
+  },
+  {
+    "sessionKey": "SESSION_002_DEF456",
+    "requestId": "REQ_002_001",
+    "timestamp": {"$date": "2025-11-08T14:20:10.234Z"},
+    "direction": "INBOUND",
+    "source": "B2B Customer (OCI)",
+    "destination": "Punchout Website",
+    "method": "POST",
+    "url": "https://punchout.waters.com/oci/setup",
+    "headers": {
+      "Content-Type": "application/x-www-form-urlencoded",
+      "User-Agent": "SAP SRM"
+    },
+    "requestBody": "HOOK_URL=https://example.com/cart/return/002&USERNAME=jane.smith@clientcorp.com&FUNCTION=DETAIL&OCI_VERSION=4.0",
+    "statusCode": 200,
+    "responseHeaders": {
+      "Content-Type": "text/html"
+    },
+    "responseBody": "<html><body>Redirecting to catalog...</body></html>",
+    "duration": 189,
+    "requestType": "OCI",
+    "success": true,
+    "errorMessage": null
+  },
+  {
+    "sessionKey": "SESSION_002_DEF456",
+    "requestId": "REQ_002_002",
+    "timestamp": {"$date": "2025-11-08T14:35:45.567Z"},
+    "direction": "OUTBOUND",
+    "source": "Punchout Website",
+    "destination": "3rd Party Payment Gateway",
+    "method": "POST",
+    "url": "https://payment.gateway.com/v1/validate",
+    "headers": {
+      "Content-Type": "application/json",
+      "X-API-Key": "pk_live_xyz789"
+    },
+    "requestBody": "{\"amount\":890.75,\"currency\":\"USD\",\"customer_email\":\"jane.smith@clientcorp.com\"}",
+    "statusCode": 200,
+    "responseHeaders": {
+      "Content-Type": "application/json"
+    },
+    "responseBody": "{\"validated\":true,\"transaction_id\":\"TXN_002_456\",\"status\":\"approved\"}",
+    "duration": 423,
+    "requestType": "REST",
+    "success": true,
+    "errorMessage": null
+  },
+  {
+    "sessionKey": "SESSION_003_GHI789",
+    "requestId": "REQ_003_001",
+    "timestamp": {"$date": "2025-11-07T10:15:20.345Z"},
+    "direction": "INBOUND",
+    "source": "B2B Customer (Ariba)",
+    "destination": "Punchout Website",
+    "method": "POST",
+    "url": "https://punchout.waters.com/setup",
+    "headers": {
+      "Content-Type": "text/xml"
+    },
+    "requestBody": "<?xml version=\"1.0\"?><cXML><Request><PunchOutSetupRequest operation=\"create\"/></Request></cXML>",
+    "statusCode": 200,
+    "responseHeaders": {
+      "Content-Type": "text/xml"
+    },
+    "responseBody": "<?xml version=\"1.0\"?><cXML><Response><Status code=\"200\" text=\"success\"/></Response></cXML>",
+    "duration": 198,
+    "requestType": "cXML",
+    "success": true,
+    "errorMessage": null
+  },
+  {
+    "sessionKey": "SESSION_003_GHI789",
+    "requestId": "REQ_003_002",
+    "timestamp": {"$date": "2025-11-07T10:16:05.678Z"},
+    "direction": "OUTBOUND",
+    "source": "Punchout Website",
+    "destination": "3rd Party Inventory Service",
+    "method": "GET",
+    "url": "https://inventory.supplier.com/api/stock-check?sku=PROD_003",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer token_abc123"
+    },
+    "requestBody": null,
+    "statusCode": 200,
+    "responseHeaders": {
+      "Content-Type": "application/json"
+    },
+    "responseBody": "{\"sku\":\"PROD_003\",\"available\":true,\"quantity\":150,\"warehouse\":\"US-EAST-1\"}",
+    "duration": 267,
+    "requestType": "REST",
+    "success": true,
+    "errorMessage": null
+  },
+  {
+    "sessionKey": "SESSION_003_GHI789",
+    "requestId": "REQ_003_003",
+    "timestamp": {"$date": "2025-11-07T10:17:30.123Z"},
+    "direction": "OUTBOUND",
+    "source": "Punchout Website",
+    "destination": "3rd Party Pricing Service",
+    "method": "POST",
+    "url": "https://pricing.service.com/v2/calculate",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "requestBody": "{\"items\":[{\"sku\":\"PROD_003\",\"quantity\":15}],\"customer_type\":\"enterprise\",\"region\":\"US\"}",
+    "statusCode": 200,
+    "responseHeaders": {
+      "Content-Type": "application/json"
+    },
+    "responseBody": "{\"subtotal\":3200.00,\"discount\":220.00,\"total\":3420.00,\"currency\":\"USD\"}",
+    "duration": 334,
+    "requestType": "REST",
+    "success": true,
+    "errorMessage": null
+  },
+  {
+    "sessionKey": "SESSION_003_GHI789",
+    "requestId": "REQ_003_004",
+    "timestamp": {"$date": "2025-11-07T11:50:10.456Z"},
+    "direction": "OUTBOUND",
+    "source": "Punchout Website",
+    "destination": "3rd Party Shipping Calculator",
+    "method": "POST",
+    "url": "https://shipping.carrier.com/api/rates",
+    "headers": {
+      "Content-Type": "application/json",
+      "API-Key": "ship_key_xyz"
+    },
+    "requestBody": "{\"weight\":45.5,\"dimensions\":{\"length\":24,\"width\":18,\"height\":12},\"destination_zip\":\"02138\"}",
+    "statusCode": 503,
+    "responseHeaders": {
+      "Content-Type": "application/json",
+      "Retry-After": "60"
+    },
+    "responseBody": "{\"error\":\"Service temporarily unavailable\",\"code\":\"SERVICE_DOWN\"}",
+    "duration": 5001,
+    "requestType": "REST",
+    "success": false,
+    "errorMessage": "Shipping service timeout - service unavailable"
+  },
+  {
+    "sessionKey": "SESSION_004_JKL012",
+    "requestId": "REQ_004_001",
+    "timestamp": {"$date": "2025-11-06T16:45:05.789Z"},
+    "direction": "INBOUND",
+    "source": "B2B Customer (Ariba)",
+    "destination": "Punchout Website",
+    "method": "POST",
+    "url": "https://punchout.waters.com/setup",
+    "headers": {
+      "Content-Type": "text/xml"
+    },
+    "requestBody": "<?xml version=\"1.0\"?><cXML><Request><PunchOutSetupRequest operation=\"inspect\"/></Request></cXML>",
+    "statusCode": 200,
+    "responseHeaders": {
+      "Content-Type": "text/xml"
+    },
+    "responseBody": "<?xml version=\"1.0\"?><cXML><Response><Status code=\"200\" text=\"success\"/></Response></cXML>",
+    "duration": 156,
+    "requestType": "cXML",
+    "success": true,
+    "errorMessage": null
+  },
+  {
+    "sessionKey": "SESSION_005_MNO345",
+    "requestId": "REQ_005_001",
+    "timestamp": {"$date": "2025-11-05T09:00:30.234Z"},
+    "direction": "INBOUND",
+    "source": "B2B Customer (OCI)",
+    "destination": "Punchout Website",
+    "method": "POST",
+    "url": "https://punchout.waters.com/oci/setup",
+    "headers": {
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    "requestBody": "HOOK_URL=https://example.com/cart/return/005&USERNAME=charlie.brown@buyercorp.com&FUNCTION=DETAIL",
+    "statusCode": 200,
+    "responseHeaders": {
+      "Content-Type": "text/html"
+    },
+    "responseBody": "<html><body>Session created</body></html>",
+    "duration": 178,
+    "requestType": "OCI",
+    "success": true,
+    "errorMessage": null
+  },
+  {
+    "sessionKey": "SESSION_005_MNO345",
+    "requestId": "REQ_005_002",
+    "timestamp": {"$date": "2025-11-05T09:15:45.567Z"},
+    "direction": "OUTBOUND",
+    "source": "Punchout Website",
+    "destination": "3rd Party Catalog API",
+    "method": "GET",
+    "url": "https://api.catalog-provider.com/v1/products/search?q=consumables",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "ApiKey sk_prod_abc123"
+    },
+    "requestBody": null,
+    "statusCode": 200,
+    "responseHeaders": {
+      "Content-Type": "application/json"
+    },
+    "responseBody": "{\"products\":[{\"id\":\"CONS_001\",\"name\":\"Sample Vials 2ml\",\"price\":45.50},{\"id\":\"CONS_002\",\"name\":\"HPLC Column Guard\",\"price\":125.75}],\"total\":2}",
+    "duration": 234,
+    "requestType": "REST",
+    "success": true,
+    "errorMessage": null
+  }
+]

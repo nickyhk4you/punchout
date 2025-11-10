@@ -1,0 +1,91 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
+import { sessionAPI, orderAPI, gatewayAPI, networkRequestAPI } from '@/lib/api';
+import { PunchOutSession, OrderObject, GatewayRequest, NetworkRequest } from '@/types';
+import Breadcrumb from '@/components/Breadcrumb';
+import SessionInfoCard from '@/components/session/SessionInfoCard';
+import OrderObjectCard from '@/components/session/OrderObjectCard';
+import NetworkRequestsTable from '@/components/session/NetworkRequestsTable';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import ErrorMessage from '@/components/ui/ErrorMessage';
+
+export default function SessionDetailsPage() {
+  const params = useParams();
+  const sessionKey = params.sessionKey as string;
+
+  const [session, setSession] = useState<PunchOutSession | null>(null);
+  const [orderObject, setOrderObject] = useState<OrderObject | null>(null);
+  const [networkRequests, setNetworkRequests] = useState<NetworkRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (sessionKey) {
+      loadSessionDetails();
+    }
+  }, [sessionKey]);
+
+  const loadSessionDetails = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const [sessionData, orderData, networkData] = await Promise.all([
+        sessionAPI.getSessionByKey(sessionKey),
+        orderAPI.getOrderObject(sessionKey).catch(() => null),
+        networkRequestAPI.getNetworkRequests(sessionKey).catch(() => []),
+      ]);
+
+      setSession(sessionData);
+      setOrderObject(orderData);
+      setNetworkRequests(networkData);
+    } catch (err: any) {
+      setError(err.message || 'Failed to load session details');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return <LoadingSpinner message="Loading session details..." />;
+  }
+
+  if (error || !session) {
+    return <ErrorMessage message={error || 'Session not found'} />;
+  }
+
+  const breadcrumbItems = [
+    { label: 'PunchOut Sessions', href: '/sessions' },
+    { label: sessionKey },
+  ];
+
+  return (
+    <div className="container py-4">
+      {/* Breadcrumb Navigation */}
+      <Breadcrumb items={breadcrumbItems} />
+
+      {/* Page Header */}
+      <div className="mb-4">
+        <h1 className="display-6 mb-2 d-flex align-items-center">
+          <i className="fas fa-file-alt me-3 text-primary"></i>
+          Session Details
+        </h1>
+        <p className="text-muted fs-5">{sessionKey}</p>
+      </div>
+
+      {/* Session Information */}
+      <SessionInfoCard session={session} />
+
+      {/* Order Object */}
+      <OrderObjectCard orderObject={orderObject} />
+
+      {/* Network Requests */}
+      <NetworkRequestsTable 
+        requests={networkRequests} 
+        sessionKey={sessionKey} 
+      />
+    </div>
+  );
+}

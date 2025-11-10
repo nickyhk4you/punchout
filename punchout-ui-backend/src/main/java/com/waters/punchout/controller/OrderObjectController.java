@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/punchout-sessions/{sessionKey}/order-object")
 @RequiredArgsConstructor
 @Slf4j
+@CrossOrigin(origins = "*")
 public class OrderObjectController {
     
     private final OrderObjectService orderObjectService;

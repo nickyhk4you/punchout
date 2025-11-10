@@ -139,6 +139,8 @@ const NavBar = () => {
                   <span className="d-inline d-lg-none d-xl-inline">Developer</span>
                 </Link>
                 <ul className="depth_2 dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                  <li><Link className="dropdown-item" href="/developer/punchout"><i className="fas fa-flask me-2 text-purple-600"></i><strong>PunchOut Testing</strong></Link></li>
+                  <li><hr className="dropdown-divider"/></li>
                   <li><Link className="dropdown-item" href="/tools/punchout">PunchOut</Link></li>
                   <li><Link className="dropdown-item" href="/tools/punchoutaddress">PunchOut Addresses</Link></li>
                   <li><Link className="dropdown-item" href="/tools/orderrequest">Purchase Order Requests</Link></li>

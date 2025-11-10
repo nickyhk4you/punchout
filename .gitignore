@@ -36,3 +36,4 @@ bin/
 /punchout-ui-frontend/target/
 /punchout-ui-frontend/node/node_modules
 /.idea
+/punchout-gateway/target

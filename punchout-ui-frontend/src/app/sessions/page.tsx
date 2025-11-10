@@ -4,12 +4,14 @@ import { useState, useEffect } from 'react';
 import { sessionAPI } from '@/lib/api';
 import { PunchOutSession, SessionFilter } from '@/types';
 import Link from 'next/link';
+import Breadcrumb from '@/components/Breadcrumb';
 
 export default function SessionsPage() {
   const [sessions, setSessions] = useState<PunchOutSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<SessionFilter>({});
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   useEffect(() => {
     loadSessions();
@@ -27,6 +29,16 @@ export default function SessionsPage() {
       setLoading(false);
     }
   };
+
+  const toggleSort = () => {
+    setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+  };
+
+  const sortedSessions = [...sessions].sort((a, b) => {
+    const dateA = a.sessionDate ? new Date(a.sessionDate).getTime() : 0;
+    const dateB = b.sessionDate ? new Date(b.sessionDate).getTime() : 0;
+    return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+  });
 
   const handleFilterChange = (key: keyof SessionFilter, value: string) => {
     setFilters(prev => ({
@@ -52,8 +64,14 @@ export default function SessionsPage() {
     }).format(value);
   };
 
+  const breadcrumbItems = [
+    { label: 'PunchOut Sessions' },
+  ];
+
   return (
     <div className="container mx-auto px-4 py-8">
+      <Breadcrumb items={breadcrumbItems} />
+      
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">PunchOut Sessions</h1>
         <p className="text-gray-600">View and manage all PunchOut sessions</p>
@@ -160,8 +178,16 @@ export default function SessionsPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Order Value
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Session Date
+                  <th 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                    onClick={toggleSort}
+                  >
+                    <div className="flex items-center space-x-1">
+                      <span>Session Date</span>
+                      <span className="text-gray-400">
+                        {sortOrder === 'asc' ? '↑' : '↓'}
+                      </span>
+                    </div>
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
@@ -169,12 +195,15 @@ export default function SessionsPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {sessions.map((session) => (
+                {sortedSessions.map((session) => (
                   <tr key={session.sessionKey} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-blue-600">
+                      <Link
+                        href={`/sessions/${session.sessionKey}`}
+                        className="text-sm font-medium text-blue-600 hover:text-blue-900 hover:underline cursor-pointer"
+                      >
                         {session.sessionKey}
-                      </div>
+                      </Link>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${

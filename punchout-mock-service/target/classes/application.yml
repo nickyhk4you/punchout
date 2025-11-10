@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: punchout-mock-service
+
+server:
+  port: 8082
+
+catalog:
+  base-url: http://localhost:3000/catalog
+
+logging:
+  level:
+    com.waters.punchout.mock: INFO
+  pattern:
+    console: '%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg%n'
