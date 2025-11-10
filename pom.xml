@@ -26,6 +26,7 @@
         <module>punchout-gateway</module>
         <module>punchout-ui-backend</module>
         <module>punchout-ui-frontend</module>
+        <module>punchout-mock-service</module>
     </modules>
 
     <properties>

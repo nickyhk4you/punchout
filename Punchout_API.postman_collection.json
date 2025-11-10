@@ -9,9 +9,189 @@
       "key": "baseUrl",
       "value": "http://localhost:8080",
       "type": "string"
+    },
+    {
+      "key": "gatewayUrl",
+      "value": "http://localhost:9090",
+      "type": "string"
     }
   ],
   "item": [
+    {
+      "name": "🚀 Complete E2E Test",
+      "item": [
+        {
+          "name": "Complete PunchOut Flow - E2E Test",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Parse the response XML",
+                  "const responseXml = pm.response.text();",
+                  "",
+                  "// Extract session key from response",
+                  "const sessionKeyMatch = responseXml.match(/<BuyerCookie>([^<]+)<\\/BuyerCookie>/);",
+                  "if (sessionKeyMatch) {",
+                  "    const sessionKey = sessionKeyMatch[1];",
+                  "    pm.collectionVariables.set('lastSessionKey', sessionKey);",
+                  "    console.log('✅ Session created: ' + sessionKey);",
+                  "    ",
+                  "    pm.test('PunchOut Setup Successful', function() {",
+                  "        pm.expect(responseXml).to.include('StartPage');",
+                  "        pm.expect(responseXml).to.include('URL');",
+                  "        pm.expect(responseXml).to.include('BuyerCookie');",
+                  "    });",
+                  "    ",
+                  "    // Fetch network requests from UI Backend after 1 second delay",
+                  "    const uiBackendUrl = pm.collectionVariables.get('baseUrl');",
+                  "    ",
+                  "    setTimeout(function() {",
+                  "        pm.sendRequest({",
+                  "            url: `${uiBackendUrl}/api/v1/sessions/${sessionKey}/network-requests`,",
+                  "            method: 'GET'",
+                  "        }, function(err, response) {",
+                  "        if (err) {",
+                  "            console.error('❌ Failed to fetch network requests:', err);",
+                  "        } else {",
+                  "            const requests = response.json();",
+                  "            console.log('\\n📊 NETWORK REQUESTS LOGGED IN UI DASHBOARD:');",
+                  "            console.log('═══════════════════════════════════════════\\n');",
+                  "            ",
+                  "            requests.forEach((req, index) => {",
+                  "                console.log(`Request #${index + 1}: ${req.requestId}`);",
+                  "                console.log(`  Direction: ${req.direction}`);",
+                  "                console.log(`  URL: ${req.url || req.endpoint}`);",
+                  "                console.log(`  Method: ${req.method}`);",
+                  "                console.log(`  Status: ${req.statusCode}`);",
+                  "                console.log(`  Timestamp: ${req.timestamp}`);",
+                  "                ",
+                  "                if (req.requestPayload) {",
+                  "                    console.log(`  📤 Request Payload: ${JSON.stringify(req.requestPayload).substring(0, 200)}...`);",
+                  "                }",
+                  "                ",
+                  "                if (req.responsePayload) {",
+                  "                    console.log(`  📥 Response Payload: ${JSON.stringify(req.responsePayload).substring(0, 200)}...`);",
+                  "                }",
+                  "                console.log('');",
+                  "            });",
+                  "            ",
+                  "            console.log('═══════════════════════════════════════════');",
+                  "            console.log(`\\n🔗 View in UI Dashboard: http://localhost:3000/sessions/${sessionKey}\\n`);",
+                  "            ",
+                  "            pm.test('Network Requests Logged', function() {",
+                  "                pm.expect(requests.length).to.be.above(0);",
+                  "            });",
+                  "        }",
+                  "        });",
+                  "    }, 1000);",
+                  "} else {",
+                  "    pm.test('Failed to extract session key', function() {",
+                  "        pm.expect.fail('Could not find BuyerCookie in response');",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/xml",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<cXML payloadID=\"{{$randomInt}}\" timestamp=\"{{$isoTimestamp}}\">\n  <Header>\n    <From>\n      <Credential domain=\"NetworkID\">\n        <Identity>buyer123</Identity>\n      </Credential>\n    </From>\n    <To>\n      <Credential domain=\"NetworkID\">\n        <Identity>supplier456</Identity>\n      </Credential>\n    </To>\n    <Sender>\n      <Credential domain=\"NetworkID\">\n        <Identity>buyerApp</Identity>\n        <SharedSecret>secret123</SharedSecret>\n      </Credential>\n      <UserAgent>BuyerApp 1.0</UserAgent>\n    </Sender>\n  </Header>\n  <Request>\n    <PunchOutSetupRequest operation=\"create\">\n      <BuyerCookie>SESSION_TEST_{{$randomInt}}</BuyerCookie>\n      <Extrinsic name=\"User\">john.doe@example.com</Extrinsic>\n      <BrowserFormPost>\n        <URL>https://buyer.example.com/punchout/return</URL>\n      </BrowserFormPost>\n      <Contact role=\"buyer\">\n        <Name xml:lang=\"en\">John Doe</Name>\n        <Email>john.doe@example.com</Email>\n      </Contact>\n    </PunchOutSetupRequest>\n  </Request>\n</cXML>"
+            },
+            "url": {
+              "raw": "{{gatewayUrl}}/punchout/setup",
+              "host": ["{{gatewayUrl}}"],
+              "path": ["punchout", "setup"]
+            },
+            "description": "🚀 Complete End-to-End Test:\n\n1. Sends PunchOut setup request to Gateway\n2. Gateway processes cXML and calls Mock services\n3. All network requests are logged to MongoDB\n4. Test automatically fetches and displays all logged network requests\n5. Shows request/response payloads in Postman console\n\n✅ Run this single test to see all network activity logged in the UI dashboard!\n\n📊 After running:\n- Check Postman Console (bottom panel) for detailed network request logs\n- Visit the UI Dashboard link shown in the console\n- All requests/responses are stored in MongoDB"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Gateway API (cXML)",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/punchout/health",
+              "host": ["{{gatewayUrl}}"],
+              "path": ["punchout", "health"]
+            },
+            "description": "Check gateway service health"
+          },
+          "response": []
+        },
+        {
+          "name": "PunchOut Setup Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/xml",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<cXML payloadID=\"1234567890\" timestamp=\"2024-01-15T10:30:00-05:00\">\n  <Header>\n    <From>\n      <Credential domain=\"NetworkID\">\n        <Identity>buyer123</Identity>\n      </Credential>\n    </From>\n    <To>\n      <Credential domain=\"NetworkID\">\n        <Identity>supplier456</Identity>\n      </Credential>\n    </To>\n    <Sender>\n      <Credential domain=\"NetworkID\">\n        <Identity>buyerApp</Identity>\n        <SharedSecret>secret123</SharedSecret>\n      </Credential>\n      <UserAgent>BuyerApp 1.0</UserAgent>\n    </Sender>\n  </Header>\n  <Request>\n    <PunchOutSetupRequest operation=\"create\">\n      <BuyerCookie>COOKIE_12345_ABC</BuyerCookie>\n      <Extrinsic name=\"User\">john.doe@example.com</Extrinsic>\n      <BrowserFormPost>\n        <URL>https://buyer.example.com/punchout/return</URL>\n      </BrowserFormPost>\n      <Contact role=\"buyer\">\n        <Name xml:lang=\"en\">John Doe</Name>\n        <Email>john.doe@example.com</Email>\n      </Contact>\n    </PunchOutSetupRequest>\n  </Request>\n</cXML>"
+            },
+            "url": {
+              "raw": "{{gatewayUrl}}/punchout/setup",
+              "host": ["{{gatewayUrl}}"],
+              "path": ["punchout", "setup"]
+            },
+            "description": "Send PunchOut setup request (cXML format). Gateway will:\n1. Parse cXML\n2. Authenticate with auth service\n3. Call catalog service\n4. Return cXML response with catalog URL"
+          },
+          "response": []
+        },
+        {
+          "name": "PunchOut Order Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/xml",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<cXML payloadID=\"9876543210\" timestamp=\"2024-01-15T11:00:00-05:00\">\n  <Header>\n    <From>\n      <Credential domain=\"NetworkID\">\n        <Identity>supplier456</Identity>\n      </Credential>\n    </From>\n    <To>\n      <Credential domain=\"NetworkID\">\n        <Identity>buyer123</Identity>\n      </Credential>\n    </To>\n    <Sender>\n      <Credential domain=\"NetworkID\">\n        <Identity>catalogApp</Identity>\n        <SharedSecret>secret456</SharedSecret>\n      </Credential>\n      <UserAgent>CatalogApp 1.0</UserAgent>\n    </Sender>\n  </Header>\n  <Message>\n    <PunchOutOrderMessage>\n      <BuyerCookie>COOKIE_12345_ABC</BuyerCookie>\n      <PunchOutOrderMessageHeader operationAllowed=\"create\">\n        <Total>\n          <Money currency=\"USD\">1250.00</Money>\n        </Total>\n      </PunchOutOrderMessageHeader>\n      <ItemIn quantity=\"10\">\n        <ItemID>\n          <SupplierPartID>PROD-001</SupplierPartID>\n        </ItemID>\n        <ItemDetail>\n          <UnitPrice>\n            <Money currency=\"USD\">125.00</Money>\n          </UnitPrice>\n          <Description xml:lang=\"en\">Sample Product</Description>\n        </ItemDetail>\n      </ItemIn>\n    </PunchOutOrderMessage>\n  </Message>\n</cXML>"
+            },
+            "url": {
+              "raw": "{{gatewayUrl}}/punchout/order",
+              "host": ["{{gatewayUrl}}"],
+              "path": ["punchout", "order"]
+            },
+            "description": "Send PunchOut order message (cXML format). Gateway will log the request and return success response."
+          },
+          "response": []
+        }
+      ]
+    },
     {
       "name": "Sessions API (MongoDB)",
       "item": [

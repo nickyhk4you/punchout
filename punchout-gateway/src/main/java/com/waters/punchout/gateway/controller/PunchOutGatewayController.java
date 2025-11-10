@@ -82,12 +82,14 @@ public class PunchOutGatewayController {
             "  <Response>\n" +
             "    <Status code=\"200\" text=\"success\"/>\n" +
             "    <PunchOutSetupResponse>\n" +
+            "      <BuyerCookie>%s</BuyerCookie>\n" +
             "      <StartPage>\n" +
             "        <URL>%s</URL>\n" +
             "      </StartPage>\n" +
             "    </PunchOutSetupResponse>\n" +
             "  </Response>\n" +
             "</cXML>",
+            sessionKey,
             catalogUrl
         );
     }

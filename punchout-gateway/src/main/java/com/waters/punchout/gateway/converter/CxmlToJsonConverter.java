@@ -27,9 +27,15 @@ public class CxmlToJsonConverter {
         JsonNode requestNode = rootNode.path("Request").path("PunchOutSetupRequest");
         
         PunchOutRequest request = new PunchOutRequest();
-        request.setSessionKey(generateSessionKey());
+        
+        // Use BuyerCookie from cXML as sessionKey, or generate if missing
+        String buyerCookie = requestNode.path("BuyerCookie").asText();
+        if (buyerCookie == null || buyerCookie.isEmpty()) {
+            buyerCookie = generateSessionKey();
+        }
+        request.setSessionKey(buyerCookie);
         request.setOperation(requestNode.path("operation").asText("create"));
-        request.setBuyerCookie(requestNode.path("BuyerCookie").asText());
+        request.setBuyerCookie(buyerCookie);
         request.setTimestamp(LocalDateTime.now());
         
         // Extract contact email
