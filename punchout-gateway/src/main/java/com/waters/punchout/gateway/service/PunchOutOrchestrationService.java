@@ -11,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -41,7 +40,6 @@ public class PunchOutOrchestrationService {
         this.sessionRepository = sessionRepository;
     }
 
-    @Transactional
     public Map<String, Object> processPunchOutRequest(String cxmlContent, String sessionKey) {
         log.info("Processing PunchOut request for sessionKey={}", sessionKey);
         
@@ -179,7 +177,6 @@ public class PunchOutOrchestrationService {
         return response;
     }
     
-    @Transactional
     public Map<String, Object> processOrderMessage(String cxmlContent) {
         long startTime = System.currentTimeMillis();
         String requestId = "REQ_ORDER_" + java.util.UUID.randomUUID().toString().substring(0, 8);
