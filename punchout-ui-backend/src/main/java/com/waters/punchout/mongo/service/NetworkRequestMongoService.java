@@ -38,10 +38,18 @@ public class NetworkRequestMongoService {
         return convertToDTO(document);
     }
     
+    public List<NetworkRequestDTO> getAllNetworkRequests() {
+        log.info("Fetching all network requests");
+        return repository.findAll().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+    
     private NetworkRequestDTO convertToDTO(NetworkRequestDocument document) {
         NetworkRequestDTO dto = new NetworkRequestDTO();
         dto.setId(document.getId());
         dto.setSessionKey(document.getSessionKey());
+        dto.setOrderId(document.getOrderId());
         dto.setRequestId(document.getRequestId());
         dto.setTimestamp(document.getTimestamp());
         dto.setDirection(document.getDirection());

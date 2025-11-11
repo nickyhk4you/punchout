@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { PunchOutSession, OrderObject, GatewayRequest, SessionFilter, CxmlTemplate } from '@/types';
+import { PunchOutSession, OrderObject, GatewayRequest, SessionFilter, CxmlTemplate, Order, NetworkRequest } from '@/types';
 
 // API Base URL - configurable via environment variable
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
@@ -179,6 +179,44 @@ export const punchOutTestAPI = {
   // Update an existing punchout test
   updateTest: async (id: string, test: Partial<import('@/types').PunchOutTest>): Promise<import('@/types').PunchOutTest> => {
     const response = await apiClient.put<import('@/types').PunchOutTest>(`/v1/punchout-tests/${id}`, test);
+    return response.data;
+  },
+};
+
+export const orderAPIv2 = {
+  // Get all orders
+  getAllOrders: async (filters?: { status?: string; customerId?: string; environment?: string }): Promise<Order[]> => {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) params.append(key, value);
+      });
+    }
+    const response = await apiClient.get<Order[]>('/v1/orders', { params });
+    return response.data;
+  },
+
+  // Get order by ID
+  getOrderById: async (orderId: string): Promise<Order> => {
+    const response = await apiClient.get<Order>(`/v1/orders/${orderId}`);
+    return response.data;
+  },
+
+  // Get network requests for order
+  getOrderNetworkRequests: async (orderId: string): Promise<NetworkRequest[]> => {
+    const response = await apiClient.get<NetworkRequest[]>(`/v1/orders/${orderId}/network-requests`);
+    return response.data;
+  },
+
+  // Get order statistics
+  getOrderStats: async (): Promise<{
+    totalOrders: number;
+    totalValue: number;
+    ordersByStatus: Record<string, number>;
+    ordersByCustomer: Record<string, number>;
+    ordersByEnvironment: Record<string, number>;
+  }> => {
+    const response = await apiClient.get('/v1/orders/stats');
     return response.data;
   },
 };

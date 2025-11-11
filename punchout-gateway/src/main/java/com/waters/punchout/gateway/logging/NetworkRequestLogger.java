@@ -18,6 +18,18 @@ public class NetworkRequestLogger {
     public NetworkRequestLogger(NetworkRequestRepository networkRequestRepository) {
         this.networkRequestRepository = networkRequestRepository;
     }
+    
+    public static class OrderContext {
+        private final String orderId;
+        
+        public OrderContext(String orderId) {
+            this.orderId = orderId;
+        }
+        
+        public String getOrderId() {
+            return orderId;
+        }
+    }
 
     public NetworkRequestDocument logInboundRequest(
             String sessionKey,
@@ -113,6 +125,38 @@ public class NetworkRequestLogger {
         });
     }
 
+    public NetworkRequestDocument logInboundOrderRequest(
+            String sessionKey,
+            String orderId,
+            String source,
+            String destination,
+            String method,
+            String url,
+            Map<String, String> headers,
+            String requestBody,
+            String requestType
+    ) {
+        log.debug("Logging inbound order request for orderId={}", orderId);
+
+        NetworkRequestDocument document = new NetworkRequestDocument();
+        document.setRequestId(generateRequestId());
+        document.setSessionKey(sessionKey);
+        document.setOrderId(orderId);
+        document.setTimestamp(LocalDateTime.now());
+        document.setDirection("INBOUND");
+        document.setSource(source);
+        document.setDestination(destination);
+        document.setMethod(method);
+        document.setUrl(url);
+        document.setHeaders(headers);
+        document.setRequestBody(requestBody);
+        document.setRequestType(requestType);
+
+        NetworkRequestDocument saved = networkRequestRepository.save(document);
+        log.info("Logged inbound order request: requestId={}, orderId={}", saved.getRequestId(), orderId);
+        return saved;
+    }
+    
     private String generateRequestId() {
         return "REQ_" + UUID.randomUUID().toString().replace("-", "").substring(0, 16).toUpperCase();
     }

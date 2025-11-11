@@ -1,0 +1,50 @@
+[
+  {
+    "environment": "dev",
+    "authServiceUrl": "http://localhost:8081/api/auth/token",
+    "muleServiceUrl": "http://localhost:8082/api/catalog",
+    "catalogBaseUrl": "http://localhost:3000",
+    "description": "Local development environment",
+    "enabled": true,
+    "createdAt": {"$date": "2025-11-11T00:00:00.000Z"},
+    "updatedAt": {"$date": "2025-11-11T00:00:00.000Z"},
+    "createdBy": "system",
+    "updatedBy": "system"
+  },
+  {
+    "environment": "stage",
+    "authServiceUrl": "https://auth-stage.waters.com/api/auth/token",
+    "muleServiceUrl": "https://mule-stage.waters.com/api/catalog",
+    "catalogBaseUrl": "https://punchout-stage.waters.com",
+    "description": "Staging environment for testing",
+    "enabled": true,
+    "createdAt": {"$date": "2025-11-11T00:00:00.000Z"},
+    "updatedAt": {"$date": "2025-11-11T00:00:00.000Z"},
+    "createdBy": "system",
+    "updatedBy": "system"
+  },
+  {
+    "environment": "prod",
+    "authServiceUrl": "https://auth.waters.com/api/auth/token",
+    "muleServiceUrl": "https://mule.waters.com/api/catalog",
+    "catalogBaseUrl": "https://punchout.waters.com",
+    "description": "Production environment",
+    "enabled": true,
+    "createdAt": {"$date": "2025-11-11T00:00:00.000Z"},
+    "updatedAt": {"$date": "2025-11-11T00:00:00.000Z"},
+    "createdBy": "system",
+    "updatedBy": "system"
+  },
+  {
+    "environment": "s4-dev",
+    "authServiceUrl": "https://auth-s4-dev.waters.com/api/auth/token",
+    "muleServiceUrl": "https://mule-s4-dev.waters.com/api/catalog",
+    "catalogBaseUrl": "https://punchout-s4-dev.waters.com",
+    "description": "S4 HANA development environment",
+    "enabled": true,
+    "createdAt": {"$date": "2025-11-11T00:00:00.000Z"},
+    "updatedAt": {"$date": "2025-11-11T00:00:00.000Z"},
+    "createdBy": "system",
+    "updatedBy": "system"
+  }
+]

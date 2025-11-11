@@ -1,0 +1,427 @@
+[
+  {
+    "sessionKey": "SESSION_001_ABC123",
+    "orderId": "ORD-2025-001",
+    "requestId": "REQ-ORD-001-INBOUND",
+    "timestamp": {"$date": "2025-11-09T09:45:30.000Z"},
+    "direction": "INBOUND",
+    "source": "Ariba Network",
+    "destination": "Punchout Gateway",
+    "method": "POST",
+    "url": "/api/v1/order",
+    "headers": {
+      "Content-Type": "text/xml",
+      "User-Agent": "Ariba-Procurement/2.0",
+      "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    },
+    "requestBody": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<cXML version=\"1.2.037\" xml:lang=\"en-US\">\n  <Header>\n    <From>\n      <Credential domain=\"NetworkID\"><Identity>AN01000000001</Identity></Credential>\n    </From>\n    <To>\n      <Credential domain=\"DUNS\"><Identity>123456789</Identity></Credential>\n    </To>\n    <Sender>\n      <Credential domain=\"NetworkID\"><Identity>AN01000000001</Identity></Credential>\n    </Sender>\n  </Header>\n  <Request deploymentMode=\"production\">\n    <OrderRequest>\n      <OrderRequestHeader orderID=\"ORD-2025-001\" orderDate=\"2025-11-09T09:45:30Z\">\n        <Total><Money currency=\"USD\">1250.50</Money></Total>\n        <ShipTo><Address><Name>WatersCorp Laboratory Supply</Name></Address></ShipTo>\n      </OrderRequestHeader>\n    </OrderRequest>\n  </Request>\n</cXML>",
+    "statusCode": 200,
+    "responseHeaders": {
+      "Content-Type": "application/json",
+      "X-Request-ID": "req-001-inbound"
+    },
+    "responseBody": "{\"success\": true, \"orderId\": \"ORD-2025-001\", \"message\": \"Order received successfully\"}",
+    "duration": 245,
+    "requestType": "cXML OrderRequest",
+    "success": true,
+    "errorMessage": null
+  },
+  {
+    "sessionKey": "SESSION_001_ABC123",
+    "orderId": "ORD-2025-001",
+    "requestId": "REQ-ORD-001-OUTBOUND-MULE",
+    "timestamp": {"$date": "2025-11-09T09:45:35.000Z"},
+    "direction": "OUTBOUND",
+    "source": "Punchout Gateway",
+    "destination": "Mule ESB",
+    "method": "POST",
+    "url": "http://mule-esb.waters.com/api/orders/submit",
+    "headers": {
+      "Content-Type": "application/json",
+      "X-Correlation-ID": "ORD-2025-001",
+      "Authorization": "Bearer mule-api-key-xyz"
+    },
+    "requestBody": "{\"orderId\":\"ORD-2025-001\",\"customerId\":\"CUST-10001\",\"total\":1250.50,\"currency\":\"USD\",\"items\":[{\"lineNumber\":1,\"partId\":\"WAT-LC-001\",\"quantity\":2,\"unitPrice\":450.00}]}",
+    "statusCode": 201,
+    "responseHeaders": {
+      "Content-Type": "application/json",
+      "X-Mule-Order-ID": "MULE-ORD-20251109-001"
+    },
+    "responseBody": "{\"success\": true, \"muleOrderId\": \"MULE-ORD-20251109-001\", \"status\": \"SUBMITTED\"}",
+    "duration": 1850,
+    "requestType": "REST API",
+    "success": true,
+    "errorMessage": null
+  },
+  {
+    "sessionKey": "SESSION_001_ABC123",
+    "orderId": "ORD-2025-001",
+    "requestId": "REQ-ORD-001-OUTBOUND-CONFIRM",
+    "timestamp": {"$date": "2025-11-09T09:46:12.000Z"},
+    "direction": "OUTBOUND",
+    "source": "Punchout Gateway",
+    "destination": "Ariba Network",
+    "method": "POST",
+    "url": "https://service.ariba.com/Supplier.aw/confirm",
+    "headers": {
+      "Content-Type": "text/xml",
+      "Authorization": "Bearer ariba-api-token"
+    },
+    "requestBody": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<cXML version=\"1.2.037\">\n  <Response>\n    <Status code=\"200\" text=\"OK\">Order ORD-2025-001 confirmed</Status>\n    <ConfirmationRequest>\n      <ConfirmationHeader orderID=\"ORD-2025-001\" confirmID=\"MULE-ORD-20251109-001\"/>\n    </ConfirmationRequest>\n  </Response>\n</cXML>",
+    "statusCode": 200,
+    "responseHeaders": {
+      "Content-Type": "text/xml"
+    },
+    "responseBody": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<cXML><Response><Status code=\"200\" text=\"success\"/></Response></cXML>",
+    "duration": 420,
+    "requestType": "cXML ConfirmationRequest",
+    "success": true,
+    "errorMessage": null
+  },
+  {
+    "sessionKey": "SESSION_002_DEF456",
+    "orderId": "ORD-2025-002",
+    "requestId": "REQ-ORD-002-INBOUND",
+    "timestamp": {"$date": "2025-11-08T14:35:45.000Z"},
+    "direction": "INBOUND",
+    "source": "OCI Client",
+    "destination": "Punchout Gateway",
+    "method": "POST",
+    "url": "/api/v1/order/oci",
+    "headers": {
+      "Content-Type": "application/x-www-form-urlencoded",
+      "User-Agent": "OCI-Client/1.0"
+    },
+    "requestBody": "NEW_ITEM-DESCRIPTION[1]=0.22µm+Syringe+Filter&NEW_ITEM-QUANTITY[1]=3&NEW_ITEM-PRICE[1]=185.00&NEW_ITEM-CURRENCY[1]=USD&ORDERID=ORD-2025-002",
+    "statusCode": 200,
+    "responseHeaders": {
+      "Content-Type": "text/html"
+    },
+    "responseBody": "OK",
+    "duration": 180,
+    "requestType": "OCI OrderMessage",
+    "success": true,
+    "errorMessage": null
+  },
+  {
+    "sessionKey": "SESSION_002_DEF456",
+    "orderId": "ORD-2025-002",
+    "requestId": "REQ-ORD-002-OUTBOUND-MULE",
+    "timestamp": {"$date": "2025-11-08T14:35:50.000Z"},
+    "direction": "OUTBOUND",
+    "source": "Punchout Gateway",
+    "destination": "Mule ESB",
+    "method": "POST",
+    "url": "http://mule-esb.waters.com/api/orders/submit",
+    "headers": {
+      "Content-Type": "application/json",
+      "X-Correlation-ID": "ORD-2025-002"
+    },
+    "requestBody": "{\"orderId\":\"ORD-2025-002\",\"customerId\":\"CUST-10002\",\"orderType\":\"update\",\"total\":890.75}",
+    "statusCode": 201,
+    "responseHeaders": {
+      "Content-Type": "application/json"
+    },
+    "responseBody": "{\"success\": true, \"muleOrderId\": \"MULE-ORD-20251108-002\", \"status\": \"PROCESSING\"}",
+    "duration": 2100,
+    "requestType": "REST API",
+    "success": true,
+    "errorMessage": null
+  },
+  {
+    "sessionKey": "SESSION_003_GHI789",
+    "orderId": "ORD-2025-003",
+    "requestId": "REQ-ORD-003-INBOUND",
+    "timestamp": {"$date": "2025-11-07T11:50:10.000Z"},
+    "direction": "INBOUND",
+    "source": "Ariba Network",
+    "destination": "Punchout Gateway",
+    "method": "POST",
+    "url": "/api/v1/order",
+    "headers": {
+      "Content-Type": "text/xml",
+      "User-Agent": "Ariba-Procurement/2.0"
+    },
+    "requestBody": "<?xml version=\"1.0\"?>\n<cXML version=\"1.2.037\">\n  <Request>\n    <OrderRequest>\n      <OrderRequestHeader orderID=\"ORD-2025-003\" orderDate=\"2025-11-07T11:50:10Z\">\n        <Total><Money currency=\"USD\">3420.00</Money></Total>\n        <ShipTo><Address><Name>PartnerCorp Research Institute</Name></Address></ShipTo>\n      </OrderRequestHeader>\n      <ItemOut quantity=\"1\" lineNumber=\"1\">\n        <ItemID><SupplierPartID>WAT-XEVO-TQ</SupplierPartID></ItemID>\n        <ItemDetail><Description>Xevo TQ-S micro Mass Spectrometer Maintenance Kit</Description></ItemDetail>\n      </ItemOut>\n    </OrderRequest>\n  </Request>\n</cXML>",
+    "statusCode": 200,
+    "responseHeaders": {
+      "Content-Type": "application/json"
+    },
+    "responseBody": "{\"success\": true, \"orderId\": \"ORD-2025-003\"}",
+    "duration": 320,
+    "requestType": "cXML OrderRequest",
+    "success": true,
+    "errorMessage": null
+  },
+  {
+    "sessionKey": "SESSION_003_GHI789",
+    "orderId": "ORD-2025-003",
+    "requestId": "REQ-ORD-003-OUTBOUND-MULE",
+    "timestamp": {"$date": "2025-11-07T11:50:15.000Z"},
+    "direction": "OUTBOUND",
+    "source": "Punchout Gateway",
+    "destination": "Mule ESB",
+    "method": "POST",
+    "url": "http://mule-esb.waters.com/api/orders/submit",
+    "headers": {
+      "Content-Type": "application/json",
+      "X-Correlation-ID": "ORD-2025-003",
+      "X-Environment": "STAGING"
+    },
+    "requestBody": "{\"orderId\":\"ORD-2025-003\",\"customerId\":\"CUST-10003\",\"total\":3420.00,\"environment\":\"STAGING\"}",
+    "statusCode": 201,
+    "responseHeaders": {
+      "Content-Type": "application/json"
+    },
+    "responseBody": "{\"success\": true, \"muleOrderId\": \"MULE-ORD-20251107-003\"}",
+    "duration": 1920,
+    "requestType": "REST API",
+    "success": true,
+    "errorMessage": null
+  },
+  {
+    "sessionKey": "SESSION_003_GHI789",
+    "orderId": "ORD-2025-003",
+    "requestId": "REQ-ORD-003-OUTBOUND-CONFIRM",
+    "timestamp": {"$date": "2025-11-07T11:51:42.000Z"},
+    "direction": "OUTBOUND",
+    "source": "Punchout Gateway",
+    "destination": "Ariba Network",
+    "method": "POST",
+    "url": "https://service.ariba.com/Supplier.aw/confirm",
+    "headers": {
+      "Content-Type": "text/xml"
+    },
+    "requestBody": "<?xml version=\"1.0\"?>\n<cXML><Response><Status code=\"200\">Confirmed</Status></Response></cXML>",
+    "statusCode": 200,
+    "responseHeaders": {
+      "Content-Type": "text/xml"
+    },
+    "responseBody": "<?xml version=\"1.0\"?>\n<cXML><Response><Status code=\"200\" text=\"success\"/></Response></cXML>",
+    "duration": 380,
+    "requestType": "cXML ConfirmationRequest",
+    "success": true,
+    "errorMessage": null
+  },
+  {
+    "sessionKey": "SESSION_005_MNO345",
+    "orderId": "ORD-2025-005",
+    "requestId": "REQ-ORD-005-INBOUND",
+    "timestamp": {"$date": "2025-11-05T10:25:15.000Z"},
+    "direction": "INBOUND",
+    "source": "OCI Client",
+    "destination": "Punchout Gateway",
+    "method": "POST",
+    "url": "/api/v1/order/oci",
+    "headers": {
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    "requestBody": "NEW_ITEM-DESCRIPTION[1]=HPLC+Standard+Mix&NEW_ITEM-QUANTITY[1]=2&NEW_ITEM-PRICE[1]=175.00&ORDERID=ORD-2025-005",
+    "statusCode": 200,
+    "responseHeaders": {
+      "Content-Type": "text/html"
+    },
+    "responseBody": "OK",
+    "duration": 165,
+    "requestType": "OCI OrderMessage",
+    "success": true,
+    "errorMessage": null
+  },
+  {
+    "sessionKey": "SESSION_007_STU901",
+    "orderId": "ORD-2025-007",
+    "requestId": "REQ-ORD-007-INBOUND",
+    "timestamp": {"$date": "2025-11-03T12:40:50.000Z"},
+    "direction": "INBOUND",
+    "source": "Ariba Network",
+    "destination": "Punchout Gateway",
+    "method": "POST",
+    "url": "/api/v1/order",
+    "headers": {
+      "Content-Type": "text/xml",
+      "X-Priority": "HIGH"
+    },
+    "requestBody": "<?xml version=\"1.0\"?>\n<cXML version=\"1.2.037\">\n  <Request>\n    <OrderRequest>\n      <OrderRequestHeader orderID=\"ORD-2025-007\" orderDate=\"2025-11-03T12:40:50Z\" type=\"new\">\n        <Total><Money currency=\"USD\">15750.99</Money></Total>\n        <Extrinsic name=\"ContractNumber\">CONTRACT-2025-WATERS-001</Extrinsic>\n      </OrderRequestHeader>\n    </OrderRequest>\n  </Request>\n</cXML>",
+    "statusCode": 200,
+    "responseHeaders": {
+      "Content-Type": "application/json"
+    },
+    "responseBody": "{\"success\": true, \"orderId\": \"ORD-2025-007\", \"priority\": \"HIGH\"}",
+    "duration": 280,
+    "requestType": "cXML OrderRequest",
+    "success": true,
+    "errorMessage": null
+  },
+  {
+    "sessionKey": "SESSION_007_STU901",
+    "orderId": "ORD-2025-007",
+    "requestId": "REQ-ORD-007-OUTBOUND-MULE",
+    "timestamp": {"$date": "2025-11-03T12:40:55.000Z"},
+    "direction": "OUTBOUND",
+    "source": "Punchout Gateway",
+    "destination": "Mule ESB",
+    "method": "POST",
+    "url": "http://mule-esb.waters.com/api/orders/submit",
+    "headers": {
+      "Content-Type": "application/json",
+      "X-Correlation-ID": "ORD-2025-007",
+      "X-Priority": "HIGH"
+    },
+    "requestBody": "{\"orderId\":\"ORD-2025-007\",\"customerId\":\"CUST-10007\",\"total\":15750.99,\"contractNumber\":\"CONTRACT-2025-WATERS-001\",\"priority\":\"HIGH\"}",
+    "statusCode": 201,
+    "responseHeaders": {
+      "Content-Type": "application/json"
+    },
+    "responseBody": "{\"success\": true, \"muleOrderId\": \"MULE-ORD-20251103-007\", \"processingPriority\": \"HIGH\"}",
+    "duration": 2450,
+    "requestType": "REST API",
+    "success": true,
+    "errorMessage": null
+  },
+  {
+    "sessionKey": "SESSION_007_STU901",
+    "orderId": "ORD-2025-007",
+    "requestId": "REQ-ORD-007-OUTBOUND-CONFIRM",
+    "timestamp": {"$date": "2025-11-03T12:42:18.000Z"},
+    "direction": "OUTBOUND",
+    "source": "Punchout Gateway",
+    "destination": "Ariba Network",
+    "method": "POST",
+    "url": "https://service.ariba.com/Supplier.aw/confirm",
+    "headers": {
+      "Content-Type": "text/xml"
+    },
+    "requestBody": "<?xml version=\"1.0\"?>\n<cXML><Response><Status code=\"200\">Order ORD-2025-007 confirmed - Contract renewal processed</Status></Response></cXML>",
+    "statusCode": 200,
+    "responseHeaders": {
+      "Content-Type": "text/xml"
+    },
+    "responseBody": "<?xml version=\"1.0\"?>\n<cXML><Response><Status code=\"200\" text=\"success\"/></Response></cXML>",
+    "duration": 390,
+    "requestType": "cXML ConfirmationRequest",
+    "success": true,
+    "errorMessage": null
+  },
+  {
+    "sessionKey": "SESSION_008_VWX234",
+    "orderId": "ORD-2025-008",
+    "requestId": "REQ-ORD-008-INBOUND",
+    "timestamp": {"$date": "2025-11-02T15:45:30.000Z"},
+    "direction": "INBOUND",
+    "source": "OCI Client",
+    "destination": "Punchout Gateway",
+    "method": "POST",
+    "url": "/api/v1/order/oci",
+    "headers": {
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    "requestBody": "NEW_ITEM-DESCRIPTION[1]=BioAccord+LC-MS+System+Sample+Kit&NEW_ITEM-QUANTITY[1]=1&NEW_ITEM-PRICE[1]=1650.00&ORDERID=ORD-2025-008",
+    "statusCode": 200,
+    "responseHeaders": {
+      "Content-Type": "text/html"
+    },
+    "responseBody": "OK",
+    "duration": 195,
+    "requestType": "OCI OrderMessage",
+    "success": true,
+    "errorMessage": null
+  },
+  {
+    "sessionKey": "SESSION_008_VWX234",
+    "orderId": "ORD-2025-008",
+    "requestId": "REQ-ORD-008-OUTBOUND-MULE",
+    "timestamp": {"$date": "2025-11-02T15:45:35.000Z"},
+    "direction": "OUTBOUND",
+    "source": "Punchout Gateway",
+    "destination": "Mule ESB",
+    "method": "POST",
+    "url": "http://mule-esb.waters.com/api/orders/submit",
+    "headers": {
+      "Content-Type": "application/json",
+      "X-Correlation-ID": "ORD-2025-008"
+    },
+    "requestBody": "{\"orderId\":\"ORD-2025-008\",\"customerId\":\"CUST-10008\",\"total\":2340.00}",
+    "statusCode": 201,
+    "responseHeaders": {
+      "Content-Type": "application/json"
+    },
+    "responseBody": "{\"success\": true, \"muleOrderId\": \"MULE-ORD-20251102-008\"}",
+    "duration": 1780,
+    "requestType": "REST API",
+    "success": true,
+    "errorMessage": null
+  },
+  {
+    "sessionKey": "SESSION_010_BCD890",
+    "orderId": "ORD-2025-010",
+    "requestId": "REQ-ORD-010-INBOUND",
+    "timestamp": {"$date": "2025-10-31T13:15:45.000Z"},
+    "direction": "INBOUND",
+    "source": "Ariba Network",
+    "destination": "Punchout Gateway",
+    "method": "POST",
+    "url": "/api/v1/order",
+    "headers": {
+      "Content-Type": "text/xml"
+    },
+    "requestBody": "<?xml version=\"1.0\"?>\n<cXML version=\"1.2.037\">\n  <Request>\n    <OrderRequest>\n      <OrderRequestHeader orderID=\"ORD-2025-010\" orderDate=\"2025-10-31T13:15:45Z\">\n        <Total><Money currency=\"USD\">4567.80</Money></Total>\n      </OrderRequestHeader>\n    </OrderRequest>\n  </Request>\n</cXML>",
+    "statusCode": 200,
+    "responseHeaders": {
+      "Content-Type": "application/json"
+    },
+    "responseBody": "{\"success\": true, \"orderId\": \"ORD-2025-010\"}",
+    "duration": 265,
+    "requestType": "cXML OrderRequest",
+    "success": true,
+    "errorMessage": null
+  },
+  {
+    "sessionKey": "SESSION_010_BCD890",
+    "orderId": "ORD-2025-010",
+    "requestId": "REQ-ORD-010-OUTBOUND-MULE",
+    "timestamp": {"$date": "2025-10-31T13:15:50.000Z"},
+    "direction": "OUTBOUND",
+    "source": "Punchout Gateway",
+    "destination": "Mule ESB",
+    "method": "POST",
+    "url": "http://mule-esb.waters.com/api/orders/submit",
+    "headers": {
+      "Content-Type": "application/json",
+      "X-Correlation-ID": "ORD-2025-010"
+    },
+    "requestBody": "{\"orderId\":\"ORD-2025-010\",\"customerId\":\"CUST-10010\",\"total\":4567.80}",
+    "statusCode": 201,
+    "responseHeaders": {
+      "Content-Type": "application/json"
+    },
+    "responseBody": "{\"success\": true, \"muleOrderId\": \"MULE-ORD-20251031-010\"}",
+    "duration": 2050,
+    "requestType": "REST API",
+    "success": true,
+    "errorMessage": null
+  },
+  {
+    "sessionKey": "SESSION_010_BCD890",
+    "orderId": "ORD-2025-010",
+    "requestId": "REQ-ORD-010-OUTBOUND-CONFIRM",
+    "timestamp": {"$date": "2025-10-31T13:17:05.000Z"},
+    "direction": "OUTBOUND",
+    "source": "Punchout Gateway",
+    "destination": "Ariba Network",
+    "method": "POST",
+    "url": "https://service.ariba.com/Supplier.aw/confirm",
+    "headers": {
+      "Content-Type": "text/xml"
+    },
+    "requestBody": "<?xml version=\"1.0\"?>\n<cXML><Response><Status code=\"200\">Confirmed</Status></Response></cXML>",
+    "statusCode": 200,
+    "responseHeaders": {
+      "Content-Type": "text/xml"
+    },
+    "responseBody": "<?xml version=\"1.0\"?>\n<cXML><Response><Status code=\"200\" text=\"success\"/></Response></cXML>",
+    "duration": 340,
+    "requestType": "cXML ConfirmationRequest",
+    "success": true,
+    "errorMessage": null
+  }
+]

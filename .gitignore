@@ -37,3 +37,7 @@ bin/
 /punchout-ui-frontend/node/node_modules
 /.idea
 /punchout-gateway/target
+/punchout-mock-service/target
+/punchout-mock-service/target
+/punchout-mock-service/target
+/punchout-mock-service/target

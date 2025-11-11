@@ -1,0 +1,32 @@
+# Pre-Production Environment
+spring:
+  data:
+    mongodb:
+      uri: mongodb://preprod-mongodb.punchout.waters.com:27017/punchout
+  
+  datasource:
+    url: jdbc:postgresql://preprod-postgres.punchout.waters.com:5432/punchout
+    username: ${DB_USERNAME:punchout_user}
+    password: ${DB_PASSWORD:changeme}
+    driver-class-name: org.postgresql.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+server:
+  port: 8080
+
+logging:
+  level:
+    com.waters.punchout: INFO
+    org.springframework.web: WARN
+  file:
+    name: /var/log/punchout/ui-backend.log
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

@@ -10,17 +10,85 @@ spring:
 server:
   port: 9090
 
+app:
+  environment: ${APP_ENVIRONMENT:dev}
+
 logging:
   level:
     com.waters.punchout.gateway: DEBUG
   pattern:
     console: '%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg%n'
 
+# Customer-specific conversion configuration
+punchout:
+  conversion:
+    customers:
+      # Default converter (fallback)
+      - id: default
+        version: v1
+        dialect: CXML
+      
+      # Acme Corporation  
+      - id: acme
+        version: v1
+        dialect: ARIBA
+        match:
+          fromIdentityPattern: "buyer123"
+        requiredExtrinsics:
+          - CostCenter
+      
+      # TechCorp Industries
+      - id: techcorp
+        version: v2
+        dialect: OCI
+        match:
+          fromIdentityPattern: "buyer456"
+        requiredExtrinsics:
+          - CompanyCode
+          - UniqueName
+      
+      # Global Solutions Inc
+      - id: global
+        version: v1
+        dialect: ARIBA
+        match:
+          fromIdentityPattern: "buyer789"
+        requiredExtrinsics:
+          - Region
+      
+      # SAP Ariba Network
+      - id: ariba
+        version: v1
+        dialect: ARIBA
+        match:
+          fromDomain: AribaNetworkUserId
+        requiredExtrinsics:
+          - UniqueName
+      
+      # Coupa Procurement
+      - id: coupa
+        version: v1
+        dialect: CXML
+        match:
+          senderUserAgentPattern: ".*Coupa.*"
+        requiredExtrinsics:
+          - requester-email
+      
+      # Oracle iProcurement / Oracle Cloud
+      - id: oracle
+        version: v1
+        dialect: OCI
+        match:
+          senderUserAgentPattern: ".*Oracle.*|.*iProcurement.*"
+        requiredExtrinsics:
+          - OrgId
+          - UserId
+
 # Third Party Service URLs
 thirdparty:
   auth:
     url: http://localhost:8082/api/v1/token
     timeout: 5000
-  catalog:
+  mule:
     url: http://localhost:8082/api/v1/catalog
     timeout: 10000

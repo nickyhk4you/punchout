@@ -1,0 +1,24 @@
+# Local Development Environment
+spring:
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017
+      database: punchout
+  
+  datasource:
+    url: jdbc:h2:mem:punchoutdb
+    username: sa
+    password: 
+  
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+
+server:
+  port: 8080
+
+logging:
+  level:
+    com.waters.punchout: DEBUG
+    org.springframework.web: DEBUG

@@ -1,0 +1,101 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7
+    container_name: punchout-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-changeme}
+      MONGO_INITDB_DATABASE: punchout
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb-data:/data/db
+      - ./mongo-init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - punchout-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  punchout-gateway:
+    image: ${REGISTRY:-localhost:5000}/punchout-gateway:${TAG:-latest}
+    container_name: punchout-gateway
+    restart: unless-stopped
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    environment:
+      APP_ENVIRONMENT: ${APP_ENVIRONMENT:-prod}
+      SPRING_DATA_MONGODB_HOST: mongodb
+      SPRING_DATA_MONGODB_PORT: 27017
+      SPRING_DATA_MONGODB_DATABASE: punchout
+      SPRING_DATA_MONGODB_USERNAME: ${MONGO_USERNAME:-admin}
+      SPRING_DATA_MONGODB_PASSWORD: ${MONGO_PASSWORD:-changeme}
+    ports:
+      - "9090:9090"
+    networks:
+      - punchout-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/actuator/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 40s
+
+  punchout-ui-backend:
+    image: ${REGISTRY:-localhost:5000}/punchout-ui-backend:${TAG:-latest}
+    container_name: punchout-ui-backend
+    restart: unless-stopped
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    environment:
+      SPRING_DATA_MONGODB_HOST: mongodb
+      SPRING_DATA_MONGODB_PORT: 27017
+      SPRING_DATA_MONGODB_DATABASE: punchout
+      SPRING_DATA_MONGODB_USERNAME: ${MONGO_USERNAME:-admin}
+      SPRING_DATA_MONGODB_PASSWORD: ${MONGO_PASSWORD:-changeme}
+    ports:
+      - "8080:8080"
+    networks:
+      - punchout-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 40s
+
+  punchout-ui-frontend:
+    image: ${REGISTRY:-localhost:5000}/punchout-ui-frontend:${TAG:-latest}
+    container_name: punchout-ui-frontend
+    restart: unless-stopped
+    depends_on:
+      punchout-ui-backend:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: http://punchout-ui-backend:8080/api
+    ports:
+      - "3000:3000"
+    networks:
+      - punchout-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+networks:
+  punchout-network:
+    driver: bridge
+
+volumes:
+  mongodb-data:
+    driver: local

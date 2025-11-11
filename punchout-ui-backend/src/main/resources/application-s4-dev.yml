@@ -1,0 +1,32 @@
+# S4 Development Environment
+spring:
+  data:
+    mongodb:
+      uri: mongodb://s4-dev-mongodb.punchout.waters.com:27017/punchout
+  
+  datasource:
+    url: jdbc:postgresql://s4-dev-postgres.punchout.waters.com:5432/punchout
+    username: ${DB_USERNAME:punchout_user}
+    password: ${DB_PASSWORD:changeme}
+    driver-class-name: org.postgresql.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+server:
+  port: 8080
+
+logging:
+  level:
+    com.waters.punchout: DEBUG
+    org.springframework.web: INFO
+  file:
+    name: /var/log/punchout/ui-backend-s4.log
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics

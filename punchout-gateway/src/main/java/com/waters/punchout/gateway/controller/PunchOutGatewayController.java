@@ -1,5 +1,7 @@
 package com.waters.punchout.gateway.controller;
 
+import com.waters.punchout.gateway.dto.OrderResponse;
+import com.waters.punchout.gateway.service.OrderOrchestrationService;
 import com.waters.punchout.gateway.service.PunchOutOrchestrationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,10 +20,21 @@ import java.util.Map;
 public class PunchOutGatewayController {
     
     private final PunchOutOrchestrationService orchestrationService;
+    private final OrderOrchestrationService orderOrchestrationService;
     
-    @PostMapping(value = "/setup", consumes = MediaType.TEXT_XML_VALUE, produces = MediaType.TEXT_XML_VALUE)
+    @PostMapping(value = "/setup", 
+                 consumes = {MediaType.TEXT_XML_VALUE, MediaType.APPLICATION_XML_VALUE}, 
+                 produces = MediaType.TEXT_XML_VALUE)
     public ResponseEntity<String> handlePunchOutSetup(@RequestBody String cxmlContent) {
-        log.info("Received PunchOut setup request");
+        log.info("Received PunchOut setup request, content length: {}", cxmlContent != null ? cxmlContent.length() : 0);
+        
+        if (cxmlContent == null || cxmlContent.trim().isEmpty()) {
+            log.error("Empty cXML content received");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(buildCxmlErrorResponse("Empty cXML content"));
+        }
+        
+        log.debug("cXML Content preview: {}", cxmlContent.substring(0, Math.min(100, cxmlContent.length())));
         
         try {
             Map<String, Object> result = orchestrationService.processPunchOutRequest(cxmlContent, null);
@@ -44,23 +57,24 @@ public class PunchOutGatewayController {
         }
     }
     
-    @PostMapping(value = "/order", consumes = MediaType.TEXT_XML_VALUE, produces = MediaType.TEXT_XML_VALUE)
-    public ResponseEntity<String> handleOrderMessage(@RequestBody String cxmlContent) {
-        log.info("Received PunchOut order message");
+    @PostMapping(value = "/order", 
+                 consumes = {MediaType.TEXT_XML_VALUE, MediaType.APPLICATION_XML_VALUE},
+                 produces = MediaType.TEXT_XML_VALUE)
+    public ResponseEntity<String> handleOrderRequest(@RequestBody String cxmlContent) {
+        log.info("Received Order request, content length: {}", cxmlContent != null ? cxmlContent.length() : 0);
         
         try {
-            // Process order message
-            Map<String, Object> result = orchestrationService.processOrderMessage(cxmlContent);
+            OrderResponse response = orderOrchestrationService.processOrder(cxmlContent);
             
-            String cxmlResponse = buildCxmlSuccessResponse();
+            String cxmlResponse = buildCxmlOrderResponse(response);
             
-            log.info("Order message processed successfully");
+            log.info("Order processed successfully: orderId={}", response.getOrderId());
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_XML)
                     .body(cxmlResponse);
                     
         } catch (Exception e) {
-            log.error("Error processing order message", e);
+            log.error("Error processing order request", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(buildCxmlErrorResponse(e.getMessage()));
         }
@@ -101,6 +115,25 @@ public class PunchOutGatewayController {
                "    <Status code=\"200\" text=\"success\"/>\n" +
                "  </Response>\n" +
                "</cXML>";
+    }
+    
+    private String buildCxmlOrderResponse(OrderResponse orderResponse) {
+        return String.format(
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+            "<cXML>\n" +
+            "  <Response>\n" +
+            "    <Status code=\"200\" text=\"success\"/>\n" +
+            "    <ConfirmationRequest>\n" +
+            "      <ConfirmationHeader>\n" +
+            "        <confirmID>%s</confirmID>\n" +
+            "        <muleOrderID>%s</muleOrderID>\n" +
+            "      </ConfirmationHeader>\n" +
+            "    </ConfirmationRequest>\n" +
+            "  </Response>\n" +
+            "</cXML>",
+            orderResponse.getOrderId(),
+            orderResponse.getMuleOrderId()
+        );
     }
     
     private String buildCxmlErrorResponse(String errorMessage) {
