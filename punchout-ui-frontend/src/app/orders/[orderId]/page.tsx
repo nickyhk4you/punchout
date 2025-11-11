@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { Order, NetworkRequest } from '@/types';
 import { orderAPIv2 } from '@/lib/api';
 import Link from 'next/link';
+import Breadcrumb from '@/components/Breadcrumb';
 
 export default function OrderDetailPage() {
   const params = useParams();
@@ -13,7 +14,7 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [networkRequests, setNetworkRequests] = useState<NetworkRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedRequest, setSelectedRequest] = useState<NetworkRequest | null>(null);
+  const [activeTab, setActiveTab] = useState<'all' | 'inbound' | 'outbound'>('all');
 
   useEffect(() => {
     loadOrderDetails();
@@ -80,38 +81,45 @@ export default function OrderDetailPage() {
 
   if (!order) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-xl text-gray-600">Order not found</p>
-          <Link href="/orders" className="text-green-600 hover:text-green-800 mt-4 inline-block">
-            ← Back to Orders
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center py-12">
+          <p className="text-red-600 mb-4">Error: Order not found</p>
+          <Link
+            href="/orders"
+            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+          >
+            Back to Orders
           </Link>
         </div>
       </div>
     );
   }
 
+  const breadcrumbItems = [
+    { label: 'Orders', href: '/orders' },
+    { label: orderId },
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      <div className="bg-gradient-to-r from-green-600 to-teal-600 text-white py-12 px-6 shadow-lg">
-        <div className="max-w-7xl mx-auto">
-          <Link href="/orders" className="text-green-100 hover:text-white mb-4 inline-block">
-            ← Back to Orders
-          </Link>
-          <h1 className="text-4xl font-bold mb-2">Order {order.orderId}</h1>
-          <div className="flex items-center gap-4 text-green-100">
-            <span>{order.customerName}</span>
-            <span>·</span>
-            <span>{formatDate(order.orderDate)}</span>
-            <span>·</span>
-            <span className="font-semibold">{formatCurrency(order.total, order.currency)}</span>
-            <span>·</span>
-            {getStatusBadge(order.status)}
+    <div>
+      {/* Hero Section */}
+      <div className="bg-gradient-to-r from-green-600 to-teal-600 text-white">
+        <div className="container mx-auto px-4 py-12">
+          <div className="max-w-4xl">
+            <h1 className="text-4xl font-bold mb-3">
+              <i className="fas fa-shopping-cart mr-3"></i>
+              Order Details
+            </h1>
+            <p className="text-xl text-green-100">
+              {orderId}
+            </p>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="container mx-auto px-4 py-8">
+        {/* Breadcrumb */}
+        <Breadcrumb items={breadcrumbItems} />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <div className="bg-white rounded-xl shadow-lg p-6">
             <h2 className="text-xl font-semibold mb-4 text-gray-800">Order Information</h2>
@@ -154,28 +162,27 @@ export default function OrderDetailPage() {
           </div>
 
           <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-xl font-semibold mb-4 text-gray-800">Network Requests</h2>
+            <h2 className="text-xl font-semibold mb-4">
+              <i className="fas fa-info-circle text-green-600 mr-2"></i>
+              Order Summary
+            </h2>
             <div className="space-y-3">
-              {networkRequests.length === 0 ? (
-                <p className="text-gray-500 text-sm">No network requests found</p>
-              ) : (
-                networkRequests.map((req) => (
-                  <div 
-                    key={req.id}
-                    onClick={() => setSelectedRequest(req)}
-                    className="p-3 border border-gray-200 rounded-lg hover:border-green-500 cursor-pointer transition-colors"
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className={`text-xs font-medium ${req.direction === 'INBOUND' ? 'text-blue-600' : 'text-purple-600'}`}>
-                        {req.direction === 'INBOUND' ? '📥 INBOUND' : '📤 OUTBOUND'}
-                      </span>
-                      <span className="text-xs text-gray-500">{req.duration}ms</span>
-                    </div>
-                    <div className="text-sm font-medium">{req.requestType}</div>
-                    <div className="text-xs text-gray-500">{req.source} → {req.destination}</div>
-                  </div>
-                ))
-              )}
+              <div className="flex justify-between">
+                <span className="text-gray-600">Customer:</span>
+                <span className="font-medium">{order.customerName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Total:</span>
+                <span className="font-semibold text-green-600">{formatCurrency(order.total, order.currency)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Tax:</span>
+                <span className="font-medium">{formatCurrency(order.taxAmount || 0, order.currency)}</span>
+              </div>
+              <div className="flex justify-between border-t pt-3">
+                <span className="text-gray-600 font-semibold">Grand Total:</span>
+                <span className="font-bold text-lg text-green-700">{formatCurrency(order.total + (order.taxAmount || 0), order.currency)}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -262,9 +269,146 @@ export default function OrderDetailPage() {
           </div>
         </div>
 
+        {/* Network Requests */}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-4">
+            <i className="fas fa-network-wired text-purple-600 mr-2"></i>
+            Network Requests ({networkRequests.length})
+          </h2>
+          
+          {/* Tabs */}
+          <div className="mb-4 border-b border-gray-200">
+            <nav className="-mb-px flex space-x-8">
+              <button
+                onClick={() => setActiveTab('all')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'all'
+                    ? 'border-green-500 text-green-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                All ({networkRequests.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('inbound')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'inbound'
+                    ? 'border-green-500 text-green-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Inbound ({networkRequests.filter(r => r.direction === 'INBOUND').length})
+              </button>
+              <button
+                onClick={() => setActiveTab('outbound')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'outbound'
+                    ? 'border-green-500 text-green-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Outbound ({networkRequests.filter(r => r.direction === 'OUTBOUND').length})
+              </button>
+            </nav>
+          </div>
+
+          {/* Requests Table */}
+          {networkRequests.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Time
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Direction
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Method
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Type
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Source → Destination
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Duration
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {networkRequests
+                    .filter(req => activeTab === 'all' || req.direction === activeTab.toUpperCase())
+                    .map((request) => (
+                      <tr key={request.id} className="hover:bg-green-50 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {new Date(request.timestamp).toLocaleTimeString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            request.direction === 'INBOUND' 
+                              ? 'bg-blue-100 text-blue-800' 
+                              : 'bg-purple-100 text-purple-800'
+                          }`}>
+                            {request.direction}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {request.method}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {request.requestType}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          <div className="max-w-xs truncate">
+                            {request.source} → {request.destination}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            request.success 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {request.statusCode || '-'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {request.duration ? `${request.duration}ms` : '-'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <Link
+                            href={`/orders/${orderId}/requests/${request.id}`}
+                            className="inline-flex items-center px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all font-semibold"
+                          >
+                            <i className="fas fa-eye mr-1"></i>
+                            View
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="text-gray-500">No network requests found for this order</p>
+          )}
+        </div>
+
         {order.extrinsics && Object.keys(order.extrinsics).length > 0 && (
           <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-            <h2 className="text-xl font-semibold mb-4 text-gray-800">Extrinsics</h2>
+            <h2 className="text-xl font-semibold mb-4">
+              <i className="fas fa-tags text-orange-600 mr-2"></i>
+              Extrinsics
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {Object.entries(order.extrinsics).map(([key, value]) => (
                 <div key={key} className="flex justify-between border-b border-gray-100 pb-2">
@@ -272,58 +416,6 @@ export default function OrderDetailPage() {
                   <span className="text-gray-900">{value}</span>
                 </div>
               ))}
-            </div>
-          </div>
-        )}
-
-        {selectedRequest && (
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-xl font-semibold mb-4 text-gray-800">Network Request Details</h2>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div>
-                  <span className={`text-sm font-medium ${selectedRequest.direction === 'INBOUND' ? 'text-blue-600' : 'text-purple-600'}`}>
-                    {selectedRequest.direction}
-                  </span>
-                  <p className="text-lg font-semibold mt-1">{selectedRequest.requestType}</p>
-                  <p className="text-sm text-gray-600">{selectedRequest.source} → {selectedRequest.destination}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-gray-600">Duration</p>
-                  <p className="text-2xl font-bold text-green-600">{selectedRequest.duration}ms</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div>
-                  <h3 className="font-semibold mb-2">Request Headers</h3>
-                  <pre className="bg-gray-50 p-4 rounded text-xs overflow-auto max-h-64">
-                    {JSON.stringify(selectedRequest.headers, null, 2)}
-                  </pre>
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-2">Response Headers</h3>
-                  <pre className="bg-gray-50 p-4 rounded text-xs overflow-auto max-h-64">
-                    {JSON.stringify(selectedRequest.responseHeaders, null, 2)}
-                  </pre>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="font-semibold mb-2">Request Body</h3>
-                <pre className="bg-gray-50 p-4 rounded text-xs overflow-auto max-h-96">
-                  {selectedRequest.requestBody}
-                </pre>
-              </div>
-
-              {selectedRequest.responseBody && (
-                <div>
-                  <h3 className="font-semibold mb-2">Response Body</h3>
-                  <pre className="bg-gray-50 p-4 rounded text-xs overflow-auto max-h-96">
-                    {selectedRequest.responseBody}
-                  </pre>
-                </div>
-              )}
             </div>
           </div>
         )}

@@ -1,0 +1,516 @@
+[
+  {
+    "orderId": "ORD-2025-001",
+    "sessionKey": "SESSION_001_ABC123",
+    "orderDate": {"$date": "2025-11-09T09:45:30.000Z"},
+    "orderType": "new",
+    "orderVersion": "1.0",
+    "customerId": "CUST-10001",
+    "customerName": "WatersCorp Laboratory Supply",
+    "total": {"$numberDecimal": "1250.50"},
+    "currency": "USD",
+    "taxAmount": {"$numberDecimal": "100.04"},
+    "shipTo": {
+      "name": "WatersCorp Laboratory Supply",
+      "street": "123 Science Park Drive",
+      "city": "Boston",
+      "state": "MA",
+      "postalCode": "02101",
+      "country": "US",
+      "email": "john.doe@waterscorp.com",
+      "phone": "+1-617-555-0101"
+    },
+    "billTo": {
+      "name": "WatersCorp Laboratory Supply",
+      "street": "123 Science Park Drive",
+      "city": "Boston",
+      "state": "MA",
+      "postalCode": "02101",
+      "country": "US"
+    },
+    "items": [
+      {
+        "lineNumber": 1,
+        "supplierPartId": "WAT-LC-001",
+        "description": "ACQUITY UPLC BEH C18 Column, 1.7µm, 2.1 x 50 mm",
+        "quantity": 2,
+        "unitPrice": {"$numberDecimal": "450.00"},
+        "extendedAmount": {"$numberDecimal": "900.00"},
+        "currency": "USD",
+        "uom": "EA"
+      },
+      {
+        "lineNumber": 2,
+        "supplierPartId": "WAT-STD-002",
+        "description": "Calibration Standard Set - HPLC Grade",
+        "quantity": 1,
+        "unitPrice": {"$numberDecimal": "250.50"},
+        "extendedAmount": {"$numberDecimal": "250.50"},
+        "currency": "USD",
+        "uom": "EA"
+      },
+      {
+        "lineNumber": 3,
+        "supplierPartId": "WAT-VIAL-100",
+        "description": "12x32mm Screw Neck Vials, Amber, 100/pk",
+        "quantity": 1,
+        "unitPrice": {"$numberDecimal": "100.00"},
+        "extendedAmount": {"$numberDecimal": "100.00"},
+        "currency": "USD",
+        "uom": "PK"
+      }
+    ],
+    "extrinsics": {
+      "RequestedDeliveryDate": "2025-11-16",
+      "ProjectCode": "PROJ-2025-LAB-001",
+      "CostCenter": "CC-LAB-BOS-01",
+      "Requester": "john.doe@waterscorp.com"
+    },
+    "comments": "Urgent - Required for ongoing validation project",
+    "status": "CONFIRMED",
+    "receivedAt": {"$date": "2025-11-09T09:45:35.000Z"},
+    "processedAt": {"$date": "2025-11-09T09:46:12.000Z"},
+    "muleOrderId": "MULE-ORD-20251109-001",
+    "environment": "PRODUCTION",
+    "source": "ARIBA",
+    "dialect": "cXML"
+  },
+  {
+    "orderId": "ORD-2025-002",
+    "sessionKey": "SESSION_002_DEF456",
+    "orderDate": {"$date": "2025-11-08T14:35:45.000Z"},
+    "orderType": "update",
+    "orderVersion": "2.0",
+    "customerId": "CUST-10002",
+    "customerName": "ClientCorp Pharmaceuticals",
+    "total": {"$numberDecimal": "890.75"},
+    "currency": "USD",
+    "taxAmount": {"$numberDecimal": "71.26"},
+    "shipTo": {
+      "name": "ClientCorp Pharmaceuticals",
+      "street": "456 Research Boulevard",
+      "city": "San Diego",
+      "state": "CA",
+      "postalCode": "92101",
+      "country": "US",
+      "email": "jane.smith@clientcorp.com",
+      "phone": "+1-858-555-0202"
+    },
+    "billTo": {
+      "name": "ClientCorp Pharmaceuticals - Accounts Payable",
+      "street": "789 Corporate Center",
+      "city": "San Diego",
+      "state": "CA",
+      "postalCode": "92102",
+      "country": "US"
+    },
+    "items": [
+      {
+        "lineNumber": 1,
+        "supplierPartId": "WAT-FILTER-005",
+        "description": "0.22µm Syringe Filter, PVDF, 25mm, 100/pk",
+        "quantity": 3,
+        "unitPrice": {"$numberDecimal": "185.00"},
+        "extendedAmount": {"$numberDecimal": "555.00"},
+        "currency": "USD",
+        "uom": "PK"
+      },
+      {
+        "lineNumber": 2,
+        "supplierPartId": "WAT-SOL-ACN",
+        "description": "Acetonitrile, HPLC Grade, 4L",
+        "quantity": 1,
+        "unitPrice": {"$numberDecimal": "335.75"},
+        "extendedAmount": {"$numberDecimal": "335.75"},
+        "currency": "USD",
+        "uom": "EA"
+      }
+    ],
+    "extrinsics": {
+      "RequestedDeliveryDate": "2025-11-15",
+      "ProjectCode": "PHARMA-QC-2025",
+      "ShippingAccount": "FEDEX-98765432"
+    },
+    "comments": "Modified quantity for line 1",
+    "status": "PROCESSING",
+    "receivedAt": {"$date": "2025-11-08T14:35:50.000Z"},
+    "processedAt": {"$date": "2025-11-08T14:36:25.000Z"},
+    "muleOrderId": "MULE-ORD-20251108-002",
+    "environment": "PRODUCTION",
+    "source": "OCI",
+    "dialect": "OCI"
+  },
+  {
+    "orderId": "ORD-2025-003",
+    "sessionKey": "SESSION_003_GHI789",
+    "orderDate": {"$date": "2025-11-07T11:50:10.000Z"},
+    "orderType": "new",
+    "orderVersion": "1.0",
+    "customerId": "CUST-10003",
+    "customerName": "PartnerCorp Research Institute",
+    "total": {"$numberDecimal": "3420.00"},
+    "currency": "USD",
+    "taxAmount": {"$numberDecimal": "273.60"},
+    "shipTo": {
+      "name": "PartnerCorp Research Institute",
+      "street": "789 Innovation Way",
+      "city": "Austin",
+      "state": "TX",
+      "postalCode": "78701",
+      "country": "US",
+      "email": "bob.johnson@partnercorp.com",
+      "phone": "+1-512-555-0303"
+    },
+    "billTo": {
+      "name": "PartnerCorp Research Institute",
+      "street": "789 Innovation Way",
+      "city": "Austin",
+      "state": "TX",
+      "postalCode": "78701",
+      "country": "US"
+    },
+    "items": [
+      {
+        "lineNumber": 1,
+        "supplierPartId": "WAT-XEVO-TQ",
+        "description": "Xevo TQ-S micro Mass Spectrometer Maintenance Kit",
+        "quantity": 1,
+        "unitPrice": {"$numberDecimal": "2400.00"},
+        "extendedAmount": {"$numberDecimal": "2400.00"},
+        "currency": "USD",
+        "uom": "EA"
+      },
+      {
+        "lineNumber": 2,
+        "supplierPartId": "WAT-COL-SET-A",
+        "description": "Column Starter Set - Peptide Analysis",
+        "quantity": 1,
+        "unitPrice": {"$numberDecimal": "850.00"},
+        "extendedAmount": {"$numberDecimal": "850.00"},
+        "currency": "USD",
+        "uom": "EA"
+      },
+      {
+        "lineNumber": 3,
+        "supplierPartId": "WAT-GUARD-010",
+        "description": "VanGuard Pre-columns, BEH C18, 5/pk",
+        "quantity": 2,
+        "unitPrice": {"$numberDecimal": "85.00"},
+        "extendedAmount": {"$numberDecimal": "170.00"},
+        "currency": "USD",
+        "uom": "PK"
+      }
+    ],
+    "extrinsics": {
+      "RequestedDeliveryDate": "2025-11-21",
+      "ProjectCode": "RES-PROTEOMICS-2025",
+      "CostCenter": "CC-RES-ATX-05",
+      "Requester": "bob.johnson@partnercorp.com",
+      "PurchaseOrder": "PO-PARTNER-2025-0987"
+    },
+    "comments": "High priority - Equipment maintenance window scheduled",
+    "status": "CONFIRMED",
+    "receivedAt": {"$date": "2025-11-07T11:50:15.000Z"},
+    "processedAt": {"$date": "2025-11-07T11:51:42.000Z"},
+    "muleOrderId": "MULE-ORD-20251107-003",
+    "environment": "STAGING",
+    "source": "ARIBA",
+    "dialect": "cXML"
+  },
+  {
+    "orderId": "ORD-2025-005",
+    "sessionKey": "SESSION_005_MNO345",
+    "orderDate": {"$date": "2025-11-05T10:25:15.000Z"},
+    "orderType": "new",
+    "orderVersion": "1.0",
+    "customerId": "CUST-10005",
+    "customerName": "BuyerCorp Quality Labs",
+    "total": {"$numberDecimal": "567.25"},
+    "currency": "USD",
+    "taxAmount": {"$numberDecimal": "45.38"},
+    "shipTo": {
+      "name": "BuyerCorp Quality Labs",
+      "street": "321 Testing Lane",
+      "city": "Chicago",
+      "state": "IL",
+      "postalCode": "60601",
+      "country": "US",
+      "email": "charlie.brown@buyercorp.com",
+      "phone": "+1-312-555-0505"
+    },
+    "billTo": {
+      "name": "BuyerCorp Quality Labs",
+      "street": "321 Testing Lane",
+      "city": "Chicago",
+      "state": "IL",
+      "postalCode": "60601",
+      "country": "US"
+    },
+    "items": [
+      {
+        "lineNumber": 1,
+        "supplierPartId": "WAT-STD-MIX-01",
+        "description": "HPLC Standard Mix - Pharmaceutical Grade",
+        "quantity": 2,
+        "unitPrice": {"$numberDecimal": "175.00"},
+        "extendedAmount": {"$numberDecimal": "350.00"},
+        "currency": "USD",
+        "uom": "EA"
+      },
+      {
+        "lineNumber": 2,
+        "supplierPartId": "WAT-VIAL-AUTO-200",
+        "description": "2mL Autosampler Vials, Clear Glass, 200/pk",
+        "quantity": 1,
+        "unitPrice": {"$numberDecimal": "217.25"},
+        "extendedAmount": {"$numberDecimal": "217.25"},
+        "currency": "USD",
+        "uom": "PK"
+      }
+    ],
+    "extrinsics": {
+      "RequestedDeliveryDate": "2025-11-12",
+      "ProjectCode": "QC-ROUTINE-2025",
+      "Requester": "charlie.brown@buyercorp.com"
+    },
+    "comments": "Standard monthly replenishment order",
+    "status": "RECEIVED",
+    "receivedAt": {"$date": "2025-11-05T10:25:20.000Z"},
+    "processedAt": null,
+    "muleOrderId": null,
+    "environment": "PRODUCTION",
+    "source": "OCI",
+    "dialect": "OCI"
+  },
+  {
+    "orderId": "ORD-2025-007",
+    "sessionKey": "SESSION_007_STU901",
+    "orderDate": {"$date": "2025-11-03T12:40:50.000Z"},
+    "orderType": "new",
+    "orderVersion": "1.0",
+    "customerId": "CUST-10007",
+    "customerName": "Enterprise Analytical Services",
+    "total": {"$numberDecimal": "15750.99"},
+    "currency": "USD",
+    "taxAmount": {"$numberDecimal": "1260.08"},
+    "shipTo": {
+      "name": "Enterprise Analytical Services",
+      "street": "555 Corporate Parkway",
+      "city": "New York",
+      "state": "NY",
+      "postalCode": "10001",
+      "country": "US",
+      "email": "edward.norton@enterprise.com",
+      "phone": "+1-212-555-0707"
+    },
+    "billTo": {
+      "name": "Enterprise Analytical Services - Finance Dept",
+      "street": "555 Corporate Parkway, Floor 10",
+      "city": "New York",
+      "state": "NY",
+      "postalCode": "10001",
+      "country": "US"
+    },
+    "items": [
+      {
+        "lineNumber": 1,
+        "supplierPartId": "WAT-ACQUITY-PREMIER",
+        "description": "ACQUITY PREMIER System Annual Service Contract",
+        "quantity": 1,
+        "unitPrice": {"$numberDecimal": "8500.00"},
+        "extendedAmount": {"$numberDecimal": "8500.00"},
+        "currency": "USD",
+        "uom": "EA"
+      },
+      {
+        "lineNumber": 2,
+        "supplierPartId": "WAT-COL-BUNDLE-PRO",
+        "description": "Professional Column Bundle - Multi-Chemistry",
+        "quantity": 1,
+        "unitPrice": {"$numberDecimal": "4200.00"},
+        "extendedAmount": {"$numberDecimal": "4200.00"},
+        "currency": "USD",
+        "uom": "EA"
+      },
+      {
+        "lineNumber": 3,
+        "supplierPartId": "WAT-SOLVENT-YEARLY",
+        "description": "Annual Solvent Package - HPLC/UPLC Grade",
+        "quantity": 1,
+        "unitPrice": {"$numberDecimal": "2850.99"},
+        "extendedAmount": {"$numberDecimal": "2850.99"},
+        "currency": "USD",
+        "uom": "EA"
+      },
+      {
+        "lineNumber": 4,
+        "supplierPartId": "WAT-CONSUMABLE-KIT",
+        "description": "Quarterly Consumables Kit - Premium",
+        "quantity": 1,
+        "unitPrice": {"$numberDecimal": "200.00"},
+        "extendedAmount": {"$numberDecimal": "200.00"},
+        "currency": "USD",
+        "uom": "EA"
+      }
+    ],
+    "extrinsics": {
+      "RequestedDeliveryDate": "2025-11-17",
+      "ProjectCode": "ANNUAL-CONTRACT-2025",
+      "CostCenter": "CC-ENT-NY-MAIN",
+      "Requester": "edward.norton@enterprise.com",
+      "PurchaseOrder": "PO-ENT-2025-1150",
+      "ContractNumber": "CONTRACT-2025-WATERS-001"
+    },
+    "comments": "Annual service contract renewal and consumables package",
+    "status": "CONFIRMED",
+    "receivedAt": {"$date": "2025-11-03T12:40:55.000Z"},
+    "processedAt": {"$date": "2025-11-03T12:42:18.000Z"},
+    "muleOrderId": "MULE-ORD-20251103-007",
+    "environment": "PRODUCTION",
+    "source": "ARIBA",
+    "dialect": "cXML"
+  },
+  {
+    "orderId": "ORD-2025-008",
+    "sessionKey": "SESSION_008_VWX234",
+    "orderDate": {"$date": "2025-11-02T15:45:30.000Z"},
+    "orderType": "new",
+    "orderVersion": "1.0",
+    "customerId": "CUST-10008",
+    "customerName": "Solutions Biotech",
+    "total": {"$numberDecimal": "2340.00"},
+    "currency": "USD",
+    "taxAmount": {"$numberDecimal": "187.20"},
+    "shipTo": {
+      "name": "Solutions Biotech",
+      "street": "888 Biotech Drive",
+      "city": "Seattle",
+      "state": "WA",
+      "postalCode": "98101",
+      "country": "US",
+      "email": "frank.castle@solutions.com",
+      "phone": "+1-206-555-0808"
+    },
+    "billTo": {
+      "name": "Solutions Biotech",
+      "street": "888 Biotech Drive",
+      "city": "Seattle",
+      "state": "WA",
+      "postalCode": "98101",
+      "country": "US"
+    },
+    "items": [
+      {
+        "lineNumber": 1,
+        "supplierPartId": "WAT-LC-BIO-001",
+        "description": "BioAccord LC-MS System Sample Kit",
+        "quantity": 1,
+        "unitPrice": {"$numberDecimal": "1650.00"},
+        "extendedAmount": {"$numberDecimal": "1650.00"},
+        "currency": "USD",
+        "uom": "EA"
+      },
+      {
+        "lineNumber": 2,
+        "supplierPartId": "WAT-PROTEIN-COL",
+        "description": "Protein-Pak Hi Res Column Set",
+        "quantity": 1,
+        "unitPrice": {"$numberDecimal": "690.00"},
+        "extendedAmount": {"$numberDecimal": "690.00"},
+        "currency": "USD",
+        "uom": "EA"
+      }
+    ],
+    "extrinsics": {
+      "RequestedDeliveryDate": "2025-11-09",
+      "ProjectCode": "BIOTECH-PROTEIN-2025",
+      "CostCenter": "CC-BIOTECH-SEA",
+      "Requester": "frank.castle@solutions.com"
+    },
+    "comments": "New method development project",
+    "status": "CONFIRMED",
+    "receivedAt": {"$date": "2025-11-02T15:45:35.000Z"},
+    "processedAt": {"$date": "2025-11-02T15:46:52.000Z"},
+    "muleOrderId": "MULE-ORD-20251102-008",
+    "environment": "PRODUCTION",
+    "source": "OCI",
+    "dialect": "OCI"
+  },
+  {
+    "orderId": "ORD-2025-010",
+    "sessionKey": "SESSION_010_BCD890",
+    "orderDate": {"$date": "2025-10-31T13:15:45.000Z"},
+    "orderType": "new",
+    "orderVersion": "1.0",
+    "customerId": "CUST-10010",
+    "customerName": "Manufacturing Quality Control Inc",
+    "total": {"$numberDecimal": "4567.80"},
+    "currency": "USD",
+    "taxAmount": {"$numberDecimal": "365.42"},
+    "shipTo": {
+      "name": "Manufacturing Quality Control Inc",
+      "street": "999 Industrial Boulevard",
+      "city": "Detroit",
+      "state": "MI",
+      "postalCode": "48201",
+      "country": "US",
+      "email": "henry.ford@manufacturing.com",
+      "phone": "+1-313-555-1010"
+    },
+    "billTo": {
+      "name": "Manufacturing Quality Control Inc",
+      "street": "999 Industrial Boulevard",
+      "city": "Detroit",
+      "state": "MI",
+      "postalCode": "48201",
+      "country": "US"
+    },
+    "items": [
+      {
+        "lineNumber": 1,
+        "supplierPartId": "WAT-QC-BUNDLE-001",
+        "description": "Quality Control Starter Bundle - Industrial",
+        "quantity": 1,
+        "unitPrice": {"$numberDecimal": "3200.00"},
+        "extendedAmount": {"$numberDecimal": "3200.00"},
+        "currency": "USD",
+        "uom": "EA"
+      },
+      {
+        "lineNumber": 2,
+        "supplierPartId": "WAT-STANDARD-IND",
+        "description": "Industrial Standards Set - Complete",
+        "quantity": 1,
+        "unitPrice": {"$numberDecimal": "875.00"},
+        "extendedAmount": {"$numberDecimal": "875.00"},
+        "currency": "USD",
+        "uom": "EA"
+      },
+      {
+        "lineNumber": 3,
+        "supplierPartId": "WAT-FILTER-IND-100",
+        "description": "Industrial Grade Filters, 0.45µm, 100/pk",
+        "quantity": 2,
+        "unitPrice": {"$numberDecimal": "246.40"},
+        "extendedAmount": {"$numberDecimal": "492.80"},
+        "currency": "USD",
+        "uom": "PK"
+      }
+    ],
+    "extrinsics": {
+      "RequestedDeliveryDate": "2025-11-07",
+      "ProjectCode": "MFG-QC-SETUP-2025",
+      "CostCenter": "CC-MFG-DET-01",
+      "Requester": "henry.ford@manufacturing.com",
+      "PurchaseOrder": "PO-MFG-2025-550"
+    },
+    "comments": "New QC lab setup",
+    "status": "CONFIRMED",
+    "receivedAt": {"$date": "2025-10-31T13:15:50.000Z"},
+    "processedAt": {"$date": "2025-10-31T13:17:05.000Z"},
+    "muleOrderId": "MULE-ORD-20251031-010",
+    "environment": "PRODUCTION",
+    "source": "ARIBA",
+    "dialect": "cXML"
+  }
+]

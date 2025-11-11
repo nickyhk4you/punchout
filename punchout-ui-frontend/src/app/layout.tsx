@@ -23,13 +23,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        {/* Components will be loaded client-side */}
-        <div suppressHydrationWarning>
-          {typeof window === 'undefined' ? null : <StylesLoader />}
-          {typeof window === 'undefined' ? null : <NavBar />}
-          {typeof window === 'undefined' ? null : <BootstrapClient />}
-        </div>
-        <main style={{minHeight: '100vh', backgroundColor: '#f8f9fa', paddingTop: '60px'}}>
+        {/* Load NavBar and components */}
+        <StylesLoader />
+        <NavBar />
+        <BootstrapClient />
+        <main className="pt-16">
           {children}
         </main>
         <footer className="bg-primary text-white py-4 mt-5">

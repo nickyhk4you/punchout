@@ -38,3 +38,4 @@ bin/
 /.idea
 /punchout-gateway/target
 /punchout-mock-service/target
+/punchout-mock-service/target
