@@ -10,6 +10,9 @@ spring:
 server:
   port: 9090
 
+app:
+  environment: ${APP_ENVIRONMENT:dev}
+
 logging:
   level:
     com.waters.punchout.gateway: DEBUG

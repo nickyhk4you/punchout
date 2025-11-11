@@ -3,6 +3,7 @@ package com.waters.punchout.gateway.client;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.waters.punchout.gateway.logging.NetworkRequestLogger;
 import com.waters.punchout.gateway.model.PunchOutRequest;
+import com.waters.punchout.gateway.service.EnvironmentConfigService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -21,22 +22,31 @@ public class AuthServiceClient {
     private final WebClient webClient;
     private final NetworkRequestLogger networkRequestLogger;
     private final ObjectMapper objectMapper;
-    private final String authUrl;
+    private final EnvironmentConfigService environmentConfigService;
+    
+    @Value("${app.environment:dev}")
+    private String currentEnvironment;
 
     public AuthServiceClient(
             WebClient.Builder webClientBuilder,
             NetworkRequestLogger networkRequestLogger,
             ObjectMapper objectMapper,
-            @Value("${thirdparty.auth.url}") String authUrl
+            EnvironmentConfigService environmentConfigService
     ) {
         this.webClient = webClientBuilder.build();
         this.networkRequestLogger = networkRequestLogger;
         this.objectMapper = objectMapper;
-        this.authUrl = authUrl;
+        this.environmentConfigService = environmentConfigService;
     }
 
     public String getAuthToken(PunchOutRequest request) {
-        log.info("Requesting auth token for sessionKey={}", request.getSessionKey());
+        return getAuthToken(request, currentEnvironment);
+    }
+
+    public String getAuthToken(PunchOutRequest request, String environment) {
+        String authUrl = environmentConfigService.getAuthServiceUrl(environment);
+        log.info("Requesting auth token for sessionKey={}, environment={}, url={}", 
+                request.getSessionKey(), environment, authUrl);
         
         long startTime = System.currentTimeMillis();
         String requestBody = null;

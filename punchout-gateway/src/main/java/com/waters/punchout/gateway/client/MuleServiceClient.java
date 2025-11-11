@@ -2,6 +2,7 @@ package com.waters.punchout.gateway.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.waters.punchout.gateway.logging.NetworkRequestLogger;
+import com.waters.punchout.gateway.service.EnvironmentConfigService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -20,22 +21,31 @@ public class MuleServiceClient {
     private final WebClient webClient;
     private final NetworkRequestLogger networkRequestLogger;
     private final ObjectMapper objectMapper;
-    private final String muleUrl;
+    private final EnvironmentConfigService environmentConfigService;
+    
+    @Value("${app.environment:dev}")
+    private String currentEnvironment;
 
     public MuleServiceClient(
             WebClient.Builder webClientBuilder,
             NetworkRequestLogger networkRequestLogger,
             ObjectMapper objectMapper,
-            @Value("${thirdparty.mule.url}") String muleUrl
+            EnvironmentConfigService environmentConfigService
     ) {
         this.webClient = webClientBuilder.build();
         this.networkRequestLogger = networkRequestLogger;
         this.objectMapper = objectMapper;
-        this.muleUrl = muleUrl;
+        this.environmentConfigService = environmentConfigService;
     }
 
     public Map<String, Object> sendMuleRequest(Map<String, Object> payload, String token, String sessionKey) {
-        log.info("Sending Mule request for sessionKey={}", sessionKey);
+        return sendMuleRequest(payload, token, sessionKey, currentEnvironment);
+    }
+
+    public Map<String, Object> sendMuleRequest(Map<String, Object> payload, String token, String sessionKey, String environment) {
+        String muleUrl = environmentConfigService.getMuleServiceUrl(environment);
+        log.info("Sending Mule request for sessionKey={}, environment={}, url={}", 
+                sessionKey, environment, muleUrl);
         
         long startTime = System.currentTimeMillis();
         String requestBody = null;
