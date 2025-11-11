@@ -1,47 +1,47 @@
-# Multi-stage Dockerfile for Next.js application
-
-# Stage 1: Dependencies
-FROM node:18-alpine AS deps
-RUN apk add --no-cache libc6-compat
-WORKDIR /app
-
-COPY package.json package-lock.json* ./
-RUN npm ci
-
-# Stage 2: Builder
+# Multi-stage build for Next.js Frontend
 FROM node:18-alpine AS builder
+
 WORKDIR /app
 
-ARG ENVIRONMENT=production
-ENV NEXT_PUBLIC_ENV=$ENVIRONMENT
+# Copy package files
+COPY package*.json ./
 
-COPY --from=deps /app/node_modules ./node_modules
+# Install dependencies
+RUN npm ci --only=production
+
+# Copy source code
 COPY . .
 
-# Copy environment-specific .env file
-COPY .env.${ENVIRONMENT} .env.production
-
+# Build application
 RUN npm run build
 
-# Stage 3: Runner
-FROM node:18-alpine AS runner
+# Production stage
+FROM node:18-alpine
+
+# Create non-root user
+RUN addgroup -S app && adduser -S app -G app
+
 WORKDIR /app
 
-ENV NODE_ENV production
-ENV NEXT_TELEMETRY_DISABLED 1
+# Copy built application from builder
+COPY --from=builder --chown=app:app /app/.next ./.next
+COPY --from=builder --chown=app:app /app/node_modules ./node_modules
+COPY --from=builder --chown=app:app /app/package.json ./package.json
+COPY --from=builder --chown=app:app /app/public ./public
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+# Switch to non-root user
+USER app
 
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+# Environment variables
+ENV NODE_ENV=production
+ENV PORT=3000
 
-USER nextjs
-
+# Expose port
 EXPOSE 3000
 
-ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000 || exit 1
 
-CMD ["node", "server.js"]
+# Run application
+CMD ["npm", "start"]

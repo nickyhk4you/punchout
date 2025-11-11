@@ -5,6 +5,7 @@ import { sessionAPI } from '@/lib/api';
 import { PunchOutSession, SessionFilter } from '@/types';
 import Link from 'next/link';
 import Breadcrumb from '@/components/Breadcrumb';
+import Pagination from '@/components/Pagination';
 
 export default function SessionsPage() {
   const [sessions, setSessions] = useState<PunchOutSession[]>([]);
@@ -12,6 +13,8 @@ export default function SessionsPage() {
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<SessionFilter>({});
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(25);
 
   useEffect(() => {
     loadSessions();
@@ -40,6 +43,23 @@ export default function SessionsPage() {
     return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
   });
 
+  // Pagination
+  const totalItems = sortedSessions.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedSessions = sortedSessions.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleItemsPerPageChange = (newItemsPerPage: number) => {
+    setItemsPerPage(newItemsPerPage);
+    setCurrentPage(1);
+  };
+
   const handleFilterChange = (key: keyof SessionFilter, value: string) => {
     setFilters(prev => ({
       ...prev,
@@ -49,6 +69,7 @@ export default function SessionsPage() {
 
   const clearFilters = () => {
     setFilters({});
+    setCurrentPage(1);
   };
 
   const formatDate = (dateString?: string) => {
@@ -178,26 +199,23 @@ export default function SessionsPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
+            <table className="w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
                     Session Key
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">
                     Operation
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">
                     Environment
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">
                     Contact Email
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Order Value
-                  </th>
                   <th 
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none w-1/5"
                     onClick={toggleSort}
                   >
                     <div className="flex items-center space-x-1">
@@ -207,15 +225,15 @@ export default function SessionsPage() {
                       </span>
                     </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">
                     Actions
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {sortedSessions.map((session) => (
+                {paginatedSessions.map((session) => (
                   <tr key={session.sessionKey} className="hover:bg-blue-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-4 whitespace-nowrap">
                       <Link
                         href={`/sessions/${session.sessionKey}`}
                         className="text-sm font-semibold text-blue-600 hover:text-blue-900 hover:underline cursor-pointer"
@@ -223,7 +241,7 @@ export default function SessionsPage() {
                         {session.sessionKey}
                       </Link>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                         session.operation === 'CREATE' ? 'bg-green-100 text-green-800' :
                         session.operation === 'EDIT' ? 'bg-yellow-100 text-yellow-800' :
@@ -232,7 +250,7 @@ export default function SessionsPage() {
                         {session.operation}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                         session.environment === 'PRODUCTION' ? 'bg-red-100 text-red-800' :
                         session.environment === 'STAGING' ? 'bg-orange-100 text-orange-800' :
@@ -241,16 +259,13 @@ export default function SessionsPage() {
                         {session.environment}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                       {session.contactEmail || '-'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatCurrency(session.orderValue)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
                       {formatDate(session.sessionDate)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
                       <Link
                         href={`/sessions/${session.sessionKey}`}
                         className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all font-semibold"
@@ -265,15 +280,19 @@ export default function SessionsPage() {
             </table>
           </div>
         )}
+        
+        {/* Pagination */}
+        {!loading && !error && sessions.length > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            itemsPerPage={itemsPerPage}
+            onPageChange={handlePageChange}
+            onItemsPerPageChange={handleItemsPerPageChange}
+          />
+        )}
       </div>
-
-      {/* Summary */}
-      {!loading && !error && sessions.length > 0 && (
-        <div className="mt-4 text-sm text-gray-600 flex items-center">
-          <i className="fas fa-info-circle text-blue-600 mr-2"></i>
-          Showing {sessions.length} session{sessions.length !== 1 ? 's' : ''}
-        </div>
-      )}
       </div>
     </div>
   );

@@ -4,10 +4,13 @@ import { useState, useEffect } from 'react';
 import { Order } from '@/types';
 import { orderAPIv2 } from '@/lib/api';
 import Link from 'next/link';
+import Pagination from '@/components/Pagination';
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(25);
   const [filters, setFilters] = useState({
     status: '',
     customerId: '',
@@ -58,6 +61,28 @@ export default function OrdersPage() {
       day: 'numeric',
       year: 'numeric'
     });
+  };
+
+  // Sort orders by date (newest first)
+  const sortedOrders = [...orders].sort((a, b) => {
+    return new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime();
+  });
+
+  // Pagination
+  const totalItems = sortedOrders.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedOrders = sortedOrders.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleItemsPerPageChange = (newItemsPerPage: number) => {
+    setItemsPerPage(newItemsPerPage);
+    setCurrentPage(1);
   };
 
   return (
@@ -115,7 +140,10 @@ export default function OrdersPage() {
             
             <div className="flex items-end">
               <button
-                onClick={() => setFilters({ status: '', customerId: '', environment: '' })}
+                onClick={() => {
+                  setFilters({ status: '', customerId: '', environment: '' });
+                  setCurrentPage(1);
+                }}
                 className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
               >
                 Clear Filters
@@ -156,7 +184,7 @@ export default function OrdersPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {orders.map((order) => (
+                  {paginatedOrders.map((order) => (
                     <tr key={order.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <Link 
@@ -192,6 +220,18 @@ export default function OrdersPage() {
                 </tbody>
               </table>
             </div>
+          )}
+          
+          {/* Pagination */}
+          {!loading && orders.length > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              itemsPerPage={itemsPerPage}
+              onPageChange={handlePageChange}
+              onItemsPerPageChange={handleItemsPerPageChange}
+            />
           )}
         </div>
       </div>

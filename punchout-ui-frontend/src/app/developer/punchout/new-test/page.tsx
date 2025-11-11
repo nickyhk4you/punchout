@@ -148,7 +148,7 @@ export default function NewTestPage() {
         testDate: new Date().toISOString(),
         status: response.ok ? 'SUCCESS' : 'FAILED',
         notes,
-        sessionKey,
+        sessionKey: sessionKey || undefined,
       });
       
     } catch (err: any) {
@@ -348,7 +348,7 @@ export default function NewTestPage() {
             )}
             {!showPayloadEditor && (
               <div className="text-sm text-gray-500 bg-gray-50 p-3 rounded border">
-                Click "Edit Payload" to customize the cXML request
+                Click &ldquo;Edit Payload&rdquo; to customize the cXML request
               </div>
             )}
           </div>
