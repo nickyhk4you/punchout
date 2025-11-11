@@ -59,6 +59,18 @@ const NavBar = () => {
             </Link>
             
             <Link 
+              href="/invoices" 
+              className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                pathname?.startsWith('/invoices') 
+                  ? 'bg-white text-orange-600 shadow-lg' 
+                  : 'text-white hover:bg-white hover:bg-opacity-10'
+              }`}
+            >
+              <i className="fas fa-file-invoice-dollar mr-2"></i>
+              <span className="hidden md:inline">Invoices</span>
+            </Link>
+            
+            <Link 
               href="/developer/punchout" 
               className={`px-4 py-2 rounded-lg font-medium transition-all ${
                 pathname?.startsWith('/developer') 

@@ -54,6 +54,7 @@ export interface NetworkRequest {
   id: string;
   sessionKey: string;
   orderId?: string;
+  invoiceNumber?: string;
   requestId: string;
   timestamp: string;
   direction: 'INBOUND' | 'OUTBOUND';
@@ -185,4 +186,35 @@ export interface CxmlTemplate {
   createdAt?: string;
   updatedAt?: string;
   createdBy?: string;
+}
+
+export interface Invoice {
+  id: string;
+  invoiceNumber: string;
+  orderId?: string;
+  sessionKey?: string;
+  poNumber: string;
+  routeName: string;
+  environment: string;
+  flags?: string;
+  invoiceTotal: number;
+  currency: string;
+  receivedDate: string;
+  invoiceDate: string;
+  dueDate?: string;
+  status: string;
+  customerId: string;
+  customerName: string;
+  supplierName?: string;
+  taxAmount?: number;
+  shippingAmount?: number;
+  subtotal?: number;
+  shipTo?: any;
+  billTo?: any;
+  lineItems?: any[];
+  paymentTerms?: string;
+  notes?: string;
+  processedAt?: string;
+  paidAt?: string;
+  source?: string;
 }

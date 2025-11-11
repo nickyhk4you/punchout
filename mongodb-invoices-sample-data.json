@@ -1,0 +1,334 @@
+[
+  {
+    "invoiceNumber": "INV-2025-0001",
+    "orderId": "ORD-2025-001",
+    "sessionKey": "SESSION_001_ABC123",
+    "poNumber": "PO-WATERS-2025-001",
+    "routeName": "standard-punchout",
+    "environment": "PRODUCTION",
+    "flags": "AUTO_PAID,CONFIRMED",
+    "invoiceTotal": {"$numberDecimal": "1350.54"},
+    "currency": "USD",
+    "receivedDate": {"$date": "2025-11-10T10:00:00.000Z"},
+    "invoiceDate": {"$date": "2025-11-09T09:45:30.000Z"},
+    "dueDate": {"$date": "2025-12-09T23:59:59.000Z"},
+    "status": "PAID",
+    "customerId": "CUST-10001",
+    "customerName": "WatersCorp Laboratory Supply",
+    "supplierName": "Waters Corporation",
+    "taxAmount": {"$numberDecimal": "100.04"},
+    "shippingAmount": {"$numberDecimal": "0.00"},
+    "subtotal": {"$numberDecimal": "1250.50"},
+    "shipTo": {
+      "name": "WatersCorp Laboratory Supply",
+      "street": "123 Science Park Drive",
+      "city": "Boston",
+      "state": "MA",
+      "postalCode": "02101",
+      "country": "US"
+    },
+    "billTo": {
+      "name": "WatersCorp Laboratory Supply - AP",
+      "street": "123 Science Park Drive",
+      "city": "Boston",
+      "state": "MA",
+      "postalCode": "02101",
+      "country": "US"
+    },
+    "lineItems": [
+      {
+        "lineNumber": 1,
+        "partNumber": "WAT-LC-001",
+        "description": "ACQUITY UPLC BEH C18 Column, 1.7µm, 2.1 x 50 mm",
+        "quantity": 2,
+        "unitPrice": {"$numberDecimal": "450.00"},
+        "extendedAmount": {"$numberDecimal": "900.00"}
+      },
+      {
+        "lineNumber": 2,
+        "partNumber": "WAT-STD-002",
+        "description": "Calibration Standard Set - HPLC Grade",
+        "quantity": 1,
+        "unitPrice": {"$numberDecimal": "250.50"},
+        "extendedAmount": {"$numberDecimal": "250.50"}
+      },
+      {
+        "lineNumber": 3,
+        "partNumber": "WAT-VIAL-100",
+        "description": "12x32mm Screw Neck Vials, Amber, 100/pk",
+        "quantity": 1,
+        "unitPrice": {"$numberDecimal": "100.00"},
+        "extendedAmount": {"$numberDecimal": "100.00"}
+      }
+    ],
+    "paymentTerms": "Net 30",
+    "notes": "Payment processed automatically",
+    "processedAt": {"$date": "2025-11-10T10:05:00.000Z"},
+    "paidAt": {"$date": "2025-11-10T14:00:00.000Z"},
+    "source": "ARIBA"
+  },
+  {
+    "invoiceNumber": "INV-2025-0002",
+    "orderId": "ORD-2025-002",
+    "sessionKey": "SESSION_002_DEF456",
+    "poNumber": "PO-CLIENT-2025-456",
+    "routeName": "express-punchout",
+    "environment": "PRODUCTION",
+    "flags": "PENDING_REVIEW",
+    "invoiceTotal": {"$numberDecimal": "962.01"},
+    "currency": "USD",
+    "receivedDate": {"$date": "2025-11-09T08:00:00.000Z"},
+    "invoiceDate": {"$date": "2025-11-08T14:35:45.000Z"},
+    "dueDate": {"$date": "2025-12-08T23:59:59.000Z"},
+    "status": "PENDING",
+    "customerId": "CUST-10002",
+    "customerName": "ClientCorp Pharmaceuticals",
+    "supplierName": "Waters Corporation",
+    "taxAmount": {"$numberDecimal": "71.26"},
+    "shippingAmount": {"$numberDecimal": "0.00"},
+    "subtotal": {"$numberDecimal": "890.75"},
+    "shipTo": {
+      "name": "ClientCorp Pharmaceuticals",
+      "street": "456 Research Boulevard",
+      "city": "San Diego",
+      "state": "CA",
+      "postalCode": "92101",
+      "country": "US"
+    },
+    "billTo": {
+      "name": "ClientCorp Pharmaceuticals - Accounts Payable",
+      "street": "789 Corporate Center",
+      "city": "San Diego",
+      "state": "CA",
+      "postalCode": "92102",
+      "country": "US"
+    },
+    "lineItems": [
+      {
+        "lineNumber": 1,
+        "partNumber": "WAT-FILTER-005",
+        "description": "0.22µm Syringe Filter, PVDF, 25mm, 100/pk",
+        "quantity": 3,
+        "unitPrice": {"$numberDecimal": "185.00"},
+        "extendedAmount": {"$numberDecimal": "555.00"}
+      },
+      {
+        "lineNumber": 2,
+        "partNumber": "WAT-SOL-ACN",
+        "description": "Acetonitrile, HPLC Grade, 4L",
+        "quantity": 1,
+        "unitPrice": {"$numberDecimal": "335.75"},
+        "extendedAmount": {"$numberDecimal": "335.75"}
+      }
+    ],
+    "paymentTerms": "Net 45",
+    "notes": "Awaiting customer approval",
+    "processedAt": {"$date": "2025-11-09T08:10:00.000Z"},
+    "paidAt": null,
+    "source": "OCI"
+  },
+  {
+    "invoiceNumber": "INV-2025-0003",
+    "orderId": "ORD-2025-003",
+    "sessionKey": "SESSION_003_GHI789",
+    "poNumber": "PO-PARTNER-2025-0987",
+    "routeName": "standard-punchout",
+    "environment": "STAGING",
+    "flags": "CONFIRMED",
+    "invoiceTotal": {"$numberDecimal": "3693.60"},
+    "currency": "USD",
+    "receivedDate": {"$date": "2025-11-08T12:00:00.000Z"},
+    "invoiceDate": {"$date": "2025-11-07T11:50:10.000Z"},
+    "dueDate": {"$date": "2025-12-07T23:59:59.000Z"},
+    "status": "CONFIRMED",
+    "customerId": "CUST-10003",
+    "customerName": "PartnerCorp Research Institute",
+    "supplierName": "Waters Corporation",
+    "taxAmount": {"$numberDecimal": "273.60"},
+    "shippingAmount": {"$numberDecimal": "0.00"},
+    "subtotal": {"$numberDecimal": "3420.00"},
+    "shipTo": {
+      "name": "PartnerCorp Research Institute",
+      "street": "789 Innovation Way",
+      "city": "Austin",
+      "state": "TX",
+      "postalCode": "78701",
+      "country": "US"
+    },
+    "billTo": {
+      "name": "PartnerCorp Research Institute",
+      "street": "789 Innovation Way",
+      "city": "Austin",
+      "state": "TX",
+      "postalCode": "78701",
+      "country": "US"
+    },
+    "lineItems": [
+      {
+        "lineNumber": 1,
+        "partNumber": "WAT-XEVO-TQ",
+        "description": "Xevo TQ-S micro Mass Spectrometer Maintenance Kit",
+        "quantity": 1,
+        "unitPrice": {"$numberDecimal": "2400.00"},
+        "extendedAmount": {"$numberDecimal": "2400.00"}
+      },
+      {
+        "lineNumber": 2,
+        "partNumber": "WAT-COL-SET-A",
+        "description": "Column Starter Set - Peptide Analysis",
+        "quantity": 1,
+        "unitPrice": {"$numberDecimal": "850.00"},
+        "extendedAmount": {"$numberDecimal": "850.00"}
+      },
+      {
+        "lineNumber": 3,
+        "partNumber": "WAT-GUARD-010",
+        "description": "VanGuard Pre-columns, BEH C18, 5/pk",
+        "quantity": 2,
+        "unitPrice": {"$numberDecimal": "85.00"},
+        "extendedAmount": {"$numberDecimal": "170.00"}
+      }
+    ],
+    "paymentTerms": "Net 30",
+    "notes": "High priority maintenance kit",
+    "processedAt": {"$date": "2025-11-08T12:15:00.000Z"},
+    "paidAt": null,
+    "source": "ARIBA"
+  },
+  {
+    "invoiceNumber": "INV-2025-0007",
+    "orderId": "ORD-2025-007",
+    "sessionKey": "SESSION_007_STU901",
+    "poNumber": "PO-ENT-2025-1150",
+    "routeName": "standard-punchout",
+    "environment": "PRODUCTION",
+    "flags": "AUTO_PAID,CONFIRMED,PRIORITY",
+    "invoiceTotal": {"$numberDecimal": "17011.07"},
+    "currency": "USD",
+    "receivedDate": {"$date": "2025-11-04T09:00:00.000Z"},
+    "invoiceDate": {"$date": "2025-11-03T12:40:50.000Z"},
+    "dueDate": {"$date": "2025-12-03T23:59:59.000Z"},
+    "status": "PAID",
+    "customerId": "CUST-10007",
+    "customerName": "Enterprise Analytical Services",
+    "supplierName": "Waters Corporation",
+    "taxAmount": {"$numberDecimal": "1260.08"},
+    "shippingAmount": {"$numberDecimal": "0.00"},
+    "subtotal": {"$numberDecimal": "15750.99"},
+    "shipTo": {
+      "name": "Enterprise Analytical Services",
+      "street": "555 Corporate Parkway",
+      "city": "New York",
+      "state": "NY",
+      "postalCode": "10001",
+      "country": "US"
+    },
+    "billTo": {
+      "name": "Enterprise Analytical Services - Finance Dept",
+      "street": "555 Corporate Parkway, Floor 10",
+      "city": "New York",
+      "state": "NY",
+      "postalCode": "10001",
+      "country": "US"
+    },
+    "lineItems": [
+      {
+        "lineNumber": 1,
+        "partNumber": "WAT-ACQUITY-PREMIER",
+        "description": "ACQUITY PREMIER System Annual Service Contract",
+        "quantity": 1,
+        "unitPrice": {"$numberDecimal": "8500.00"},
+        "extendedAmount": {"$numberDecimal": "8500.00"}
+      },
+      {
+        "lineNumber": 2,
+        "partNumber": "WAT-COL-BUNDLE-PRO",
+        "description": "Professional Column Bundle - Multi-Chemistry",
+        "quantity": 1,
+        "unitPrice": {"$numberDecimal": "4200.00"},
+        "extendedAmount": {"$numberDecimal": "4200.00"}
+      },
+      {
+        "lineNumber": 3,
+        "partNumber": "WAT-SOLVENT-YEARLY",
+        "description": "Annual Solvent Package - HPLC/UPLC Grade",
+        "quantity": 1,
+        "unitPrice": {"$numberDecimal": "2850.99"},
+        "extendedAmount": {"$numberDecimal": "2850.99"}
+      },
+      {
+        "lineNumber": 4,
+        "partNumber": "WAT-CONSUMABLE-KIT",
+        "description": "Quarterly Consumables Kit - Premium",
+        "quantity": 1,
+        "unitPrice": {"$numberDecimal": "200.00"},
+        "extendedAmount": {"$numberDecimal": "200.00"}
+      }
+    ],
+    "paymentTerms": "Net 15",
+    "notes": "Annual contract renewal - Priority customer",
+    "processedAt": {"$date": "2025-11-04T09:10:00.000Z"},
+    "paidAt": {"$date": "2025-11-05T10:00:00.000Z"},
+    "source": "ARIBA"
+  },
+  {
+    "invoiceNumber": "INV-2025-0008",
+    "orderId": "ORD-2025-008",
+    "sessionKey": "SESSION_008_VWX234",
+    "poNumber": "PO-SOL-BIO-2025-123",
+    "routeName": "standard-punchout",
+    "environment": "PRODUCTION",
+    "flags": "CONFIRMED",
+    "invoiceTotal": {"$numberDecimal": "2527.20"},
+    "currency": "USD",
+    "receivedDate": {"$date": "2025-11-03T14:00:00.000Z"},
+    "invoiceDate": {"$date": "2025-11-02T15:45:30.000Z"},
+    "dueDate": {"$date": "2025-12-02T23:59:59.000Z"},
+    "status": "CONFIRMED",
+    "customerId": "CUST-10008",
+    "customerName": "Solutions Biotech",
+    "supplierName": "Waters Corporation",
+    "taxAmount": {"$numberDecimal": "187.20"},
+    "shippingAmount": {"$numberDecimal": "0.00"},
+    "subtotal": {"$numberDecimal": "2340.00"},
+    "shipTo": {
+      "name": "Solutions Biotech",
+      "street": "888 Biotech Drive",
+      "city": "Seattle",
+      "state": "WA",
+      "postalCode": "98101",
+      "country": "US"
+    },
+    "billTo": {
+      "name": "Solutions Biotech",
+      "street": "888 Biotech Drive",
+      "city": "Seattle",
+      "state": "WA",
+      "postalCode": "98101",
+      "country": "US"
+    },
+    "lineItems": [
+      {
+        "lineNumber": 1,
+        "partNumber": "WAT-LC-BIO-001",
+        "description": "BioAccord LC-MS System Sample Kit",
+        "quantity": 1,
+        "unitPrice": {"$numberDecimal": "1650.00"},
+        "extendedAmount": {"$numberDecimal": "1650.00"}
+      },
+      {
+        "lineNumber": 2,
+        "partNumber": "WAT-PROTEIN-COL",
+        "description": "Protein-Pak Hi Res Column Set",
+        "quantity": 1,
+        "unitPrice": {"$numberDecimal": "690.00"},
+        "extendedAmount": {"$numberDecimal": "690.00"}
+      }
+    ],
+    "paymentTerms": "Net 30",
+    "notes": "New method development project",
+    "processedAt": {"$date": "2025-11-03T14:15:00.000Z"},
+    "paidAt": null,
+    "source": "OCI"
+  }
+]

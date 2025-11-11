@@ -1,33 +1,33 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Order } from '@/types';
-import { orderAPIv2 } from '@/lib/api';
+import { Invoice } from '@/types';
+import { invoiceAPI } from '@/lib/api';
 import Link from 'next/link';
 import Pagination from '@/components/Pagination';
+import { formatCurrency, formatDate } from '@/lib/utils/formatters';
 
-export default function OrdersPage() {
-  const [orders, setOrders] = useState<Order[]>([]);
+export default function InvoicesPage() {
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(25);
   const [filters, setFilters] = useState({
     status: '',
-    customerId: '',
     environment: ''
   });
 
   useEffect(() => {
-    loadOrders();
+    loadInvoices();
   }, [filters]);
 
-  const loadOrders = async () => {
+  const loadInvoices = async () => {
     try {
       setLoading(true);
-      const data = await orderAPIv2.getAllOrders(filters);
-      setOrders(data);
+      const data = await invoiceAPI.getAllInvoices(filters);
+      setInvoices(data);
     } catch (error) {
-      console.error('Failed to load orders:', error);
+      console.error('Failed to load invoices:', error);
     } finally {
       setLoading(false);
     }
@@ -35,9 +35,9 @@ export default function OrdersPage() {
 
   const getStatusBadge = (status: string) => {
     const statusColors: Record<string, string> = {
-      'RECEIVED': 'bg-blue-100 text-blue-800',
-      'CONFIRMED': 'bg-green-100 text-green-800',
-      'PROCESSING': 'bg-yellow-100 text-yellow-800',
+      'PAID': 'bg-green-100 text-green-800',
+      'PENDING': 'bg-yellow-100 text-yellow-800',
+      'CONFIRMED': 'bg-blue-100 text-blue-800',
       'FAILED': 'bg-red-100 text-red-800'
     };
     
@@ -48,32 +48,17 @@ export default function OrdersPage() {
     );
   };
 
-  const formatCurrency = (amount: number, currency: string = 'USD') => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency
-    }).format(amount);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
-  };
-
-  // Sort orders by date (newest first)
-  const sortedOrders = [...orders].sort((a, b) => {
-    return new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime();
+  // Sort invoices by date (newest first)
+  const sortedInvoices = [...invoices].sort((a, b) => {
+    return new Date(b.receivedDate).getTime() - new Date(a.receivedDate).getTime();
   });
 
   // Pagination
-  const totalItems = sortedOrders.length;
+  const totalItems = sortedInvoices.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedOrders = sortedOrders.slice(startIndex, endIndex);
+  const paginatedInvoices = sortedInvoices.slice(startIndex, endIndex);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -87,17 +72,17 @@ export default function OrdersPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      <div className="bg-gradient-to-r from-green-600 to-teal-600 text-white py-16 px-6 shadow-lg">
+      <div className="bg-gradient-to-r from-orange-600 to-amber-600 text-white py-16 px-6 shadow-lg">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-4xl font-bold mb-2">Orders</h1>
-          <p className="text-xl text-green-100">View and manage all customer orders</p>
+          <h1 className="text-4xl font-bold mb-2">Invoices</h1>
+          <p className="text-xl text-orange-100">View and manage all invoices</p>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-6">
           <h2 className="text-lg font-semibold mb-4">
-            <i className="fas fa-filter text-green-600 mr-2"></i>
+            <i className="fas fa-filter text-orange-600 mr-2"></i>
             Filters
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -108,12 +93,12 @@ export default function OrdersPage() {
               <select
                 value={filters.status}
                 onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
               >
                 <option value="">All</option>
-                <option value="RECEIVED">Received</option>
+                <option value="PAID">Paid</option>
+                <option value="PENDING">Pending</option>
                 <option value="CONFIRMED">Confirmed</option>
-                <option value="PROCESSING">Processing</option>
                 <option value="FAILED">Failed</option>
               </select>
             </div>
@@ -125,7 +110,7 @@ export default function OrdersPage() {
               <select
                 value={filters.environment}
                 onChange={(e) => setFilters({ ...filters, environment: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
               >
                 <option value="">All</option>
                 <option value="DEVELOPMENT">Development</option>
@@ -134,23 +119,10 @@ export default function OrdersPage() {
               </select>
             </div>
             
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Customer ID
-              </label>
-              <input
-                type="text"
-                value={filters.customerId}
-                onChange={(e) => setFilters({ ...filters, customerId: e.target.value })}
-                placeholder="Enter customer ID"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-              />
-            </div>
-            
-            <div className="flex items-end">
+            <div className="md:col-span-2 flex items-end">
               <button
                 onClick={() => {
-                  setFilters({ status: '', customerId: '', environment: '' });
+                  setFilters({ status: '', environment: '' });
                   setCurrentPage(1);
                 }}
                 className="w-full px-4 py-2 bg-gradient-to-r from-gray-200 to-gray-300 text-gray-700 rounded-lg hover:from-gray-300 hover:to-gray-400 transition-all font-semibold"
@@ -165,18 +137,18 @@ export default function OrdersPage() {
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           <div className="p-6 border-b border-gray-200">
             <h2 className="text-xl font-semibold">
-              Orders ({orders.length})
+              Invoices ({invoices.length})
             </h2>
           </div>
 
           {loading ? (
             <div className="p-12 text-center">
-              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
-              <p className="mt-4 text-gray-600">Loading orders...</p>
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
+              <p className="mt-4 text-gray-600">Loading invoices...</p>
             </div>
-          ) : orders.length === 0 ? (
+          ) : invoices.length === 0 ? (
             <div className="p-12 text-center text-gray-500">
-              <p className="text-lg">No orders found</p>
+              <p className="text-lg">No invoices found</p>
               <p className="text-sm mt-2">Try adjusting your filters</p>
             </div>
           ) : (
@@ -184,46 +156,57 @@ export default function OrdersPage() {
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice Number</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PO Number</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Route Name</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Environment</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Flags</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice Total</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Currency</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Received Date</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {paginatedOrders.map((order) => (
-                    <tr key={order.id} className="hover:bg-gray-50 transition-colors">
+                  {paginatedInvoices.map((invoice) => (
+                    <tr key={invoice.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <Link 
-                          href={`/orders/${order.orderId}`}
-                          className="text-green-600 hover:text-green-800 font-medium"
+                          href={`/invoices/${invoice.invoiceNumber}`}
+                          className="text-orange-600 hover:text-orange-800 font-medium"
                         >
-                          {order.orderId}
+                          {invoice.invoiceNumber}
                         </Link>
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-gray-900">{order.customerName || 'Unknown'}</div>
-                        <div className="text-sm text-gray-500">{order.customerId}</div>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {getStatusBadge(invoice.status)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatDate(order.orderDate)}
+                        {invoice.poNumber}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {order.items?.length || 0}
+                        {invoice.routeName}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          invoice.environment === 'PRODUCTION' ? 'bg-red-100 text-red-800' :
+                          invoice.environment === 'STAGING' ? 'bg-orange-100 text-orange-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {invoice.environment}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {invoice.flags || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {formatCurrency(order.total, order.currency)}
+                        {formatCurrency(invoice.invoiceTotal, invoice.currency)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {getStatusBadge(order.status)}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {invoice.currency}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 py-1 text-xs font-medium text-gray-700 bg-gray-100 rounded">
-                          {order.environment || 'N/A'}
-                        </span>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {formatDate(invoice.receivedDate)}
                       </td>
                     </tr>
                   ))}
@@ -233,7 +216,7 @@ export default function OrdersPage() {
           )}
           
           {/* Pagination */}
-          {!loading && orders.length > 0 && (
+          {!loading && invoices.length > 0 && (
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}

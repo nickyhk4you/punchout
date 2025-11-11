@@ -25,6 +25,9 @@ public class NetworkRequestDocument {
     @Field("orderId")
     private String orderId;
     
+    @Field("invoiceNumber")
+    private String invoiceNumber;
+    
     @Field("requestId")
     private String requestId;
     

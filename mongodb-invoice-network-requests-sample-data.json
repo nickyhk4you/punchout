@@ -1,0 +1,100 @@
+[
+  {
+    "invoiceNumber": "INV-2025-0001",
+    "sessionKey": "SESSION_001_ABC123",
+    "orderId": "ORD-2025-001",
+    "requestId": "REQ-INV-001-INBOUND",
+    "timestamp": {"$date": "2025-11-10T10:00:00.000Z"},
+    "direction": "INBOUND",
+    "source": "Ariba Network",
+    "destination": "Punchout Gateway",
+    "method": "POST",
+    "url": "/api/v1/invoice",
+    "headers": {
+      "Content-Type": "text/xml",
+      "User-Agent": "Ariba-InvoiceService/2.0"
+    },
+    "requestBody": "<?xml version=\"1.0\"?>\n<cXML><Invoice><InvoiceDetailRequest><InvoiceDetailRequestHeader invoiceID=\"INV-2025-0001\" invoiceDate=\"2025-11-09\" purpose=\"standard\"><InvoiceDetailHeaderIndicator/><InvoiceDetailLineIndicator/><InvoicePartner><Contact role=\"remitTo\"><Name>Waters Corporation</Name></Contact></InvoicePartner></InvoiceDetailRequestHeader></InvoiceDetailRequest></Invoice></cXML>",
+    "statusCode": 200,
+    "responseHeaders": {
+      "Content-Type": "application/json"
+    },
+    "responseBody": "{\"success\": true, \"invoiceNumber\": \"INV-2025-0001\"}",
+    "duration": 320,
+    "requestType": "cXML InvoiceRequest",
+    "success": true,
+    "errorMessage": null
+  },
+  {
+    "invoiceNumber": "INV-2025-0001",
+    "requestId": "REQ-INV-001-OUTBOUND-ERP",
+    "timestamp": {"$date": "2025-11-10T10:00:05.000Z"},
+    "direction": "OUTBOUND",
+    "source": "Punchout Gateway",
+    "destination": "ERP System",
+    "method": "POST",
+    "url": "http://erp.waters.com/api/invoices/process",
+    "headers": {
+      "Content-Type": "application/json",
+      "X-Invoice-ID": "INV-2025-0001"
+    },
+    "requestBody": "{\"invoiceNumber\":\"INV-2025-0001\",\"poNumber\":\"PO-WATERS-2025-001\",\"total\":1350.54,\"currency\":\"USD\",\"customerId\":\"CUST-10001\"}",
+    "statusCode": 201,
+    "responseHeaders": {
+      "Content-Type": "application/json"
+    },
+    "responseBody": "{\"success\": true, \"erpInvoiceId\": \"ERP-INV-20251110-001\"}",
+    "duration": 1850,
+    "requestType": "REST API",
+    "success": true,
+    "errorMessage": null
+  },
+  {
+    "invoiceNumber": "INV-2025-0002",
+    "sessionKey": "SESSION_002_DEF456",
+    "orderId": "ORD-2025-002",
+    "requestId": "REQ-INV-002-INBOUND",
+    "timestamp": {"$date": "2025-11-09T08:00:00.000Z"},
+    "direction": "INBOUND",
+    "source": "OCI Client",
+    "destination": "Punchout Gateway",
+    "method": "POST",
+    "url": "/api/v1/invoice/oci",
+    "headers": {
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    "requestBody": "INVOICE_ID=INV-2025-0002&PO_NUMBER=PO-CLIENT-2025-456&TOTAL=962.01&CURRENCY=USD",
+    "statusCode": 200,
+    "responseHeaders": {
+      "Content-Type": "text/html"
+    },
+    "responseBody": "OK",
+    "duration": 180,
+    "requestType": "OCI InvoiceMessage",
+    "success": true,
+    "errorMessage": null
+  },
+  {
+    "invoiceNumber": "INV-2025-0003",
+    "requestId": "REQ-INV-003-INBOUND",
+    "timestamp": {"$date": "2025-11-08T12:00:00.000Z"},
+    "direction": "INBOUND",
+    "source": "Ariba Network",
+    "destination": "Punchout Gateway",
+    "method": "POST",
+    "url": "/api/v1/invoice",
+    "headers": {
+      "Content-Type": "text/xml"
+    },
+    "requestBody": "<?xml version=\"1.0\"?>\n<cXML><Invoice><InvoiceDetailRequest><InvoiceDetailRequestHeader invoiceID=\"INV-2025-0003\" purpose=\"standard\"/></InvoiceDetailRequest></Invoice></cXML>",
+    "statusCode": 200,
+    "responseHeaders": {
+      "Content-Type": "application/json"
+    },
+    "responseBody": "{\"success\": true, \"invoiceNumber\": \"INV-2025-0003\"}",
+    "duration": 295,
+    "requestType": "cXML InvoiceRequest",
+    "success": true,
+    "errorMessage": null
+  }
+]

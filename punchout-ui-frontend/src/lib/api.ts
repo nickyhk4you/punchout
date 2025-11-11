@@ -261,4 +261,30 @@ export const cxmlTemplateAPI = {
   },
 };
 
+export const invoiceAPI = {
+  // Get all invoices
+  getAllInvoices: async (filters?: { status?: string; environment?: string }): Promise<import('@/types').Invoice[]> => {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) params.append(key, value);
+      });
+    }
+    const response = await apiClient.get<import('@/types').Invoice[]>('/v1/invoices', { params });
+    return response.data;
+  },
+
+  // Get invoice by invoice number
+  getInvoiceByNumber: async (invoiceNumber: string): Promise<import('@/types').Invoice> => {
+    const response = await apiClient.get<import('@/types').Invoice>(`/v1/invoices/${invoiceNumber}`);
+    return response.data;
+  },
+
+  // Get network requests for invoice
+  getInvoiceNetworkRequests: async (invoiceNumber: string): Promise<NetworkRequest[]> => {
+    const response = await apiClient.get<NetworkRequest[]>(`/v1/invoices/${invoiceNumber}/network-requests`);
+    return response.data;
+  },
+};
+
 export default apiClient;
