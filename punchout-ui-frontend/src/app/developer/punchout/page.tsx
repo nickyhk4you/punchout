@@ -162,35 +162,44 @@ export default function DeveloperPunchOutPage() {
       await new Promise(resolve => setTimeout(resolve, 500));
       
       let networkRequests = [];
+      let catalogRequest = null;
+      
+      // Poll for network requests until we get the catalog response (max 10 attempts)
       if (sessionKey) {
-        try {
-          const requestsResponse = await fetch(`http://localhost:8080/api/v1/sessions/${sessionKey}/network-requests`);
-          networkRequests = await requestsResponse.json();
-          
-          // Check for auth success
-          const authRequest = networkRequests.find((req: any) => req.destination === 'Auth Service');
-          if (authRequest && authRequest.success) {
-            setProgressSteps(prev => ({
-              ...prev,
-              auth: { ...prev.auth, status: 'success' },
-              catalog: { ...prev.catalog, status: 'loading' }
-            }));
-            await new Promise(resolve => setTimeout(resolve, 300));
+        for (let attempt = 0; attempt < 10; attempt++) {
+          try {
+            const requestsResponse = await fetch(`http://localhost:8080/api/v1/sessions/${sessionKey}/network-requests`);
+            networkRequests = await requestsResponse.json();
+            
+            // Check for auth success
+            const authRequest = networkRequests.find((req: any) => req.destination === 'Auth Service');
+            if (authRequest && authRequest.success && progressSteps.auth.status !== 'success') {
+              setProgressSteps(prev => ({
+                ...prev,
+                auth: { ...prev.auth, status: 'success' },
+                catalog: { ...prev.catalog, status: 'loading' }
+              }));
+            }
+            
+            // Check for catalog/mule success
+            catalogRequest = networkRequests.find((req: any) => 
+              (req.destination === 'Mule Service' || req.destination === 'Catalog Service') && req.success
+            );
+            
+            if (catalogRequest) {
+              setProgressSteps(prev => ({
+                ...prev,
+                catalog: { ...prev.catalog, status: 'success' },
+                complete: { ...prev.complete, status: 'success' }
+              }));
+              break; // Found catalog response, stop polling
+            }
+            
+            // Wait before next poll
+            await new Promise(resolve => setTimeout(resolve, 800));
+          } catch (err) {
+            console.error('Failed to fetch network requests:', err);
           }
-          
-          // Check for catalog/mule success
-          const catalogRequest = networkRequests.find((req: any) => 
-            (req.destination === 'Mule Service' || req.destination === 'Catalog Service') && req.success
-          );
-          if (catalogRequest) {
-            setProgressSteps(prev => ({
-              ...prev,
-              catalog: { ...prev.catalog, status: 'success' },
-              complete: { ...prev.complete, status: 'success' }
-            }));
-          }
-        } catch (err) {
-          console.error('Failed to fetch network requests:', err);
         }
       }
       
@@ -249,8 +258,8 @@ export default function DeveloperPunchOutPage() {
           console.log('Setting catalog URL for redirect:', extractedCatalogUrl);
           setCatalogUrl(extractedCatalogUrl);
           
-          // Start countdown from 5 seconds
-          let countdown = 5;
+          // Start countdown from 3 seconds (since we already waited during polling)
+          let countdown = 3;
           setRedirectCountdown(countdown);
           
           const countdownInterval = setInterval(() => {
