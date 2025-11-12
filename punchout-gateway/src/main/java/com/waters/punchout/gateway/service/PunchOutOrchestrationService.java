@@ -58,7 +58,9 @@ public class PunchOutOrchestrationService {
             
             Map<String, Object> mulePayload = prepareMulePayload(request);
             
-            Map<String, Object> muleResponse = getMuleResponse(mulePayload, authToken, request.getSessionKey());
+            // Extract environment from request
+            String environment = extractEnvironmentFromRequest(request);
+            Map<String, Object> muleResponse = getMuleResponse(mulePayload, authToken, request.getSessionKey(), environment);
             
             savePunchOutSession(request, muleResponse);
             
@@ -125,6 +127,16 @@ public class PunchOutOrchestrationService {
     private Map<String, Object> prepareMulePayload(PunchOutRequest request) {
         log.debug("Preparing Mule payload");
         
+        // Check if this is Acme customer (buyer123) - use custom payload
+        if ("buyer123".equals(request.getFromIdentity())) {
+            log.debug("Using Acme custom payload builder");
+            // Import the Acme converter
+            com.waters.punchout.gateway.converter.strategy.customers.AcmeV1Converter acmeConverter = 
+                new com.waters.punchout.gateway.converter.strategy.customers.AcmeV1Converter();
+            return acmeConverter.buildMulePayload(request);
+        }
+        
+        // Default payload for other customers
         Map<String, Object> payload = new HashMap<>();
         payload.put("sessionKey", request.getSessionKey());
         payload.put("operation", request.getOperation());
@@ -141,14 +153,36 @@ public class PunchOutOrchestrationService {
         return payload;
     }
 
-    private Map<String, Object> getMuleResponse(Map<String, Object> payload, String token, String sessionKey) {
+    private Map<String, Object> getMuleResponse(Map<String, Object> payload, String token, String sessionKey, String environment) {
         try {
-            log.debug("Fetching Mule response for sessionKey={}", sessionKey);
-            return muleServiceClient.sendMuleRequest(payload, token, sessionKey);
+            log.debug("Fetching Mule response for sessionKey={}, environment={}", sessionKey, environment);
+            return muleServiceClient.sendMuleRequest(payload, token, sessionKey, environment);
         } catch (Exception e) {
             log.error("Failed to get Mule response: {}", e.getMessage(), e);
             throw new RuntimeException("Mule request failed: " + e.getMessage(), e);
         }
+    }
+    
+    private String extractEnvironmentFromRequest(PunchOutRequest request) {
+        // First try to get from extrinsics
+        if (request.getExtrinsics() != null && request.getExtrinsics().containsKey("Environment")) {
+            String env = request.getExtrinsics().get("Environment");
+            log.debug("Extracted environment from extrinsics: {}", env);
+            return env;
+        }
+        
+        // Fallback: Extract from session key (e.g., SESSION_DEV_CUST001_123456)
+        if (request.getSessionKey() != null && request.getSessionKey().contains("_")) {
+            String[] parts = request.getSessionKey().split("_");
+            if (parts.length > 1) {
+                String env = parts[1].toLowerCase();
+                log.debug("Extracted environment from session key: {}", env);
+                return env;
+            }
+        }
+        
+        log.debug("Using default environment: dev");
+        return "dev";
     }
 
     private void savePunchOutSession(PunchOutRequest request, Map<String, Object> muleResponse) {

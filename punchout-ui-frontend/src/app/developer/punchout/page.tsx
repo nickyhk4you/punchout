@@ -21,7 +21,16 @@ export default function DeveloperPunchOutPage() {
   const [loading, setLoading] = useState(false);
   const [executing, setExecuting] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<any>(null);
+  const [catalogUrl, setCatalogUrl] = useState<string | null>(null);
+  const [redirectCountdown, setRedirectCountdown] = useState<number>(0);
   const [showPayloadModal, setShowPayloadModal] = useState(false);
+  const [showProgressModal, setShowProgressModal] = useState(false);
+  const [progressSteps, setProgressSteps] = useState({
+    parsing: { status: 'pending', label: 'Parsing PunchOut Request' },
+    auth: { status: 'pending', label: 'Authenticating with Waters' },
+    catalog: { status: 'pending', label: 'Fetching Catalog' },
+    complete: { status: 'pending', label: 'Complete' }
+  });
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [cxmlPayload, setCxmlPayload] = useState<string>('');
 
@@ -115,6 +124,16 @@ export default function DeveloperPunchOutPage() {
   const handlePunchOut = async (customer: any, useCustomPayload = false) => {
     setExecuting(customer.id);
     setTestResult(null);
+    setCatalogUrl(null);
+    setShowProgressModal(true);
+    
+    // Reset progress steps
+    setProgressSteps({
+      parsing: { status: 'loading', label: 'Parsing PunchOut Request' },
+      auth: { status: 'pending', label: 'Authenticating with Waters' },
+      catalog: { status: 'pending', label: 'Fetching Catalog' },
+      complete: { status: 'pending', label: 'Complete' }
+    });
     
     try {
       const gatewayUrl = 'http://localhost:9090/punchout/setup';
@@ -133,13 +152,43 @@ export default function DeveloperPunchOutPage() {
       const sessionKeyMatch = responseText.match(/<BuyerCookie>([^<]+)<\/BuyerCookie>/);
       const sessionKey = sessionKeyMatch ? sessionKeyMatch[1] : null;
       
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Mark parsing complete
+      setProgressSteps(prev => ({
+        ...prev,
+        parsing: { ...prev.parsing, status: 'success' },
+        auth: { ...prev.auth, status: 'loading' }
+      }));
+      
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       let networkRequests = [];
       if (sessionKey) {
         try {
           const requestsResponse = await fetch(`http://localhost:8080/api/v1/sessions/${sessionKey}/network-requests`);
           networkRequests = await requestsResponse.json();
+          
+          // Check for auth success
+          const authRequest = networkRequests.find((req: any) => req.destination === 'Auth Service');
+          if (authRequest && authRequest.success) {
+            setProgressSteps(prev => ({
+              ...prev,
+              auth: { ...prev.auth, status: 'success' },
+              catalog: { ...prev.catalog, status: 'loading' }
+            }));
+            await new Promise(resolve => setTimeout(resolve, 300));
+          }
+          
+          // Check for catalog/mule success
+          const catalogRequest = networkRequests.find((req: any) => 
+            (req.destination === 'Mule Service' || req.destination === 'Catalog Service') && req.success
+          );
+          if (catalogRequest) {
+            setProgressSteps(prev => ({
+              ...prev,
+              catalog: { ...prev.catalog, status: 'success' },
+              complete: { ...prev.complete, status: 'success' }
+            }));
+          }
         } catch (err) {
           console.error('Failed to fetch network requests:', err);
         }
@@ -156,7 +205,66 @@ export default function DeveloperPunchOutPage() {
         timestamp: new Date().toISOString(),
       });
       
+      console.log('PunchOut response:', { ok: response.ok, status: response.status, sessionKey });
+      console.log('Network requests count:', networkRequests.length);
+      
       await loadRecentSessions();
+      
+      // If successful, try to extract catalog/start_url and open it
+      if (response.ok && sessionKey) {
+        let extractedCatalogUrl = null;
+        
+        // First, try to get from Mule/Catalog service response
+        if (networkRequests.length > 0) {
+          const muleResponse = networkRequests.find((req: any) => 
+            (req.destination === 'Mule Service' || req.destination === 'Catalog Service') && 
+            req.direction === 'OUTBOUND'
+          );
+          
+          if (muleResponse && muleResponse.responseBody) {
+            try {
+              const muleData = JSON.parse(muleResponse.responseBody);
+              extractedCatalogUrl = muleData.start_url || muleData.catalogUrl;
+              console.log('Extracted catalog URL from Mule response:', extractedCatalogUrl);
+            } catch (e) {
+              console.log('Could not parse Mule response for catalog URL', e);
+            }
+          }
+        }
+        
+        // Fallback: try to get from session catalog field
+        if (!extractedCatalogUrl) {
+          try {
+            const sessionResponse = await fetch(`http://localhost:8080/api/v1/sessions/${sessionKey}`);
+            const sessionData = await sessionResponse.json();
+            extractedCatalogUrl = sessionData.catalog;
+            console.log('Extracted catalog URL from session:', extractedCatalogUrl);
+          } catch (e) {
+            console.log('Could not fetch session catalog URL', e);
+          }
+        }
+        
+        // Set catalog URL for display and auto-redirect
+        if (extractedCatalogUrl && !extractedCatalogUrl.startsWith('FAILED')) {
+          console.log('Setting catalog URL for redirect:', extractedCatalogUrl);
+          setCatalogUrl(extractedCatalogUrl);
+          
+          // Start countdown from 5 seconds
+          let countdown = 5;
+          setRedirectCountdown(countdown);
+          
+          const countdownInterval = setInterval(() => {
+            countdown--;
+            setRedirectCountdown(countdown);
+            
+            if (countdown <= 0) {
+              clearInterval(countdownInterval);
+              console.log('Auto-redirecting to:', extractedCatalogUrl);
+              window.location.href = extractedCatalogUrl;
+            }
+          }, 1000);
+        }
+      }
       
     } catch (err: any) {
       console.error('Failed to execute punchout:', err);
@@ -165,11 +273,26 @@ export default function DeveloperPunchOutPage() {
         error: err.message,
         timestamp: new Date().toISOString(),
       });
+      setProgressSteps(prev => {
+        const failedStep = Object.entries(prev).find(([_, step]) => step.status === 'loading');
+        if (failedStep) {
+          return {
+            ...prev,
+            [failedStep[0]]: { ...failedStep[1], status: 'error' }
+          };
+        }
+        return prev;
+      });
     } finally {
       setExecuting(null);
       setShowPayloadModal(false);
       setSelectedCustomer(null);
       setCxmlPayload('');
+      
+      // Close progress modal after a delay if failed or no catalog URL
+      if (!catalogUrl) {
+        setTimeout(() => setShowProgressModal(false), 3000);
+      }
     }
   };
 
@@ -322,6 +445,83 @@ export default function DeveloperPunchOutPage() {
         </div>
       </div>
 
+      {/* Progress Modal */}
+      {showProgressModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8">
+            <h2 className="text-3xl font-bold text-center mb-8">
+              <i className="fas fa-rocket text-blue-600 mr-2"></i>
+              PunchOut in Progress
+            </h2>
+            
+            {/* Progress Steps */}
+            <div className="space-y-6 mb-8">
+              {Object.entries(progressSteps).map(([key, step]: [string, any]) => (
+                <div key={key} className="flex items-center gap-4">
+                  <div className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center ${
+                    step.status === 'success' ? 'bg-green-500' : 
+                    step.status === 'loading' ? 'bg-blue-500 animate-pulse' : 
+                    'bg-gray-300'
+                  }`}>
+                    {step.status === 'success' && <i className="fas fa-check text-white text-xl"></i>}
+                    {step.status === 'loading' && <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent"></div>}
+                    {step.status === 'pending' && <i className="fas fa-circle text-white text-xs"></i>}
+                  </div>
+                  <div className="flex-1">
+                    <p className={`font-semibold text-lg ${
+                      step.status === 'success' ? 'text-green-700' : 
+                      step.status === 'loading' ? 'text-blue-700' : 
+                      'text-gray-500'
+                    }`}>
+                      {step.label}
+                    </p>
+                  </div>
+                  {step.status === 'loading' && (
+                    <div className="flex-shrink-0">
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent"></div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            
+            {/* Redirect Countdown */}
+            {catalogUrl && redirectCountdown > 0 && (
+              <div className="text-center p-6 bg-gradient-to-r from-green-50 to-blue-50 rounded-xl border-2 border-green-400">
+                <div className="inline-flex items-center gap-4 mb-4">
+                  <div className="relative">
+                    <div className="w-16 h-16 rounded-full border-4 border-blue-200"></div>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-3xl font-bold text-blue-600">{redirectCountdown}</span>
+                    </div>
+                  </div>
+                  <div className="text-left">
+                    <p className="text-xl font-bold text-green-800">Success!</p>
+                    <p className="text-gray-700">Redirecting in {redirectCountdown}s...</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => window.location.href = catalogUrl}
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg hover:from-green-700 hover:to-blue-700 font-bold text-lg shadow-lg transform hover:scale-105 transition-all"
+                  >
+                    <i className="fas fa-shopping-cart mr-2"></i>
+                    Go Now
+                  </button>
+                  <button
+                    onClick={() => window.open(catalogUrl, '_blank')}
+                    className="px-6 py-3 bg-white border-2 border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 font-semibold transition-all"
+                  >
+                    <i className="fas fa-external-link-alt mr-2"></i>
+                    New Tab
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Payload Editor Modal */}
       {showPayloadModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -398,7 +598,7 @@ export default function DeveloperPunchOutPage() {
 
       {/* Test Results */}
       {testResult && (
-        <div className={`rounded-xl shadow-lg p-6 mb-6 ${testResult.success ? 'bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300' : 'bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-300'}`}>
+        <div className={`rounded-xl shadow-lg p-6 mb-6 ${testResult.success && !catalogUrl ? 'bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300' : !testResult.success ? 'bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-300' : 'hidden'}`}>
           <h2 className="text-xl font-semibold mb-4">
             {testResult.success ? (
               <><i className="fas fa-check-circle mr-2 text-green-600"></i>PunchOut Successful</>
@@ -406,6 +606,56 @@ export default function DeveloperPunchOutPage() {
               <><i className="fas fa-times-circle mr-2 text-red-600"></i>PunchOut Failed</>
             )}
           </h2>
+          
+          {testResult.success && catalogUrl && (
+            <div className="mb-6 p-8 bg-gradient-to-br from-green-50 via-blue-50 to-indigo-50 border-4 border-green-400 rounded-2xl shadow-2xl animate-pulse-slow">
+              <div className="text-center mb-6">
+                <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-green-500 to-blue-500 rounded-full mb-4 shadow-lg">
+                  <i className="fas fa-check text-white text-4xl"></i>
+                </div>
+                <h3 className="text-3xl font-bold text-green-800 mb-2">
+                  <i className="fas fa-rocket mr-2"></i>
+                  PunchOut Successful!
+                </h3>
+                <p className="text-xl text-gray-700 mb-4">
+                  Redirecting to Waters Catalog...
+                </p>
+                <div className="inline-flex items-center gap-3 px-6 py-3 bg-white border-2 border-blue-500 rounded-full shadow-lg">
+                  <div className="relative">
+                    <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200"></div>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-2xl font-bold text-blue-600">{redirectCountdown}</span>
+                    </div>
+                  </div>
+                  <span className="text-lg font-semibold text-gray-700">
+                    Redirecting in {redirectCountdown} second{redirectCountdown !== 1 ? 's' : ''}
+                  </span>
+                </div>
+              </div>
+              
+              <div className="flex flex-col gap-3 max-w-2xl mx-auto">
+                <button
+                  onClick={() => window.location.href = catalogUrl}
+                  className="w-full inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-xl hover:from-green-700 hover:to-blue-700 transition-all font-bold text-xl shadow-lg transform hover:scale-105"
+                >
+                  <i className="fas fa-shopping-cart mr-3 text-2xl"></i>
+                  Go to Catalog Now (Don't Wait)
+                </button>
+                <button
+                  onClick={() => window.open(catalogUrl, '_blank')}
+                  className="w-full inline-flex items-center justify-center px-8 py-4 bg-white border-3 border-blue-600 text-blue-600 rounded-xl hover:bg-blue-50 transition-all font-bold text-lg shadow-md transform hover:scale-105"
+                >
+                  <i className="fas fa-external-link-alt mr-2"></i>
+                  Open in New Tab Instead
+                </button>
+              </div>
+              
+              <div className="mt-4 text-center text-sm text-gray-600">
+                <i className="fas fa-info-circle mr-1"></i>
+                Catalog URL: <code className="bg-gray-100 px-2 py-1 rounded text-xs">{catalogUrl.substring(0, 80)}...</code>
+              </div>
+            </div>
+          )}
           
           <div className="space-y-4">
             {testResult.sessionKey && (
