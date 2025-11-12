@@ -33,6 +33,39 @@ public class MockServiceController {
         return ResponseEntity.ok(token);
     }
     
+    @PostMapping("/waters/user/v2/login")
+    public ResponseEntity<Map<String, Object>> watersLogin(@RequestBody Map<String, String> credentials) {
+        String email = credentials.get("email");
+        String password = credentials.get("password");
+        
+        log.info("Mock Waters Auth Service: Login attempt for email={}", email);
+        
+        // Validate credentials (mock validation)
+        if ("USMulti2@yopmail.com".equals(email) && "Password1!".equals(password)) {
+            String token = tokenService.generateOneTimeToken(email, "login");
+            
+            Map<String, Object> response = Map.of(
+                "success", true,
+                "token", token,
+                "user", Map.of(
+                    "email", email,
+                    "name", "Test User",
+                    "userId", "USMulti2"
+                )
+            );
+            
+            log.info("Mock Waters Auth Service: Login successful, token={}", token);
+            return ResponseEntity.ok(response);
+        } else {
+            log.warn("Mock Waters Auth Service: Invalid credentials for email={}", email);
+            return ResponseEntity.status(401)
+                .body(Map.of(
+                    "success", false,
+                    "error", "Invalid email or password"
+                ));
+        }
+    }
+    
     @PostMapping("/validate")
     public ResponseEntity<Map<String, Object>> validateToken(@RequestBody Map<String, String> request) {
         String token = request.get("token");

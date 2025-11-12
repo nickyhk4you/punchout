@@ -1,8 +1,8 @@
 [
   {
     "environment": "dev",
-    "authServiceUrl": "http://localhost:8081/api/auth/token",
-    "muleServiceUrl": "http://localhost:8082/api/catalog",
+    "authServiceUrl": "https://dev1-services.waters.com:443/api/waters/user/v2/login",
+    "muleServiceUrl": "https://api-sbox.waters.com:443/dev-waters-punchout-exp-api-v1/api/punchout/setup",
     "catalogBaseUrl": "http://localhost:3000",
     "description": "Local development environment",
     "enabled": true,
@@ -13,8 +13,8 @@
   },
   {
     "environment": "stage",
-    "authServiceUrl": "https://auth-stage.waters.com/api/auth/token",
-    "muleServiceUrl": "https://mule-stage.waters.com/api/catalog",
+    "authServiceUrl": "https://stgservices.waters.com:443/api/waters/user/v2/login",
+    "muleServiceUrl": "https://api-sbox.waters.com:443/uat-waters-punchout-exp-api-v1/api/punchout/setup",
     "catalogBaseUrl": "https://punchout-stage.waters.com",
     "description": "Staging environment for testing",
     "enabled": true,

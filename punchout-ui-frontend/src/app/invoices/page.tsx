@@ -72,17 +72,17 @@ export default function InvoicesPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      <div className="bg-gradient-to-r from-orange-600 to-amber-600 text-white py-16 px-6 shadow-lg">
+      <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white py-16 px-6 shadow-lg">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-4xl font-bold mb-2">Invoices</h1>
-          <p className="text-xl text-orange-100">View and manage all invoices</p>
+          <p className="text-xl opacity-90">View and manage all invoices</p>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-6">
           <h2 className="text-lg font-semibold mb-4">
-            <i className="fas fa-filter text-orange-600 mr-2"></i>
+            <i className="fas fa-filter text-red-600 mr-2"></i>
             Filters
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -93,7 +93,7 @@ export default function InvoicesPage() {
               <select
                 value={filters.status}
                 onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
               >
                 <option value="">All</option>
                 <option value="PAID">Paid</option>
@@ -110,7 +110,7 @@ export default function InvoicesPage() {
               <select
                 value={filters.environment}
                 onChange={(e) => setFilters({ ...filters, environment: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
               >
                 <option value="">All</option>
                 <option value="DEVELOPMENT">Development</option>
@@ -143,7 +143,7 @@ export default function InvoicesPage() {
 
           {loading ? (
             <div className="p-12 text-center">
-              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
               <p className="mt-4 text-gray-600">Loading invoices...</p>
             </div>
           ) : invoices.length === 0 ? (
@@ -173,7 +173,7 @@ export default function InvoicesPage() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <Link 
                           href={`/invoices/${invoice.invoiceNumber}`}
-                          className="text-orange-600 hover:text-orange-800 font-medium"
+                          className="text-red-600 hover:text-red-800 font-medium"
                         >
                           {invoice.invoiceNumber}
                         </Link>

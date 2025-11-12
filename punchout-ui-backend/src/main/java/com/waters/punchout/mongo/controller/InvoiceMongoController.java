@@ -11,6 +11,9 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.itextpdf.text.*;
+import com.itextpdf.text.pdf.*;
+
 import java.io.ByteArrayOutputStream;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -116,99 +119,163 @@ public class InvoiceMongoController {
         }
     }
     
-    private byte[] generateInvoicePdf(InvoiceDTO invoice) {
-        // Simple HTML-to-PDF generation (can be enhanced with iText, Apache PDFBox, etc.)
-        StringBuilder html = new StringBuilder();
+    private byte[] generateInvoicePdf(InvoiceDTO invoice) throws Exception {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        Document document = new Document(PageSize.A4);
+        PdfWriter.getInstance(document, baos);
+        
+        document.open();
+        
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("MMM dd, yyyy");
         
-        html.append("<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><style>");
-        html.append("body { font-family: Arial, sans-serif; margin: 40px; }");
-        html.append(".header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }");
-        html.append(".header h1 { color: #ea580c; margin: 0; }");
-        html.append(".section { margin: 20px 0; }");
-        html.append(".section h2 { color: #333; border-bottom: 1px solid #ddd; padding-bottom: 10px; }");
-        html.append(".info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }");
-        html.append(".info-item { margin: 10px 0; }");
-        html.append(".label { font-weight: bold; color: #666; }");
-        html.append(".value { color: #333; }");
-        html.append("table { width: 100%; border-collapse: collapse; margin: 20px 0; }");
-        html.append("th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }");
-        html.append("th { background-color: #f3f4f6; font-weight: bold; }");
-        html.append(".total-row { font-weight: bold; background-color: #f9fafb; }");
-        html.append(".text-right { text-align: right; }");
-        html.append(".badge { padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold; }");
-        html.append(".badge-paid { background-color: #d1fae5; color: #065f46; }");
-        html.append(".badge-pending { background-color: #fef3c7; color: #92400e; }");
-        html.append(".badge-confirmed { background-color: #dbeafe; color: #1e40af; }");
-        html.append("</style></head><body>");
+        // Fonts
+        Font titleFont = new Font(Font.FontFamily.HELVETICA, 24, Font.BOLD, BaseColor.RED);
+        Font headerFont = new Font(Font.FontFamily.HELVETICA, 16, Font.BOLD, BaseColor.DARK_GRAY);
+        Font boldFont = new Font(Font.FontFamily.HELVETICA, 10, Font.BOLD);
+        Font normalFont = new Font(Font.FontFamily.HELVETICA, 10);
+        Font smallFont = new Font(Font.FontFamily.HELVETICA, 8);
         
-        // Header
-        html.append("<div class=\"header\">");
-        html.append("<h1>INVOICE</h1>");
-        html.append("<p>").append(invoice.getSupplierName() != null ? invoice.getSupplierName() : "Waters Corporation").append("</p>");
-        html.append("</div>");
+        // Title
+        Paragraph title = new Paragraph("INVOICE", titleFont);
+        title.setAlignment(Element.ALIGN_CENTER);
+        document.add(title);
         
-        // Invoice Info
-        html.append("<div class=\"section\">");
-        html.append("<div class=\"info-grid\">");
-        html.append("<div>");
-        html.append("<div class=\"info-item\"><span class=\"label\">Invoice Number:</span> <span class=\"value\">").append(invoice.getInvoiceNumber()).append("</span></div>");
-        html.append("<div class=\"info-item\"><span class=\"label\">PO Number:</span> <span class=\"value\">").append(invoice.getPoNumber()).append("</span></div>");
-        html.append("<div class=\"info-item\"><span class=\"label\">Invoice Date:</span> <span class=\"value\">").append(invoice.getInvoiceDate() != null ? invoice.getInvoiceDate().format(dateFormatter) : "").append("</span></div>");
-        html.append("<div class=\"info-item\"><span class=\"label\">Due Date:</span> <span class=\"value\">").append(invoice.getDueDate() != null ? invoice.getDueDate().format(dateFormatter) : "").append("</span></div>");
-        html.append("</div>");
-        html.append("<div>");
-        html.append("<div class=\"info-item\"><span class=\"label\">Customer:</span> <span class=\"value\">").append(invoice.getCustomerName()).append("</span></div>");
-        html.append("<div class=\"info-item\"><span class=\"label\">Customer ID:</span> <span class=\"value\">").append(invoice.getCustomerId()).append("</span></div>");
-        html.append("<div class=\"info-item\"><span class=\"label\">Status:</span> <span class=\"badge badge-").append(invoice.getStatus().toLowerCase()).append("\">").append(invoice.getStatus()).append("</span></div>");
-        html.append("<div class=\"info-item\"><span class=\"label\">Payment Terms:</span> <span class=\"value\">").append(invoice.getPaymentTerms() != null ? invoice.getPaymentTerms() : "").append("</span></div>");
-        html.append("</div>");
-        html.append("</div></div>");
+        Paragraph supplier = new Paragraph(invoice.getSupplierName() != null ? invoice.getSupplierName() : "Waters Corporation", normalFont);
+        supplier.setAlignment(Element.ALIGN_CENTER);
+        supplier.setSpacingAfter(20);
+        document.add(supplier);
         
-        // Line Items
-        html.append("<div class=\"section\">");
-        html.append("<h2>Line Items</h2>");
-        html.append("<table>");
-        html.append("<thead><tr>");
-        html.append("<th>Line</th><th>Part Number</th><th>Description</th><th class=\"text-right\">Qty</th><th class=\"text-right\">Unit Price</th><th class=\"text-right\">Extended</th>");
-        html.append("</tr></thead><tbody>");
+        // Separator line
+        document.add(Chunk.NEWLINE);
         
+        // Invoice Information
+        PdfPTable infoTable = new PdfPTable(4);
+        infoTable.setWidthPercentage(100);
+        infoTable.setSpacingBefore(10);
+        infoTable.setSpacingAfter(20);
+        
+        addInfoCell(infoTable, "Invoice Number:", invoice.getInvoiceNumber(), boldFont, normalFont);
+        addInfoCell(infoTable, "PO Number:", invoice.getPoNumber(), boldFont, normalFont);
+        addInfoCell(infoTable, "Invoice Date:", invoice.getInvoiceDate() != null ? invoice.getInvoiceDate().format(dateFormatter) : "", boldFont, normalFont);
+        addInfoCell(infoTable, "Due Date:", invoice.getDueDate() != null ? invoice.getDueDate().format(dateFormatter) : "", boldFont, normalFont);
+        
+        addInfoCell(infoTable, "Customer:", invoice.getCustomerName(), boldFont, normalFont);
+        addInfoCell(infoTable, "Customer ID:", invoice.getCustomerId(), boldFont, normalFont);
+        addInfoCell(infoTable, "Status:", invoice.getStatus(), boldFont, normalFont);
+        addInfoCell(infoTable, "Payment Terms:", invoice.getPaymentTerms() != null ? invoice.getPaymentTerms() : "", boldFont, normalFont);
+        
+        document.add(infoTable);
+        
+        // Line Items Header
+        Paragraph lineItemsHeader = new Paragraph("Line Items", headerFont);
+        lineItemsHeader.setSpacingBefore(10);
+        lineItemsHeader.setSpacingAfter(10);
+        document.add(lineItemsHeader);
+        
+        // Line Items Table
+        PdfPTable itemsTable = new PdfPTable(6);
+        itemsTable.setWidthPercentage(100);
+        itemsTable.setWidths(new float[]{1, 2, 5, 1.5f, 2, 2});
+        
+        // Table headers
+        addTableHeader(itemsTable, "Line", boldFont);
+        addTableHeader(itemsTable, "Part Number", boldFont);
+        addTableHeader(itemsTable, "Description", boldFont);
+        addTableHeader(itemsTable, "Qty", boldFont);
+        addTableHeader(itemsTable, "Unit Price", boldFont);
+        addTableHeader(itemsTable, "Extended", boldFont);
+        
+        // Line items
         if (invoice.getLineItems() != null) {
             for (Map<String, Object> item : invoice.getLineItems()) {
-                html.append("<tr>");
-                html.append("<td>").append(item.get("lineNumber")).append("</td>");
-                html.append("<td>").append(item.get("partNumber")).append("</td>");
-                html.append("<td>").append(item.get("description")).append("</td>");
-                html.append("<td class=\"text-right\">").append(item.get("quantity")).append("</td>");
-                html.append("<td class=\"text-right\">$").append(item.get("unitPrice")).append("</td>");
-                html.append("<td class=\"text-right\">$").append(item.get("extendedAmount")).append("</td>");
-                html.append("</tr>");
+                addTableCell(itemsTable, String.valueOf(item.get("lineNumber")), normalFont);
+                addTableCell(itemsTable, String.valueOf(item.get("partNumber")), normalFont);
+                addTableCell(itemsTable, String.valueOf(item.get("description")), normalFont);
+                addTableCellRight(itemsTable, String.valueOf(item.get("quantity")), normalFont);
+                addTableCellRight(itemsTable, "$" + item.get("unitPrice"), normalFont);
+                addTableCellRight(itemsTable, "$" + item.get("extendedAmount"), normalFont);
             }
         }
         
         // Totals
-        html.append("<tr class=\"total-row\"><td colspan=\"5\" class=\"text-right\">Subtotal:</td><td class=\"text-right\">$").append(invoice.getSubtotal()).append("</td></tr>");
+        addTotalRow(itemsTable, "Subtotal:", "$" + invoice.getSubtotal(), boldFont);
         if (invoice.getTaxAmount() != null && invoice.getTaxAmount().doubleValue() > 0) {
-            html.append("<tr class=\"total-row\"><td colspan=\"5\" class=\"text-right\">Tax:</td><td class=\"text-right\">$").append(invoice.getTaxAmount()).append("</td></tr>");
+            addTotalRow(itemsTable, "Tax:", "$" + invoice.getTaxAmount(), boldFont);
         }
         if (invoice.getShippingAmount() != null && invoice.getShippingAmount().doubleValue() > 0) {
-            html.append("<tr class=\"total-row\"><td colspan=\"5\" class=\"text-right\">Shipping:</td><td class=\"text-right\">$").append(invoice.getShippingAmount()).append("</td></tr>");
+            addTotalRow(itemsTable, "Shipping:", "$" + invoice.getShippingAmount(), boldFont);
         }
-        html.append("<tr class=\"total-row\"><td colspan=\"5\" class=\"text-right\"><strong>Total:</strong></td><td class=\"text-right\"><strong>$").append(invoice.getInvoiceTotal()).append("</strong></td></tr>");
-        html.append("</tbody></table>");
-        html.append("</div>");
+        addTotalRow(itemsTable, "Total:", "$" + invoice.getInvoiceTotal(), new Font(Font.FontFamily.HELVETICA, 12, Font.BOLD));
         
+        document.add(itemsTable);
+        
+        // Notes
         if (invoice.getNotes() != null && !invoice.getNotes().isEmpty()) {
-            html.append("<div class=\"section\">");
-            html.append("<h2>Notes</h2>");
-            html.append("<p>").append(invoice.getNotes()).append("</p>");
-            html.append("</div>");
+            Paragraph notesHeader = new Paragraph("Notes", headerFont);
+            notesHeader.setSpacingBefore(20);
+            notesHeader.setSpacingAfter(10);
+            document.add(notesHeader);
+            
+            Paragraph notes = new Paragraph(invoice.getNotes(), normalFont);
+            document.add(notes);
         }
         
-        html.append("</body></html>");
+        document.close();
         
-        // For now, return HTML as PDF placeholder
-        // In production, use library like iText or Flying Saucer to convert HTML to PDF
-        return html.toString().getBytes();
+        return baos.toByteArray();
+    }
+    
+    private void addInfoCell(PdfPTable table, String label, String value, Font labelFont, Font valueFont) {
+        PdfPCell labelCell = new PdfPCell(new Phrase(label, labelFont));
+        labelCell.setBorder(Rectangle.NO_BORDER);
+        labelCell.setPaddingBottom(5);
+        table.addCell(labelCell);
+        
+        PdfPCell valueCell = new PdfPCell(new Phrase(value, valueFont));
+        valueCell.setBorder(Rectangle.NO_BORDER);
+        valueCell.setPaddingBottom(5);
+        table.addCell(valueCell);
+    }
+    
+    private void addTableHeader(PdfPTable table, String text, Font font) {
+        PdfPCell cell = new PdfPCell(new Phrase(text, font));
+        cell.setBackgroundColor(BaseColor.LIGHT_GRAY);
+        cell.setPadding(8);
+        table.addCell(cell);
+    }
+    
+    private void addTableCell(PdfPTable table, String text, Font font) {
+        PdfPCell cell = new PdfPCell(new Phrase(text, font));
+        cell.setPadding(8);
+        table.addCell(cell);
+    }
+    
+    private void addTableCellRight(PdfPTable table, String text, Font font) {
+        PdfPCell cell = new PdfPCell(new Phrase(text, font));
+        cell.setPadding(8);
+        cell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+        table.addCell(cell);
+    }
+    
+    private void addTotalRow(PdfPTable table, String label, String value, Font font) {
+        PdfPCell emptyCell = new PdfPCell(new Phrase(""));
+        emptyCell.setColspan(4);
+        emptyCell.setBorder(Rectangle.TOP);
+        emptyCell.setBackgroundColor(new BaseColor(249, 250, 251));
+        table.addCell(emptyCell);
+        
+        PdfPCell labelCell = new PdfPCell(new Phrase(label, font));
+        labelCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+        labelCell.setBorder(Rectangle.TOP);
+        labelCell.setBackgroundColor(new BaseColor(249, 250, 251));
+        labelCell.setPadding(8);
+        table.addCell(labelCell);
+        
+        PdfPCell valueCell = new PdfPCell(new Phrase(value, font));
+        valueCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+        valueCell.setBorder(Rectangle.TOP);
+        valueCell.setBackgroundColor(new BaseColor(249, 250, 251));
+        valueCell.setPadding(8);
+        table.addCell(valueCell);
     }
 }

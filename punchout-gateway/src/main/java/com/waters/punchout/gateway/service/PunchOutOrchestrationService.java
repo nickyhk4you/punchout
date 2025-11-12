@@ -43,9 +43,10 @@ public class PunchOutOrchestrationService {
     public Map<String, Object> processPunchOutRequest(String cxmlContent, String sessionKey) {
         log.info("Processing PunchOut request for sessionKey={}", sessionKey);
         
+        PunchOutRequest request = null;
         try {
             // Parse cXML first to extract the session key
-            PunchOutRequest request = convertCxmlToJson(cxmlContent);
+            request = convertCxmlToJson(cxmlContent);
             if (sessionKey != null && !sessionKey.isEmpty()) {
                 request.setSessionKey(sessionKey);
             }
@@ -66,6 +67,16 @@ public class PunchOutOrchestrationService {
             
         } catch (Exception e) {
             log.error("Error processing PunchOut request for sessionKey={}: {}", sessionKey, e.getMessage(), e);
+            
+            // Save failed session for troubleshooting
+            if (request != null) {
+                try {
+                    saveFailedPunchOutSession(request, e);
+                } catch (Exception saveError) {
+                    log.error("Failed to save failed session: {}", saveError.getMessage());
+                }
+            }
+            
             throw new RuntimeException("Failed to process PunchOut request: " + e.getMessage(), e);
         }
     }
@@ -151,38 +162,65 @@ public class PunchOutOrchestrationService {
         session.setCartReturn(request.getCartReturnUrl());
         session.setSessionDate(LocalDateTime.now());
         session.setPunchedIn(LocalDateTime.now());
+        session.setEnvironment(extractEnvironment(request));
+        session.setCatalog((String) muleResponse.get("catalogUrl"));
         
-        // Extract environment from session key if available (e.g., SESSION_DEV_CUST001_123456)
+        sessionRepository.save(session);
+        log.info("Saved PunchOut session: sessionKey={}, environment={}", request.getSessionKey(), session.getEnvironment());
+    }
+
+    private void saveFailedPunchOutSession(PunchOutRequest request, Exception error) {
+        log.debug("Saving failed PunchOut session for sessionKey={}", request.getSessionKey());
+        
+        PunchOutSessionDocument session = new PunchOutSessionDocument();
+        session.setSessionKey(request.getSessionKey());
+        session.setBuyerCookie(request.getBuyerCookie());
+        session.setOperation(request.getOperation() != null ? request.getOperation().toUpperCase() : "CREATE");
+        session.setContact(request.getContactEmail());
+        session.setCartReturn(request.getCartReturnUrl());
+        session.setSessionDate(LocalDateTime.now());
+        session.setPunchedIn(LocalDateTime.now());
+        session.setEnvironment(extractEnvironment(request));
+        session.setCatalog("FAILED: " + error.getMessage());
+        
+        sessionRepository.save(session);
+        log.info("Saved failed PunchOut session: sessionKey={}, error={}", request.getSessionKey(), error.getMessage());
+    }
+
+    private String extractEnvironment(PunchOutRequest request) {
+        // First try to get from extrinsics
+        if (request.getExtrinsics() != null && request.getExtrinsics().containsKey("Environment")) {
+            String env = request.getExtrinsics().get("Environment");
+            return mapEnvironmentName(env);
+        }
+        
+        // Fallback: Extract environment from session key if available (e.g., SESSION_DEV_CUST001_123456)
         String environment = "DEVELOPMENT";
         if (request.getSessionKey() != null) {
             String[] parts = request.getSessionKey().split("_");
             if (parts.length > 1) {
-                String envPart = parts[1];
-                // Map to expected values: dev -> DEVELOPMENT, prod -> PRODUCTION, etc.
-                switch (envPart.toLowerCase()) {
-                    case "dev":
-                        environment = "DEVELOPMENT";
-                        break;
-                    case "stage":
-                        environment = "STAGING";
-                        break;
-                    case "prod":
-                        environment = "PRODUCTION";
-                        break;
-                    case "s4":
-                    case "s4-dev":
-                        environment = "S4_DEVELOPMENT";
-                        break;
-                    default:
-                        environment = "DEVELOPMENT";
-                }
+                return mapEnvironmentName(parts[1]);
             }
         }
-        session.setEnvironment(environment);
-        session.setCatalog((String) muleResponse.get("catalogUrl"));
+        return environment;
+    }
+
+    private String mapEnvironmentName(String env) {
+        if (env == null) return "DEVELOPMENT";
         
-        sessionRepository.save(session);
-        log.info("Saved PunchOut session: sessionKey={}, environment={}", request.getSessionKey(), environment);
+        switch (env.toLowerCase()) {
+            case "dev":
+                return "DEVELOPMENT";
+            case "stage":
+                return "STAGING";
+            case "prod":
+                return "PRODUCTION";
+            case "s4":
+            case "s4-dev":
+                return "S4_DEVELOPMENT";
+            default:
+                return "DEVELOPMENT";
+        }
     }
 
     private Map<String, Object> buildSuccessResponse(PunchOutRequest request, Map<String, Object> muleResponse) {

@@ -50,7 +50,7 @@ export default function InvoiceNetworkRequestDetailPage() {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
           <p className="mt-4 text-gray-600">Loading request details...</p>
         </div>
       </div>
@@ -64,7 +64,7 @@ export default function InvoiceNetworkRequestDetailPage() {
           <p className="text-red-600 mb-4">Error: {error || 'Request not found'}</p>
           <Link
             href={`/invoices/${invoiceNumber}`}
-            className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700"
+            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
           >
             Back to Invoice
           </Link>
@@ -82,14 +82,14 @@ export default function InvoiceNetworkRequestDetailPage() {
   return (
     <div>
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-orange-600 to-amber-600 text-white">
+      <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white">
         <div className="container mx-auto px-4 py-12">
           <div className="max-w-4xl">
             <h1 className="text-4xl font-bold mb-3">
               <i className="fas fa-network-wired mr-3"></i>
               Network Request Details
             </h1>
-            <p className="text-xl text-orange-100">
+            <p className="text-xl opacity-90">
               {request.requestType} - {request.direction}
             </p>
           </div>
@@ -103,7 +103,7 @@ export default function InvoiceNetworkRequestDetailPage() {
         {/* Request Overview */}
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-6 mt-6">
           <h2 className="text-xl font-semibold mb-4">
-            <i className="fas fa-info-circle text-orange-600 mr-2"></i>
+            <i className="fas fa-info-circle text-red-600 mr-2"></i>
             Request Overview
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -194,7 +194,7 @@ export default function InvoiceNetworkRequestDetailPage() {
         {/* Bodies */}
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4">
-            <i className="fas fa-file-alt text-orange-600 mr-2"></i>
+            <i className="fas fa-file-alt text-red-600 mr-2"></i>
             Request Body
           </h2>
           <pre className="bg-gray-50 p-4 rounded-lg text-xs overflow-auto max-h-96 border border-gray-200">
@@ -228,7 +228,7 @@ export default function InvoiceNetworkRequestDetailPage() {
         <div className="flex justify-center">
           <Link
             href={`/invoices/${invoiceNumber}`}
-            className="px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-all font-semibold"
+            className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all font-semibold"
           >
             <i className="fas fa-arrow-left mr-2"></i>
             Back to Invoice

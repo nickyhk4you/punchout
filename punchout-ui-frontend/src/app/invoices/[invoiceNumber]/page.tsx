@@ -52,15 +52,33 @@ export default function InvoiceDetailPage() {
     );
   };
 
-  const handleDownloadPDF = () => {
-    alert('PDF download feature coming soon!');
+  const handleDownloadPDF = async () => {
+    try {
+      const response = await fetch(`http://localhost:8080/api/v1/invoices/${invoiceNumber}/pdf`);
+      if (!response.ok) {
+        throw new Error('Failed to download PDF');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${invoiceNumber}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to download PDF:', error);
+      alert('Failed to download PDF. Please try again.');
+    }
   };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
           <p className="mt-4 text-gray-600">Loading invoice details...</p>
         </div>
       </div>
@@ -74,7 +92,7 @@ export default function InvoiceDetailPage() {
           <p className="text-red-600 mb-4">Error: Invoice not found</p>
           <Link
             href="/invoices"
-            className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700"
+            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
           >
             Back to Invoices
           </Link>
@@ -91,14 +109,14 @@ export default function InvoiceDetailPage() {
   return (
     <div>
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-orange-600 to-amber-600 text-white">
+      <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white">
         <div className="container mx-auto px-4 py-12">
           <div className="max-w-4xl">
             <h1 className="text-4xl font-bold mb-3">
               <i className="fas fa-file-invoice mr-3"></i>
               Invoice Details
             </h1>
-            <p className="text-xl text-orange-100">
+            <p className="text-xl opacity-90">
               {invoiceNumber}
             </p>
           </div>
@@ -113,7 +131,7 @@ export default function InvoiceDetailPage() {
         <div className="mb-6 flex justify-end">
           <button
             onClick={handleDownloadPDF}
-            className="px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-all font-semibold shadow-lg"
+            className="px-6 py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-lg hover:from-red-600 hover:to-pink-600 transition-all font-semibold shadow-lg"
           >
             <i className="fas fa-file-pdf mr-2"></i>
             Download PDF
@@ -122,7 +140,10 @@ export default function InvoiceDetailPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-xl font-semibold mb-4 text-gray-800">Invoice Information</h2>
+            <h2 className="text-xl font-semibold mb-4">
+              <i className="fas fa-file-invoice text-red-600 mr-2"></i>
+              Invoice Information
+            </h2>
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-gray-600">Invoice Number:</span>
@@ -167,7 +188,7 @@ export default function InvoiceDetailPage() {
               {invoice.sessionKey && (
                 <div className="flex justify-between">
                   <span className="text-gray-600">Session Key:</span>
-                  <Link href={`/sessions/${invoice.sessionKey}`} className="font-medium text-orange-600 hover:text-orange-800">
+                  <Link href={`/sessions/${invoice.sessionKey}`} className="font-medium text-blue-600 hover:text-blue-800">
                     {invoice.sessionKey}
                   </Link>
                 </div>
@@ -175,7 +196,7 @@ export default function InvoiceDetailPage() {
               {invoice.orderId && (
                 <div className="flex justify-between">
                   <span className="text-gray-600">Order ID:</span>
-                  <Link href={`/orders/${invoice.orderId}`} className="font-medium text-orange-600 hover:text-orange-800">
+                  <Link href={`/orders/${invoice.orderId}`} className="font-medium text-green-600 hover:text-green-800">
                     {invoice.orderId}
                   </Link>
                 </div>
@@ -185,7 +206,7 @@ export default function InvoiceDetailPage() {
 
           <div className="bg-white rounded-xl shadow-lg p-6">
             <h2 className="text-xl font-semibold mb-4">
-              <i className="fas fa-info-circle text-orange-600 mr-2"></i>
+              <i className="fas fa-dollar-sign text-green-600 mr-2"></i>
               Invoice Summary
             </h2>
             <div className="space-y-3">
@@ -223,7 +244,7 @@ export default function InvoiceDetailPage() {
               )}
               <div className="flex justify-between border-t pt-3">
                 <span className="text-gray-600 font-semibold">Total:</span>
-                <span className="font-bold text-lg text-orange-700">{formatCurrency(invoice.invoiceTotal, invoice.currency)}</span>
+                <span className="font-bold text-lg text-green-700">{formatCurrency(invoice.invoiceTotal, invoice.currency)}</span>
               </div>
               {invoice.paymentTerms && (
                 <div className="flex justify-between">
@@ -341,7 +362,7 @@ export default function InvoiceDetailPage() {
                 onClick={() => setActiveTab('all')}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'all'
-                    ? 'border-orange-500 text-orange-600'
+                    ? 'border-red-500 text-red-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
@@ -351,7 +372,7 @@ export default function InvoiceDetailPage() {
                 onClick={() => setActiveTab('inbound')}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'inbound'
-                    ? 'border-orange-500 text-orange-600'
+                    ? 'border-red-500 text-red-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
@@ -361,7 +382,7 @@ export default function InvoiceDetailPage() {
                 onClick={() => setActiveTab('outbound')}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'outbound'
-                    ? 'border-orange-500 text-orange-600'
+                    ? 'border-red-500 text-red-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
@@ -406,7 +427,7 @@ export default function InvoiceDetailPage() {
                   {networkRequests
                     .filter(req => activeTab === 'all' || req.direction === activeTab.toUpperCase())
                     .map((request) => (
-                      <tr key={request.id} className="hover:bg-orange-50 transition-colors">
+                      <tr key={request.id} className="hover:bg-red-50 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {new Date(request.timestamp).toLocaleTimeString()}
                         </td>
@@ -445,7 +466,7 @@ export default function InvoiceDetailPage() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <Link
                             href={`/invoices/${invoiceNumber}/requests/${request.id}`}
-                            className="inline-flex items-center px-3 py-1.5 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-all font-semibold"
+                            className="inline-flex items-center px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all font-semibold"
                           >
                             <i className="fas fa-eye mr-1"></i>
                             View

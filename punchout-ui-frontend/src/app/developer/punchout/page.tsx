@@ -241,10 +241,13 @@ export default function DeveloperPunchOutPage() {
             setSelectedEnvironment(env);
             setTestResult(null);
             }}
-            className={`px-6 py-3 rounded-lg font-semibold transition-all transform hover:scale-105 ${
-            selectedEnvironment === env
-            ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg'
-            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            disabled={env === 'prod'}
+            className={`px-6 py-3 rounded-lg font-semibold transition-all ${
+            env === 'prod'
+            ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+            : selectedEnvironment === env
+            ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg transform hover:scale-105'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200 transform hover:scale-105'
             }`}
             >
             {env.toUpperCase()}

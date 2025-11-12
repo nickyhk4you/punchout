@@ -36,9 +36,9 @@ public class EnvironmentConfigService {
     }
     
     /**
-     * Get configuration for current environment with caching
+     * Get configuration for current environment (caching disabled)
      */
-    @Cacheable(value = "environmentConfig", key = "#environment")
+    // @Cacheable(value = "environmentConfig", key = "#environment") - DISABLED to avoid cache issues
     public EnvironmentConfig getConfig(String environment) {
         log.info("Loading configuration for environment: {}", environment);
         
@@ -111,7 +111,7 @@ public class EnvironmentConfigService {
     /**
      * Save or update configuration
      */
-    @CacheEvict(value = "environmentConfig", key = "#config.environment")
+    // @CacheEvict(value = "environmentConfig", key = "#config.environment") - Cache disabled
     public EnvironmentConfig saveConfig(EnvironmentConfig config) {
         log.info("Saving configuration for environment: {}", config.getEnvironment());
         return repository.save(config);
@@ -120,7 +120,7 @@ public class EnvironmentConfigService {
     /**
      * Delete configuration
      */
-    @CacheEvict(value = "environmentConfig", key = "#environment")
+    // @CacheEvict(value = "environmentConfig", key = "#environment") - Cache disabled
     public void deleteConfig(String environment) {
         log.info("Deleting configuration for environment: {}", environment);
         repository.findByEnvironment(environment)
@@ -128,19 +128,19 @@ public class EnvironmentConfigService {
     }
     
     /**
-     * Clear cache for specific environment
+     * Clear cache for specific environment (no-op when cache disabled)
      */
-    @CacheEvict(value = "environmentConfig", key = "#environment")
+    // @CacheEvict(value = "environmentConfig", key = "#environment") - Cache disabled
     public void clearCache(String environment) {
-        log.info("Clearing cache for environment: {}", environment);
+        log.info("Cache clearing skipped - caching is disabled for environment: {}", environment);
     }
     
     /**
-     * Clear all caches
+     * Clear all caches (no-op when cache disabled)
      */
-    @CacheEvict(value = "environmentConfig", allEntries = true)
+    // @CacheEvict(value = "environmentConfig", allEntries = true) - Cache disabled
     public void clearAllCaches() {
-        log.info("Clearing all environment configuration caches");
+        log.info("Cache clearing skipped - caching is disabled");
     }
     
     /**
