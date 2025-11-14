@@ -231,3 +231,23 @@ export interface CustomerDatastore {
   createdBy?: string;
   updatedBy?: string;
 }
+
+export interface CustomerOnboarding {
+  id?: string;
+  customerName: string;
+  customerType: string;
+  network: string;
+  environment: string;
+  sampleCxml: string;
+  targetJson: string;
+  fieldMappings: Record<string, string>;
+  notes?: string;
+  converterClass?: string;
+  status?: string;
+  deployed?: boolean;
+  deployedAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  createdBy?: string;
+  updatedBy?: string;
+}

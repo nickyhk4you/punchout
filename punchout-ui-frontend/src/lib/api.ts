@@ -3,11 +3,21 @@ import { PunchOutSession, OrderObject, GatewayRequest, SessionFilter, CxmlTempla
 
 // API Base URL - configurable via environment variable
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+const GATEWAY_BASE_URL = process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:9090/api';
 
 console.log('API Base URL:', API_BASE_URL);
+console.log('Gateway Base URL:', GATEWAY_BASE_URL);
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  timeout: 10000, // 10 second timeout
+});
+
+const gatewayClient = axios.create({
+  baseURL: GATEWAY_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -290,60 +300,115 @@ export const invoiceAPI = {
 export const datastoreAPI = {
   // Get all datastores
   getAllDatastores: async (): Promise<import('@/types').CustomerDatastore[]> => {
-    const response = await apiClient.get<import('@/types').CustomerDatastore[]>('/datastore');
+    const response = await gatewayClient.get<import('@/types').CustomerDatastore[]>('/datastore');
     return response.data;
   },
 
   // Get datastore by ID
   getDatastoreById: async (id: string): Promise<import('@/types').CustomerDatastore> => {
-    const response = await apiClient.get<import('@/types').CustomerDatastore>(`/datastore/${id}`);
+    const response = await gatewayClient.get<import('@/types').CustomerDatastore>(`/datastore/${id}`);
     return response.data;
   },
 
   // Get datastores by customer
   getDatastoresByCustomer: async (customer: string): Promise<import('@/types').CustomerDatastore[]> => {
-    const response = await apiClient.get<import('@/types').CustomerDatastore[]>(`/datastore/customer/${customer}`);
+    const response = await gatewayClient.get<import('@/types').CustomerDatastore[]>(`/datastore/customer/${customer}`);
     return response.data;
   },
 
   // Get datastores by environment
   getDatastoresByEnvironment: async (environment: string): Promise<import('@/types').CustomerDatastore[]> => {
-    const response = await apiClient.get<import('@/types').CustomerDatastore[]>(`/datastore/environment/${environment}`);
+    const response = await gatewayClient.get<import('@/types').CustomerDatastore[]>(`/datastore/environment/${environment}`);
     return response.data;
   },
 
   // Get datastore by customer and environment
   getDatastoreByCustomerAndEnvironment: async (customer: string, environment: string): Promise<import('@/types').CustomerDatastore> => {
-    const response = await apiClient.get<import('@/types').CustomerDatastore>(`/datastore/customer/${customer}/environment/${environment}`);
+    const response = await gatewayClient.get<import('@/types').CustomerDatastore>(`/datastore/customer/${customer}/environment/${environment}`);
     return response.data;
   },
 
   // Create datastore
   createDatastore: async (datastore: Partial<import('@/types').CustomerDatastore>): Promise<import('@/types').CustomerDatastore> => {
-    const response = await apiClient.post<import('@/types').CustomerDatastore>('/datastore', datastore);
+    const response = await gatewayClient.post<import('@/types').CustomerDatastore>('/datastore', datastore);
     return response.data;
   },
 
   // Update datastore
   updateDatastore: async (id: string, datastore: Partial<import('@/types').CustomerDatastore>): Promise<import('@/types').CustomerDatastore> => {
-    const response = await apiClient.put<import('@/types').CustomerDatastore>(`/datastore/${id}`, datastore);
+    const response = await gatewayClient.put<import('@/types').CustomerDatastore>(`/datastore/${id}`, datastore);
     return response.data;
   },
 
   // Delete datastore
   deleteDatastore: async (id: string): Promise<void> => {
-    await apiClient.delete(`/datastore/${id}`);
+    await gatewayClient.delete(`/datastore/${id}`);
   },
 
   // Add or update key-value
   addOrUpdateKeyValue: async (id: string, key: string, value: string): Promise<import('@/types').CustomerDatastore> => {
-    const response = await apiClient.put<import('@/types').CustomerDatastore>(`/datastore/${id}/key/${key}`, { value });
+    const response = await gatewayClient.put<import('@/types').CustomerDatastore>(`/datastore/${id}/key/${key}`, { value });
     return response.data;
   },
 
   // Remove key
   removeKey: async (id: string, key: string): Promise<import('@/types').CustomerDatastore> => {
-    const response = await apiClient.delete<import('@/types').CustomerDatastore>(`/datastore/${id}/key/${key}`);
+    const response = await gatewayClient.delete<import('@/types').CustomerDatastore>(`/datastore/${id}/key/${key}`);
+    return response.data;
+  },
+};
+
+export const onboardingAPI = {
+  // Get all onboardings
+  getAllOnboardings: async (): Promise<import('@/types').CustomerOnboarding[]> => {
+    const response = await gatewayClient.get<import('@/types').CustomerOnboarding[]>('/onboarding');
+    return response.data;
+  },
+
+  // Get onboarding by ID
+  getOnboardingById: async (id: string): Promise<import('@/types').CustomerOnboarding> => {
+    const response = await gatewayClient.get<import('@/types').CustomerOnboarding>(`/onboarding/${id}`);
+    return response.data;
+  },
+
+  // Get deployed onboardings
+  getDeployedOnboardings: async (): Promise<import('@/types').CustomerOnboarding[]> => {
+    const response = await gatewayClient.get<import('@/types').CustomerOnboarding[]>('/onboarding/deployed');
+    return response.data;
+  },
+
+  // Create onboarding
+  createOnboarding: async (onboarding: Partial<import('@/types').CustomerOnboarding>): Promise<import('@/types').CustomerOnboarding> => {
+    const response = await gatewayClient.post<import('@/types').CustomerOnboarding>('/onboarding', onboarding);
+    return response.data;
+  },
+
+  // Update onboarding
+  updateOnboarding: async (id: string, onboarding: Partial<import('@/types').CustomerOnboarding>): Promise<import('@/types').CustomerOnboarding> => {
+    const response = await gatewayClient.put<import('@/types').CustomerOnboarding>(`/onboarding/${id}`, onboarding);
+    return response.data;
+  },
+
+  // Deploy onboarding
+  deployOnboarding: async (id: string): Promise<import('@/types').CustomerOnboarding> => {
+    const response = await gatewayClient.post<import('@/types').CustomerOnboarding>(`/onboarding/${id}/deploy`);
+    return response.data;
+  },
+
+  // Generate converter
+  generateConverter: async (id: string): Promise<import('@/types').CustomerOnboarding> => {
+    const response = await gatewayClient.post<import('@/types').CustomerOnboarding>(`/onboarding/${id}/generate-converter`);
+    return response.data;
+  },
+
+  // Delete onboarding
+  deleteOnboarding: async (id: string): Promise<void> => {
+    await gatewayClient.delete(`/onboarding/${id}`);
+  },
+
+  // Test conversion
+  testConversion: async (id: string, testData: any): Promise<any> => {
+    const response = await gatewayClient.post(`/onboarding/${id}/test`, testData);
     return response.data;
   },
 };
