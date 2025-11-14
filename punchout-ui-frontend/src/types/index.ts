@@ -218,3 +218,16 @@ export interface Invoice {
   paidAt?: string;
   source?: string;
 }
+
+export interface CustomerDatastore {
+  id?: string;
+  customer: string;
+  environment: string;
+  keyValuePairs: Record<string, string>;
+  description?: string;
+  enabled: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  createdBy?: string;
+  updatedBy?: string;
+}

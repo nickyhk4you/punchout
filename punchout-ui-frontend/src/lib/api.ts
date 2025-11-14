@@ -287,4 +287,65 @@ export const invoiceAPI = {
   },
 };
 
+export const datastoreAPI = {
+  // Get all datastores
+  getAllDatastores: async (): Promise<import('@/types').CustomerDatastore[]> => {
+    const response = await apiClient.get<import('@/types').CustomerDatastore[]>('/datastore');
+    return response.data;
+  },
+
+  // Get datastore by ID
+  getDatastoreById: async (id: string): Promise<import('@/types').CustomerDatastore> => {
+    const response = await apiClient.get<import('@/types').CustomerDatastore>(`/datastore/${id}`);
+    return response.data;
+  },
+
+  // Get datastores by customer
+  getDatastoresByCustomer: async (customer: string): Promise<import('@/types').CustomerDatastore[]> => {
+    const response = await apiClient.get<import('@/types').CustomerDatastore[]>(`/datastore/customer/${customer}`);
+    return response.data;
+  },
+
+  // Get datastores by environment
+  getDatastoresByEnvironment: async (environment: string): Promise<import('@/types').CustomerDatastore[]> => {
+    const response = await apiClient.get<import('@/types').CustomerDatastore[]>(`/datastore/environment/${environment}`);
+    return response.data;
+  },
+
+  // Get datastore by customer and environment
+  getDatastoreByCustomerAndEnvironment: async (customer: string, environment: string): Promise<import('@/types').CustomerDatastore> => {
+    const response = await apiClient.get<import('@/types').CustomerDatastore>(`/datastore/customer/${customer}/environment/${environment}`);
+    return response.data;
+  },
+
+  // Create datastore
+  createDatastore: async (datastore: Partial<import('@/types').CustomerDatastore>): Promise<import('@/types').CustomerDatastore> => {
+    const response = await apiClient.post<import('@/types').CustomerDatastore>('/datastore', datastore);
+    return response.data;
+  },
+
+  // Update datastore
+  updateDatastore: async (id: string, datastore: Partial<import('@/types').CustomerDatastore>): Promise<import('@/types').CustomerDatastore> => {
+    const response = await apiClient.put<import('@/types').CustomerDatastore>(`/datastore/${id}`, datastore);
+    return response.data;
+  },
+
+  // Delete datastore
+  deleteDatastore: async (id: string): Promise<void> => {
+    await apiClient.delete(`/datastore/${id}`);
+  },
+
+  // Add or update key-value
+  addOrUpdateKeyValue: async (id: string, key: string, value: string): Promise<import('@/types').CustomerDatastore> => {
+    const response = await apiClient.put<import('@/types').CustomerDatastore>(`/datastore/${id}/key/${key}`, { value });
+    return response.data;
+  },
+
+  // Remove key
+  removeKey: async (id: string, key: string): Promise<import('@/types').CustomerDatastore> => {
+    const response = await apiClient.delete<import('@/types').CustomerDatastore>(`/datastore/${id}/key/${key}`);
+    return response.data;
+  },
+};
+
 export default apiClient;

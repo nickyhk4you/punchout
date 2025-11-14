@@ -19,6 +19,7 @@ const Sidebar = () => {
     { href: '/sessions', icon: 'tasks', label: 'PunchOut Sessions' },
     { href: '/order-requests', icon: 'shopping-cart', label: 'Order Requests' },
     { href: '/order-notices', icon: 'bell', label: 'Order Notices' },
+    { href: '/datastore', icon: 'database', label: 'Datastore' },
     { href: '/configuration', icon: 'cog', label: 'Configuration' },
     { href: '/reports', icon: 'chart-bar', label: 'Reports' },
   ];
