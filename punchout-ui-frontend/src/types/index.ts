@@ -137,6 +137,20 @@ export interface EnvironmentConfig {
   notes?: string;
 }
 
+export interface SystemEnvironmentConfig {
+  id?: string;
+  environment: string;
+  authServiceUrl: string;
+  muleServiceUrl: string;
+  catalogBaseUrl: string;
+  description?: string;
+  enabled: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  createdBy?: string;
+  updatedBy?: string;
+}
+
 export interface CatalogRoute {
   id: string;
   routeName: string;
