@@ -398,8 +398,8 @@ export default function CustomerOnboardingPage() {
               ) : (
                 <div className="text-center py-16 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
                   <i className="fas fa-wand-magic text-6xl text-gray-300 mb-4"></i>
-                  <p className="text-gray-600 text-lg font-medium mb-4">Click "Auto-Generate Mappings" to start</p>
-                  <p className="text-gray-500 text-sm">We'll analyze your cXML and JSON to create intelligent field mappings</p>
+                  <p className="text-gray-600 text-lg font-medium mb-4">Click &quot;Auto-Generate Mappings&quot; to start</p>
+                  <p className="text-gray-500 text-sm">We&apos;ll analyze your cXML and JSON to create intelligent field mappings</p>
                 </div>
               )}
             </div>

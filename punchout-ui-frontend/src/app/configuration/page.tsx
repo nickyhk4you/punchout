@@ -1014,8 +1014,8 @@ export default function ConfigurationPage() {
                 )
               )}
 
-                  {/* Application Logs */}
-                  <div>
+              {/* Application Logs */}
+              <div>
                     <div className="flex justify-between items-center mb-3">
                       <h3 className="text-lg font-semibold text-gray-900">
                         <i className="fas fa-file-alt text-purple-600 mr-2"></i>

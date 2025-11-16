@@ -41,12 +41,18 @@ start_service() {
     cd /Users/nickhu/dev/java/punchout/$service_dir
     
     echo "   Building $service_name..."
-    mvn clean compile -q
+    # Build from root to include dependencies
+    cd /Users/nickhu/dev/java/punchout
+    mvn clean install -pl punchout-common -am -DskipTests -q
+    mvn clean compile -pl $service_dir -am -DskipTests -q
     
     if [ $? -ne 0 ]; then
         echo "❌ Build failed for $service_name"
         return 1
     fi
+    
+    # Return to service directory
+    cd /Users/nickhu/dev/java/punchout/$service_dir
     
     echo "   Starting $service_name on port $port..."
     nohup mvn spring-boot:run > /tmp/$service_dir.log 2>&1 &

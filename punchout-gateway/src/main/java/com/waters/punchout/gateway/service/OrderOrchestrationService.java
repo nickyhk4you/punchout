@@ -3,7 +3,7 @@ package com.waters.punchout.gateway.service;
 import com.waters.punchout.gateway.client.AuthServiceClient;
 import com.waters.punchout.gateway.client.MuleServiceClient;
 import com.waters.punchout.gateway.converter.CxmlOrderConverter;
-import com.waters.punchout.gateway.dto.OrderResponse;
+import com.waters.punchout.common.dto.OrderResponse;
 import com.waters.punchout.gateway.entity.OrderDocument;
 import com.waters.punchout.gateway.logging.NetworkRequestLogger;
 import com.waters.punchout.gateway.repository.OrderRepository;

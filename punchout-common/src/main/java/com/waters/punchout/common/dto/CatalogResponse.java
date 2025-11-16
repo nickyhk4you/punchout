@@ -1,4 +1,4 @@
-package com.waters.punchout.gateway.dto;
+package com.waters.punchout.common.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
