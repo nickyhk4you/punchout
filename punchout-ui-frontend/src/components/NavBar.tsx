@@ -85,41 +85,45 @@ const NavBar = () => {
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg">
-      <div className="container mx-auto px-4">
+      <div className="max-w-full px-6">
         <div className="flex items-center justify-between h-16" ref={dropdownRef}>
           {/* Logo/Brand */}
-          <Link href="/" className="flex items-center space-x-3 hover:opacity-90 transition-opacity">
+          <Link href="/" className="flex items-center space-x-3 hover:opacity-90 transition-opacity flex-shrink-0">
             <div className="bg-white rounded-lg p-2 shadow-md">
               <i className="fas fa-rocket text-2xl text-blue-600"></i>
             </div>
-            <span className="text-white font-bold text-xl hidden md:block">
+            <span className="text-white font-bold text-xl hidden lg:block whitespace-nowrap">
               Waters Punchout Platform
+            </span>
+            <span className="text-white font-bold text-lg hidden md:block lg:hidden whitespace-nowrap">
+              Waters
             </span>
           </Link>
           
           {/* Navigation Menu */}
-          <div className="hidden md:flex items-center space-x-2">
+          <div className="hidden md:flex items-center space-x-3 lg:space-x-4">
             <Link
               href="/"
-              className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
+              className={`px-3 lg:px-4 py-2 rounded-lg font-semibold text-sm transition-all whitespace-nowrap ${
                 isActive('/')
                   ? 'bg-white text-blue-600 shadow-lg scale-105'
                   : 'text-white hover:bg-white hover:bg-opacity-20'
               }`}
             >
               <i className="fas fa-home mr-2"></i>
-              Dashboard
+              <span className="hidden lg:inline">Dashboard</span>
+              <span className="lg:hidden">Home</span>
             </Link>
 
             <DropdownMenu 
-              title="Data Management" 
+              title="Data" 
               icon="database"
               items={dataMenuItems}
               menuKey="data"
             />
 
             <DropdownMenu 
-              title="Developer Tools" 
+              title="Dev Tools" 
               icon="code"
               items={devMenuItems}
               menuKey="dev"
@@ -127,7 +131,7 @@ const NavBar = () => {
 
             <Link
               href="/configuration"
-              className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
+              className={`px-3 lg:px-4 py-2 rounded-lg font-semibold text-sm transition-all whitespace-nowrap ${
                 isActive('/configuration')
                   ? 'bg-white text-blue-600 shadow-lg scale-105'
                   : 'text-white hover:bg-white hover:bg-opacity-20'
