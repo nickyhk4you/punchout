@@ -30,6 +30,13 @@ export default function CustomerOnboardingPage() {
     notes: '',
   });
   const [autoMappings, setAutoMappings] = useState<any>(null);
+  const [selectedEnvironments, setSelectedEnvironments] = useState<string[]>(['dev']);
+  const [availableEnvironments] = useState([
+    { value: 'dev', label: 'Development', color: 'blue', icon: 'laptop-code' },
+    { value: 'stage', label: 'Staging', color: 'purple', icon: 'vial' },
+    { value: 'prod', label: 'Production', color: 'red', icon: 'rocket' },
+    { value: 's4-dev', label: 'S4 Dev', color: 'green', icon: 'server' },
+  ]);
 
   const steps = [
     { id: 1, title: 'Customer Info', icon: 'user-circle' },
@@ -69,15 +76,54 @@ export default function CustomerOnboardingPage() {
     });
   };
 
+  const toggleEnvironment = (env: string) => {
+    setSelectedEnvironments(prev => 
+      prev.includes(env) 
+        ? prev.filter(e => e !== env)
+        : [...prev, env]
+    );
+  };
+
+  const setEnvironmentPreset = (preset: 'all' | 'dev-only' | 'dev-stage' | 'prod-ready') => {
+    switch (preset) {
+      case 'all':
+        setSelectedEnvironments(availableEnvironments.map(e => e.value));
+        break;
+      case 'dev-only':
+        setSelectedEnvironments(['dev']);
+        break;
+      case 'dev-stage':
+        setSelectedEnvironments(['dev', 'stage']);
+        break;
+      case 'prod-ready':
+        setSelectedEnvironments(['stage', 'prod']);
+        break;
+    }
+  };
+
   const handleDeploy = async () => {
+    if (selectedEnvironments.length === 0) {
+      alert('⚠️ Please select at least one environment to deploy to.');
+      return;
+    }
+
     try {
-      // Save onboarding configuration to MongoDB
-      const saved = await onboardingAPI.createOnboarding(formData);
+      const deploymentResults = [];
       
-      // Deploy the converter
-      await onboardingAPI.deployOnboarding(saved.id!);
+      // Deploy to each selected environment
+      for (const env of selectedEnvironments) {
+        const envFormData = { ...formData, environment: env };
+        
+        // Save onboarding configuration to MongoDB
+        const saved = await onboardingAPI.createOnboarding(envFormData);
+        
+        // Deploy the converter
+        await onboardingAPI.deployOnboarding(saved.id!);
+        
+        deploymentResults.push(env);
+      }
       
-      alert(`🎉 Converter deployed successfully!\n\nCustomer: ${formData.customerName}\nEnvironment: ${formData.environment}\n\nYou can now test it in Developer Tools → Testing`);
+      alert(`🎉 Converter deployed successfully!\n\nCustomer: ${formData.customerName}\nEnvironments: ${deploymentResults.map(e => e.toUpperCase()).join(', ')}\n\nYou can now test it in Developer Tools → Testing`);
     } catch (error: any) {
       alert('Failed to deploy converter: ' + error.message);
     }
@@ -195,20 +241,6 @@ export default function CustomerOnboardingPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Environment <span className="text-red-500">*</span>
-                </label>
-                <select
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                  value={formData.environment}
-                  onChange={(e) => setFormData({ ...formData, environment: e.target.value })}
-                >
-                  <option value="dev">Development</option>
-                  <option value="stage">Staging</option>
-                  <option value="prod">Production</option>
-                </select>
-              </div>
             </div>
           )}
 
@@ -400,10 +432,6 @@ export default function CustomerOnboardingPage() {
                       <span className="text-blue-700 font-medium">Network:</span>
                       <span className="text-blue-900 font-semibold">{formData.network || 'N/A'}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-blue-700 font-medium">Environment:</span>
-                      <span className="text-blue-900 font-semibold">{formData.environment}</span>
-                    </div>
                   </div>
                 </div>
 
@@ -432,6 +460,116 @@ export default function CustomerOnboardingPage() {
                 </div>
               </div>
 
+              {/* Environment Selection Section */}
+              <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border-2 border-indigo-200 rounded-xl p-6">
+                <div className="mb-4">
+                  <h3 className="font-bold text-lg text-gray-900 mb-2">
+                    <i className="fas fa-server text-indigo-600 mr-2"></i>
+                    Deploy to Environments
+                  </h3>
+                  <p className="text-sm text-gray-600">Select which environments to deploy this customer configuration to</p>
+                </div>
+                
+                {/* Environment Chips */}
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  {availableEnvironments.map((env) => {
+                    const isSelected = selectedEnvironments.includes(env.value);
+                    return (
+                      <button
+                        key={env.value}
+                        type="button"
+                        onClick={() => toggleEnvironment(env.value)}
+                        className={`relative flex items-center gap-3 px-5 py-4 rounded-xl border-2 transition-all duration-200 ${
+                          isSelected
+                            ? `border-${env.color}-500 bg-gradient-to-br from-${env.color}-500 to-${env.color}-600 text-white shadow-lg transform scale-[1.02]`
+                            : 'border-gray-300 bg-white hover:border-gray-400 hover:shadow-md text-gray-700'
+                        }`}
+                      >
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                          isSelected ? 'bg-white bg-opacity-20' : 'bg-gray-100'
+                        }`}>
+                          <i className={`fas fa-${env.icon} ${isSelected ? 'text-white' : `text-${env.color}-600`}`}></i>
+                        </div>
+                        <div className="flex-1 text-left">
+                          <div className={`font-bold text-sm ${isSelected ? 'text-white' : 'text-gray-900'}`}>
+                            {env.label}
+                          </div>
+                          <div className={`text-xs ${isSelected ? 'text-white text-opacity-90' : 'text-gray-500'}`}>
+                            {env.value.toUpperCase()}
+                          </div>
+                        </div>
+                        {isSelected && (
+                          <div className="absolute top-2 right-2">
+                            <i className="fas fa-check-circle text-white text-lg"></i>
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Quick Presets */}
+                <div className="pt-4 border-t border-indigo-200">
+                  <p className="text-xs text-gray-600 mb-2 font-semibold uppercase tracking-wide">Quick Presets:</p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setEnvironmentPreset('dev-only')}
+                      className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-all text-sm font-semibold"
+                    >
+                      <i className="fas fa-laptop-code mr-1"></i>
+                      Dev Only
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEnvironmentPreset('dev-stage')}
+                      className="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-all text-sm font-semibold"
+                    >
+                      <i className="fas fa-vial mr-1"></i>
+                      Dev + Staging
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEnvironmentPreset('prod-ready')}
+                      className="px-3 py-1.5 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition-all text-sm font-semibold"
+                    >
+                      <i className="fas fa-rocket mr-1"></i>
+                      Production Ready
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEnvironmentPreset('all')}
+                      className="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-all text-sm font-semibold"
+                    >
+                      <i className="fas fa-globe mr-1"></i>
+                      All Environments
+                    </button>
+                  </div>
+                </div>
+
+                {/* Selected Count */}
+                <div className="mt-4 pt-4 border-t border-indigo-200">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">
+                      <i className="fas fa-info-circle text-indigo-600 mr-1"></i>
+                      Selected Environments:
+                    </span>
+                    <span className="font-bold text-indigo-600">
+                      {selectedEnvironments.length} of {availableEnvironments.length}
+                    </span>
+                  </div>
+                  {selectedEnvironments.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {selectedEnvironments.map(env => (
+                        <span key={env} className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs font-semibold">
+                          {env.toUpperCase()}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                 <div className="flex items-start">
                   <i className="fas fa-exclamation-triangle text-yellow-600 mt-1 mr-3"></i>
@@ -439,6 +577,7 @@ export default function CustomerOnboardingPage() {
                     <p className="font-semibold mb-1">Before deploying, make sure to:</p>
                     <ul className="list-disc list-inside space-y-1 ml-2">
                       <li>Verify all field mappings are correct</li>
+                      <li>Select appropriate target environments</li>
                       <li>Test the converter with sample data in Developer Tools</li>
                       <li>Coordinate with the customer for testing window</li>
                     </ul>
