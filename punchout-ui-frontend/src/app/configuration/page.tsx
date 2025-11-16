@@ -56,6 +56,32 @@ interface SystemEnvConfig {
   updatedBy?: string;
 }
 
+interface ApiKey {
+  id: string;
+  keyValue: string;
+  customerName: string;
+  description: string;
+  permissions: string[];
+  environment: string;
+  enabled: boolean;
+  createdAt: string;
+  expiresAt?: string;
+  lastUsedAt?: string;
+  usageCount: number;
+  createdBy?: string;
+  revokedAt?: string;
+}
+
+interface SecurityAuditLog {
+  id: string;
+  timestamp: string;
+  eventType: string;
+  severity: string;
+  customerName?: string;
+  description: string;
+  metadata?: {[key: string]: string};
+}
+
 export default function ConfigurationPage() {
   const [activeTab, setActiveTab] = useState('environment');
   const [networkRequests, setNetworkRequests] = useState<NetworkRequest[]>([]);
@@ -75,6 +101,21 @@ export default function ConfigurationPage() {
   const [urlTestResults, setUrlTestResults] = useState<{[key: string]: {status: string, latency?: number}}>({});
   const [expandedEnvCard, setExpandedEnvCard] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  
+  // Security states
+  const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
+  const [securityStats, setSecurityStats] = useState<any>(null);
+  const [auditLogs, setAuditLogs] = useState<SecurityAuditLog[]>([]);
+  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
+  const [newApiKey, setNewApiKey] = useState<Partial<ApiKey>>({
+    customerName: '',
+    description: '',
+    permissions: ['PUNCHOUT', 'ORDER'],
+    environment: 'dev',
+    enabled: true
+  });
+  const [jwtConfig, setJwtConfig] = useState<any>(null);
+  const [securityTab, setSecurityTab] = useState<'api-keys' | 'jwt' | 'audit'>('api-keys');
 
   const breadcrumbItems = [{ label: 'Configuration' }];
 
@@ -170,6 +211,84 @@ export default function ConfigurationPage() {
     link.click();
   };
 
+  const fetchSecurityData = async () => {
+    try {
+      const [keysRes, statsRes, logsRes, jwtRes] = await Promise.all([
+        fetch('http://localhost:9090/api/security/api-keys'),
+        fetch('http://localhost:9090/api/security/statistics'),
+        fetch('http://localhost:9090/api/security/audit-logs?limit=50'),
+        fetch('http://localhost:9090/api/security/jwt/config')
+      ]);
+      
+      if (keysRes.ok) setApiKeys(await keysRes.json());
+      if (statsRes.ok) setSecurityStats(await statsRes.json());
+      if (logsRes.ok) setAuditLogs(await logsRes.json());
+      if (jwtRes.ok) setJwtConfig(await jwtRes.json());
+    } catch (error) {
+      console.error('Error fetching security data:', error);
+    }
+  };
+
+  const generateApiKey = async () => {
+    try {
+      const response = await fetch('http://localhost:9090/api/security/api-keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newApiKey)
+      });
+      
+      if (response.ok) {
+        await fetchSecurityData();
+        setShowApiKeyModal(false);
+        setNewApiKey({
+          customerName: '',
+          description: '',
+          permissions: ['PUNCHOUT', 'ORDER'],
+          environment: 'dev',
+          enabled: true
+        });
+      }
+    } catch (error) {
+      console.error('Error generating API key:', error);
+    }
+  };
+
+  const revokeApiKey = async (keyId: string) => {
+    if (!confirm('Revoke this API key? This action cannot be undone.')) return;
+    
+    try {
+      const response = await fetch(`http://localhost:9090/api/security/api-keys/${keyId}/revoke`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ revokedBy: 'admin' })
+      });
+      
+      if (response.ok) await fetchSecurityData();
+    } catch (error) {
+      console.error('Error revoking API key:', error);
+    }
+  };
+
+  const rotateApiKey = async (keyId: string) => {
+    if (!confirm('Rotate this API key? A new key will be generated and this one will be revoked.')) return;
+    
+    try {
+      const response = await fetch(`http://localhost:9090/api/security/api-keys/${keyId}/rotate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rotatedBy: 'admin' })
+      });
+      
+      if (response.ok) {
+        const newKey = await response.json();
+        alert(`New API Key Generated:\n\n${newKey.keyValue}\n\nPlease save this key - it won't be shown again!`);
+        await fetchSecurityData();
+      }
+    } catch (error) {
+      console.error('Error rotating API key:', error);
+    }
+  };
+
   const fetchMonitoringData = async () => {
     setLoading(true);
     try {
@@ -196,6 +315,8 @@ export default function ConfigurationPage() {
       fetchMonitoringData();
     } else if (activeTab === 'environment') {
       fetchEnvironmentConfigs();
+    } else if (activeTab === 'security') {
+      fetchSecurityData();
     }
   }, [activeTab]);
 
@@ -383,7 +504,7 @@ export default function ConfigurationPage() {
                         <div className="col-span-2 text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
                           <i className="fas fa-inbox text-5xl text-gray-300 mb-3"></i>
                           <p className="text-gray-500 font-semibold">No environments configured</p>
-                          <p className="text-sm text-gray-400 mt-1">Click "Add Environment" to create your first configuration</p>
+                          <p className="text-sm text-gray-400 mt-1">Click &quot;Add Environment&quot; to create your first configuration</p>
                         </div>
                       ) : (
                         envConfigs.map((config) => {
@@ -822,20 +943,455 @@ export default function ConfigurationPage() {
 
               {activeTab === 'security' && (
                 <div className="p-8">
-                  <div className="mb-8">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                      <i className="fas fa-shield-alt text-red-600 mr-2"></i>
-                      Security & Authentication
-                    </h2>
-                    <p className="text-gray-600">Manage security policies, authentication methods, and access controls.</p>
-                  </div>
-                  <div className="bg-gradient-to-br from-red-50 to-rose-50 border border-red-200 rounded-xl p-8 text-center">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-4">
-                      <i className="fas fa-lock text-2xl text-red-600"></i>
+                  <div className="flex justify-between items-center mb-8">
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-900">
+                        <i className="fas fa-shield-alt text-red-600 mr-2"></i>
+                        Security & Authentication
+                      </h2>
+                      <p className="text-sm text-gray-600 mt-1">Manage API keys, authentication methods, and monitor security events</p>
                     </div>
-                    <h3 className="text-lg font-bold text-gray-900 mb-2">Coming Soon</h3>
-                    <p className="text-gray-600">Security settings panel is under development</p>
+                    <button
+                      onClick={fetchSecurityData}
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all"
+                    >
+                      <i className="fas fa-sync-alt mr-2"></i>
+                      Refresh
+                    </button>
                   </div>
+
+                  {/* Security Statistics */}
+                  <div className="grid grid-cols-4 gap-4 mb-6">
+                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-lg p-4 shadow-lg">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-blue-100 text-sm">Total API Keys</p>
+                          <p className="text-3xl font-bold mt-1">{securityStats?.totalApiKeys || 0}</p>
+                        </div>
+                        <i className="fas fa-key text-4xl text-blue-200 opacity-50"></i>
+                      </div>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-lg p-4 shadow-lg">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-green-100 text-sm">Active Keys</p>
+                          <p className="text-3xl font-bold mt-1">{securityStats?.activeApiKeys || 0}</p>
+                        </div>
+                        <i className="fas fa-check-circle text-4xl text-green-200 opacity-50"></i>
+                      </div>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-yellow-500 to-orange-600 text-white rounded-lg p-4 shadow-lg">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-yellow-100 text-sm">Auth Success</p>
+                          <p className="text-3xl font-bold mt-1">{securityStats?.authSuccesses24h || 0}</p>
+                        </div>
+                        <i className="fas fa-user-check text-4xl text-yellow-200 opacity-50"></i>
+                      </div>
+                      <p className="text-xs text-yellow-100 mt-2">Last 24 hours</p>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-red-500 to-red-600 text-white rounded-lg p-4 shadow-lg">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-red-100 text-sm">Auth Failures</p>
+                          <p className="text-3xl font-bold mt-1">{securityStats?.authFailures24h || 0}</p>
+                        </div>
+                        <i className="fas fa-exclamation-triangle text-4xl text-red-200 opacity-50"></i>
+                      </div>
+                      <p className="text-xs text-red-100 mt-2">Last 24 hours</p>
+                    </div>
+                  </div>
+
+                  {/* Security Tabs */}
+                  <div className="flex gap-2 mb-6 border-b border-gray-200">
+                    {[
+                      { id: 'api-keys', label: 'API Keys', icon: 'key' },
+                      { id: 'jwt', label: 'JWT Configuration', icon: 'shield-alt' },
+                      { id: 'audit', label: 'Audit Logs', icon: 'list-alt' }
+                    ].map((tab) => (
+                      <button
+                        key={tab.id}
+                        onClick={() => setSecurityTab(tab.id as any)}
+                        className={`px-4 py-3 font-semibold text-sm transition-all border-b-2 ${
+                          securityTab === tab.id
+                            ? 'border-red-600 text-red-600'
+                            : 'border-transparent text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        <i className={`fas fa-${tab.icon} mr-2`}></i>
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* API Keys Tab */}
+                  {securityTab === 'api-keys' && (
+                    <div>
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          <i className="fas fa-key text-red-600 mr-2"></i>
+                          API Key Management
+                        </h3>
+                        <button
+                          onClick={() => setShowApiKeyModal(true)}
+                          className="px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:from-red-600 hover:to-red-700 transition-all shadow-md font-semibold"
+                        >
+                          <i className="fas fa-plus mr-2"></i>
+                          Generate API Key
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-4">
+                        {apiKeys.length === 0 ? (
+                          <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                            <i className="fas fa-key text-5xl text-gray-300 mb-3"></i>
+                            <p className="text-gray-500 font-semibold">No API keys generated</p>
+                            <p className="text-sm text-gray-400 mt-1">Click &quot;Generate API Key&quot; to create your first key</p>
+                          </div>
+                        ) : (
+                          apiKeys.map((key) => (
+                            <div key={key.id} className="bg-white border-2 border-gray-200 rounded-xl p-5 hover:border-gray-300 transition-all">
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-3 mb-3">
+                                    <div className="bg-red-100 p-2 rounded-lg">
+                                      <i className="fas fa-user-shield text-red-600 text-xl"></i>
+                                    </div>
+                                    <div>
+                                      <h4 className="font-bold text-gray-900">{key.customerName}</h4>
+                                      <p className="text-sm text-gray-600">{key.description}</p>
+                                    </div>
+                                    <span className={`ml-2 px-3 py-1 rounded-full text-xs font-bold ${
+                                      key.enabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
+                                    }`}>
+                                      {key.enabled ? 'Active' : 'Revoked'}
+                                    </span>
+                                  </div>
+
+                                  <div className="grid grid-cols-2 gap-4 mb-3">
+                                    <div>
+                                      <p className="text-xs text-gray-500">API Key</p>
+                                      <div className="flex items-center gap-2 mt-1">
+                                        <code className="text-sm bg-gray-100 px-3 py-1 rounded font-mono text-gray-700">
+                                          {key.keyValue.substring(0, 20)}...
+                                        </code>
+                                        <button
+                                          onClick={() => {
+                                            navigator.clipboard.writeText(key.keyValue);
+                                            alert('API Key copied to clipboard!');
+                                          }}
+                                          className="text-blue-600 hover:text-blue-700"
+                                          title="Copy to clipboard"
+                                        >
+                                          <i className="fas fa-copy"></i>
+                                        </button>
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs text-gray-500">Environment</p>
+                                      <p className="text-sm font-semibold text-gray-700 mt-1">{key.environment.toUpperCase()}</p>
+                                    </div>
+                                  </div>
+
+                                  <div className="grid grid-cols-4 gap-3 text-xs">
+                                    <div>
+                                      <span className="text-gray-500">Permissions:</span>
+                                      <div className="flex flex-wrap gap-1 mt-1">
+                                        {key.permissions.map(p => (
+                                          <span key={p} className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded font-semibold">
+                                            {p}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <span className="text-gray-500">Created:</span>
+                                      <p className="font-semibold text-gray-700 mt-1">
+                                        {new Date(key.createdAt).toLocaleDateString()}
+                                      </p>
+                                    </div>
+                                    <div>
+                                      <span className="text-gray-500">Last Used:</span>
+                                      <p className="font-semibold text-gray-700 mt-1">
+                                        {key.lastUsedAt ? new Date(key.lastUsedAt).toLocaleString() : 'Never'}
+                                      </p>
+                                    </div>
+                                    <div>
+                                      <span className="text-gray-500">Usage Count:</span>
+                                      <p className="font-semibold text-gray-700 mt-1">{key.usageCount || 0} requests</p>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="flex flex-col gap-2 ml-4">
+                                  {key.enabled && (
+                                    <>
+                                      <button
+                                        onClick={() => rotateApiKey(key.id)}
+                                        className="px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-all text-sm font-semibold whitespace-nowrap"
+                                      >
+                                        <i className="fas fa-sync-alt mr-1"></i>
+                                        Rotate
+                                      </button>
+                                      <button
+                                        onClick={() => revokeApiKey(key.id)}
+                                        className="px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-all text-sm font-semibold whitespace-nowrap"
+                                      >
+                                        <i className="fas fa-ban mr-1"></i>
+                                        Revoke
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+
+                              {key.expiresAt && (
+                                <div className="mt-3 pt-3 border-t border-gray-200 flex items-center gap-2 text-sm">
+                                  <i className="fas fa-clock text-orange-600"></i>
+                                  <span className="text-gray-600">
+                                    Expires: <span className="font-semibold">{new Date(key.expiresAt).toLocaleDateString()}</span>
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* JWT Configuration Tab */}
+                  {securityTab === 'jwt' && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                        <i className="fas fa-shield-alt text-red-600 mr-2"></i>
+                        JWT Token Configuration
+                      </h3>
+
+                      <div className="grid grid-cols-2 gap-6">
+                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
+                          <h4 className="font-bold text-gray-900 mb-4">Current Settings</h4>
+                          <div className="space-y-3">
+                            <div>
+                              <label className="text-sm text-gray-600">Algorithm</label>
+                              <p className="font-semibold text-gray-900">{jwtConfig?.algorithm || 'HS256'}</p>
+                            </div>
+                            <div>
+                              <label className="text-sm text-gray-600">Token Expiration</label>
+                              <p className="font-semibold text-gray-900">{jwtConfig?.expirationMinutes || 30} minutes</p>
+                            </div>
+                            <div>
+                              <label className="text-sm text-gray-600">Issuer</label>
+                              <p className="font-semibold text-gray-900">{jwtConfig?.issuer || 'waters-punchout-platform'}</p>
+                            </div>
+                            <div>
+                              <label className="text-sm text-gray-600">Active Tokens</label>
+                              <p className="font-semibold text-gray-900">{jwtConfig?.activeTokensCount || 0}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="bg-gradient-to-br from-red-50 to-rose-50 border border-red-200 rounded-xl p-6">
+                          <h4 className="font-bold text-gray-900 mb-4">Update Configuration</h4>
+                          <div className="space-y-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Token Expiration (minutes)
+                              </label>
+                              <input
+                                type="number"
+                                defaultValue={jwtConfig?.expirationMinutes || 30}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                              />
+                            </div>
+                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
+                              <i className="fas fa-exclamation-triangle mr-2"></i>
+                              Changing JWT settings will invalidate all existing tokens
+                            </div>
+                            <button className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all font-semibold">
+                              <i className="fas fa-save mr-2"></i>
+                              Update Configuration
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Audit Logs Tab */}
+                  {securityTab === 'audit' && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                        <i className="fas fa-list-alt text-red-600 mr-2"></i>
+                        Security Audit Logs
+                      </h3>
+
+                      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                        <table className="w-full">
+                          <thead className="bg-gray-50 border-b border-gray-200">
+                            <tr>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Time</th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Event</th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Severity</th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Customer</th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Description</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-200">
+                            {auditLogs.length === 0 ? (
+                              <tr>
+                                <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
+                                  <i className="fas fa-inbox text-3xl mb-2 block text-gray-300"></i>
+                                  No audit logs found
+                                </td>
+                              </tr>
+                            ) : (
+                              auditLogs.map((log) => (
+                                <tr key={log.id} className="hover:bg-gray-50 transition-colors">
+                                  <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
+                                    {new Date(log.timestamp).toLocaleString()}
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <span className="text-sm font-medium text-gray-700">{log.eventType}</span>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <span className={`px-2 py-1 rounded text-xs font-bold ${
+                                      log.severity === 'CRITICAL' ? 'bg-red-100 text-red-700' :
+                                      log.severity === 'ERROR' ? 'bg-orange-100 text-orange-700' :
+                                      log.severity === 'WARNING' ? 'bg-yellow-100 text-yellow-700' :
+                                      'bg-blue-100 text-blue-700'
+                                    }`}>
+                                      {log.severity}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-gray-700">
+                                    {log.customerName || '-'}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-gray-600">
+                                    {log.description}
+                                  </td>
+                                </tr>
+                              ))
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* API Key Generation Modal */}
+                  {showApiKeyModal && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                      <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-4">
+                        <div className="bg-gradient-to-r from-red-600 to-rose-600 text-white p-6 rounded-t-xl">
+                          <h3 className="text-2xl font-bold">
+                            <i className="fas fa-key mr-2"></i>
+                            Generate New API Key
+                          </h3>
+                        </div>
+                        
+                        <div className="p-6 space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Customer Name <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              value={newApiKey.customerName}
+                              onChange={(e) => setNewApiKey({...newApiKey, customerName: e.target.value})}
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                              placeholder="e.g., Acme Corporation"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Description
+                            </label>
+                            <input
+                              type="text"
+                              value={newApiKey.description}
+                              onChange={(e) => setNewApiKey({...newApiKey, description: e.target.value})}
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                              placeholder="e.g., Production API key"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Environment <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                              value={newApiKey.environment}
+                              onChange={(e) => setNewApiKey({...newApiKey, environment: e.target.value})}
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                            >
+                              <option value="dev">Development</option>
+                              <option value="stage">Staging</option>
+                              <option value="prod">Production</option>
+                              <option value="s4-dev">S4 Dev</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Permissions
+                            </label>
+                            <div className="flex flex-wrap gap-2">
+                              {['PUNCHOUT', 'ORDER', 'INVOICE', 'READ', 'WRITE'].map((perm) => (
+                                <label key={perm} className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-100">
+                                  <input
+                                    type="checkbox"
+                                    checked={newApiKey.permissions?.includes(perm)}
+                                    onChange={(e) => {
+                                      const perms = newApiKey.permissions || [];
+                                      setNewApiKey({
+                                        ...newApiKey,
+                                        permissions: e.target.checked 
+                                          ? [...perms, perm]
+                                          : perms.filter(p => p !== perm)
+                                      });
+                                    }}
+                                    className="rounded text-red-600"
+                                  />
+                                  <span className="text-sm font-semibold text-gray-700">{perm}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="bg-gray-50 px-6 py-4 rounded-b-xl flex justify-end gap-3">
+                          <button
+                            onClick={() => {
+                              setShowApiKeyModal(false);
+                              setNewApiKey({
+                                customerName: '',
+                                description: '',
+                                permissions: ['PUNCHOUT', 'ORDER'],
+                                environment: 'dev',
+                                enabled: true
+                              });
+                            }}
+                            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-all"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={generateApiKey}
+                            disabled={!newApiKey.customerName}
+                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <i className="fas fa-key mr-2"></i>
+                            Generate API Key
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1011,11 +1567,9 @@ export default function ConfigurationPage() {
                       </div>
                     </div>
                   </div>
-                )
-              )}
 
-              {/* Application Logs */}
-              <div>
+                  {/* Application Logs */}
+                  <div>
                     <div className="flex justify-between items-center mb-3">
                       <h3 className="text-lg font-semibold text-gray-900">
                         <i className="fas fa-file-alt text-purple-600 mr-2"></i>
