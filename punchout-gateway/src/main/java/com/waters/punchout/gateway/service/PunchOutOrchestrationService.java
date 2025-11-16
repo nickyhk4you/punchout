@@ -1,12 +1,15 @@
 package com.waters.punchout.gateway.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.waters.punchout.gateway.client.AuthServiceClient;
 import com.waters.punchout.gateway.client.MuleServiceClient;
 import com.waters.punchout.gateway.converter.CxmlConversionService;
+import com.waters.punchout.gateway.entity.CustomerOnboarding;
 import com.waters.punchout.gateway.entity.PunchOutSessionDocument;
 import com.waters.punchout.gateway.logging.NetworkRequestLogger;
 import com.waters.punchout.gateway.model.PunchOutRequest;
 import com.waters.punchout.gateway.repository.PunchOutSessionRepository;
+import com.waters.punchout.gateway.service.CustomerOnboardingService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -14,7 +17,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -25,19 +30,25 @@ public class PunchOutOrchestrationService {
     private final AuthServiceClient authServiceClient;
     private final MuleServiceClient muleServiceClient;
     private final PunchOutSessionRepository sessionRepository;
+    private final CustomerOnboardingService onboardingService;
+    private final ObjectMapper objectMapper;
 
     public PunchOutOrchestrationService(
             NetworkRequestLogger networkRequestLogger,
             CxmlConversionService cxmlConversionService,
             AuthServiceClient authServiceClient,
             MuleServiceClient muleServiceClient,
-            PunchOutSessionRepository sessionRepository
+            PunchOutSessionRepository sessionRepository,
+            CustomerOnboardingService onboardingService,
+            ObjectMapper objectMapper
     ) {
         this.networkRequestLogger = networkRequestLogger;
         this.cxmlConversionService = cxmlConversionService;
         this.authServiceClient = authServiceClient;
         this.muleServiceClient = muleServiceClient;
         this.sessionRepository = sessionRepository;
+        this.onboardingService = onboardingService;
+        this.objectMapper = objectMapper;
     }
 
     public Map<String, Object> processPunchOutRequest(String cxmlContent, String sessionKey) {
@@ -125,18 +136,80 @@ public class PunchOutOrchestrationService {
     }
 
     private Map<String, Object> prepareMulePayload(PunchOutRequest request) {
-        log.debug("Preparing Mule payload");
+        log.debug("Preparing Mule payload for sessionKey={}", request.getSessionKey());
         
-        // Check if this is Acme customer (buyer123) - use custom payload
+        // Extract customer identifier from request
+        String customerIdentifier = extractCustomerIdentifier(request);
+        String environment = extractEnvironmentFromRequest(request);
+        
+        log.info("Extracted customer identifier: '{}', environment: '{}'", customerIdentifier, environment);
+        log.info("Request extrinsics: {}", request.getExtrinsics());
+        
+        // Try to find onboarded customer configuration
+        try {
+            List<CustomerOnboarding> onboardings = onboardingService.getOnboardingsByCustomerName(customerIdentifier);
+            log.info("Found {} onboarding(s) for customer: {}", onboardings.size(), customerIdentifier);
+            
+            // Find matching environment
+            Optional<CustomerOnboarding> matchingOnboarding = onboardings.stream()
+                    .filter(o -> o.getEnvironment().equals(environment) && o.getDeployed())
+                    .findFirst();
+            
+            if (matchingOnboarding.isPresent()) {
+                CustomerOnboarding onboarding = matchingOnboarding.get();
+                log.info("✅ Found onboarded configuration for customer: {}, environment: {}, onboardingId: {}", 
+                        customerIdentifier, environment, onboarding.getId());
+                
+                // Use the targetJson from onboarding as template
+                if (onboarding.getTargetJson() != null && !onboarding.getTargetJson().isEmpty()) {
+                    try {
+                        log.info("Parsing targetJson (length: {})", onboarding.getTargetJson().length());
+                        
+                        @SuppressWarnings("unchecked")
+                        Map<String, Object> template = objectMapper.readValue(
+                                onboarding.getTargetJson(), 
+                                Map.class
+                        );
+                        
+                        log.info("Parsed template keys: {}", template.keySet());
+                        
+                        // Replace placeholders with actual values from request
+                        replaceTemplateValues(template, request);
+                        
+                        log.info("✅ Using onboarded JSON template for customer: {}, final keys: {}", 
+                                customerIdentifier, template.keySet());
+                        
+                        // Log the actual JSON being sent for debugging
+                        try {
+                            String jsonString = objectMapper.writeValueAsString(template);
+                            log.info("📤 Mule request body: {}", jsonString);
+                        } catch (Exception logEx) {
+                            log.warn("Could not serialize template for logging");
+                        }
+                        
+                        return template;
+                    } catch (Exception e) {
+                        log.error("Error parsing targetJson from onboarding: {}", e.getMessage(), e);
+                    }
+                }
+            } else {
+                log.warn("No matching onboarding found for customer: {}, environment: {}", 
+                        customerIdentifier, environment);
+            }
+        } catch (Exception e) {
+            log.warn("Could not load onboarding config: {}, using default payload", e.getMessage(), e);
+        }
+        
+        // Check if this is Acme customer (buyer123) - use custom converter (legacy)
         if ("buyer123".equals(request.getFromIdentity())) {
-            log.debug("Using Acme custom payload builder");
-            // Import the Acme converter
+            log.debug("Using Acme custom payload builder (legacy)");
             com.waters.punchout.gateway.converter.strategy.customers.AcmeV1Converter acmeConverter = 
                 new com.waters.punchout.gateway.converter.strategy.customers.AcmeV1Converter();
             return acmeConverter.buildMulePayload(request);
         }
         
         // Default payload for other customers
+        log.debug("Using default payload builder");
         Map<String, Object> payload = new HashMap<>();
         payload.put("sessionKey", request.getSessionKey());
         payload.put("operation", request.getOperation());
@@ -151,6 +224,64 @@ public class PunchOutOrchestrationService {
         }
         
         return payload;
+    }
+
+    private String extractCustomerIdentifier(PunchOutRequest request) {
+        // Try to get customer name from extrinsics first
+        if (request.getExtrinsics() != null) {
+            String customerName = request.getExtrinsics().get("CustomerName");
+            if (customerName != null && !customerName.isEmpty()) {
+                return customerName;
+            }
+        }
+        
+        // Fallback to fromIdentity or other identifiers
+        if (request.getFromIdentity() != null) {
+            return request.getFromIdentity();
+        }
+        
+        return "UNKNOWN";
+    }
+
+    @SuppressWarnings("unchecked")
+    private void replaceTemplateValues(Map<String, Object> template, PunchOutRequest request) {
+        replaceTemplateValues(template, request, true);
+    }
+
+    @SuppressWarnings("unchecked")
+    private void replaceTemplateValues(Map<String, Object> template, PunchOutRequest request, boolean isRoot) {
+        // Recursively replace common placeholder patterns in the template
+        for (Map.Entry<String, Object> entry : template.entrySet()) {
+            Object value = entry.getValue();
+            
+            if (value instanceof String) {
+                String strValue = (String) value;
+                
+                // Replace common placeholders
+                strValue = strValue.replace("{{sessionKey}}", request.getSessionKey() != null ? request.getSessionKey() : "");
+                strValue = strValue.replace("{{buyerCookie}}", request.getBuyerCookie() != null ? request.getBuyerCookie() : "");
+                strValue = strValue.replace("{{returnUrl}}", request.getCartReturnUrl() != null ? request.getCartReturnUrl() : "");
+                strValue = strValue.replace("{{operation}}", request.getOperation() != null ? request.getOperation() : "create");
+                strValue = strValue.replace("{{contactEmail}}", request.getContactEmail() != null ? request.getContactEmail() : "");
+                strValue = strValue.replace("{{fromIdentity}}", request.getFromIdentity() != null ? request.getFromIdentity() : "");
+                strValue = strValue.replace("{{toIdentity}}", request.getToIdentity() != null ? request.getToIdentity() : "");
+                
+                entry.setValue(strValue);
+            } else if (value instanceof Map) {
+                // Recursively process nested maps
+                replaceTemplateValues((Map<String, Object>) value, request, false);
+            }
+        }
+        
+        // Only add dynamic values to root level (not nested objects)
+        if (isRoot) {
+            if (!template.containsKey("sessionKey") && request.getSessionKey() != null) {
+                template.put("sessionKey", request.getSessionKey());
+            }
+            if (!template.containsKey("timestamp")) {
+                template.put("timestamp", request.getTimestamp().toString());
+            }
+        }
     }
 
     private Map<String, Object> getMuleResponse(Map<String, Object> payload, String token, String sessionKey, String environment) {

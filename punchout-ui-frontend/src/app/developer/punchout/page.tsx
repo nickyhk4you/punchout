@@ -1,22 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { cxmlTemplateAPI } from '@/lib/api';
+import { cxmlTemplateAPI, onboardingAPI } from '@/lib/api';
 import { CxmlTemplate } from '@/types';
 import Link from 'next/link';
 import Breadcrumb from '@/components/Breadcrumb';
 
-// Mock customer data - in real app, this would come from an API
-const CUSTOMERS = [
-  { id: 'CUST001', name: 'Acme Corporation', domain: 'acme.com', buyerId: 'buyer123' },
-  { id: 'CUST002', name: 'TechCorp Industries', domain: 'techcorp.com', buyerId: 'buyer456' },
-  { id: 'CUST003', name: 'Global Solutions Inc', domain: 'globalsolutions.com', buyerId: 'buyer789' },
-  { id: 'CUST004', name: 'Enterprise Partners', domain: 'enterprise.com', buyerId: 'buyer321' },
-  { id: 'CUST005', name: 'Innovation Labs', domain: 'innovationlabs.com', buyerId: 'buyer654' },
-];
-
 export default function DeveloperPunchOutPage() {
   const [selectedEnvironment, setSelectedEnvironment] = useState<string>('dev');
+  const [customers, setCustomers] = useState<any[]>([]);
   const [executing, setExecuting] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<any>(null);
   const [catalogUrl, setCatalogUrl] = useState<string | null>(null);
@@ -31,6 +23,40 @@ export default function DeveloperPunchOutPage() {
   });
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [cxmlPayload, setCxmlPayload] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+
+  // Load onboarded customers for selected environment
+  useEffect(() => {
+    const loadCustomers = async () => {
+      setLoading(true);
+      try {
+        const allOnboardings = await onboardingAPI.getDeployedOnboardings();
+        
+        // Filter by selected environment and get unique customers
+        const customersForEnv = allOnboardings
+          .filter((onboarding: any) => onboarding.environment === selectedEnvironment)
+          .map((onboarding: any) => ({
+            id: onboarding.id,
+            name: onboarding.customerName,
+            domain: onboarding.network,
+            type: onboarding.customerType,
+            buyerId: `buyer_${onboarding.id.substring(0, 8)}`,
+            onboardingId: onboarding.id,
+            sampleCxml: onboarding.sampleCxml,
+            targetJson: onboarding.targetJson
+          }));
+        
+        setCustomers(customersForEnv);
+      } catch (error) {
+        console.error('Error loading customers:', error);
+        setCustomers([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCustomers();
+  }, [selectedEnvironment]);
 
   const generateCxmlPayload = async (customer: any, environment: string) => {
     const timestamp = new Date().toISOString();
@@ -385,10 +411,40 @@ export default function DeveloperPunchOutPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {CUSTOMERS.map((customer) => (
+              {loading ? (
+                <tr>
+                  <td colSpan={4} className="px-6 py-12 text-center">
+                    <i className="fas fa-spinner fa-spin text-3xl text-gray-400 mb-2"></i>
+                    <p className="text-gray-500">Loading onboarded customers...</p>
+                  </td>
+                </tr>
+              ) : customers.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-6 py-12 text-center">
+                    <i className="fas fa-inbox text-5xl text-gray-300 mb-3"></i>
+                    <p className="text-gray-600 font-semibold mb-2">No customers onboarded for {selectedEnvironment.toUpperCase()}</p>
+                    <p className="text-sm text-gray-500 mb-4">Onboard a customer to start testing</p>
+                    <Link
+                      href="/onboarding"
+                      className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all"
+                    >
+                      <i className="fas fa-user-plus mr-2"></i>
+                      Onboard Customer
+                    </Link>
+                  </td>
+                </tr>
+              ) : (
+                customers.map((customer) => (
                 <tr key={customer.id} className="hover:bg-purple-50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="font-medium text-gray-900">{customer.name}</div>
+                    <div className="flex items-center gap-2">
+                      <div className="font-medium text-gray-900">{customer.name}</div>
+                      {customer.type && (
+                        <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-bold rounded">
+                          {customer.type}
+                        </span>
+                      )}
+                    </div>
                     <div className="text-xs text-gray-500">{customer.id}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
@@ -425,7 +481,8 @@ export default function DeveloperPunchOutPage() {
                     </button>
                   </td>
                 </tr>
-              ))}
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -442,7 +499,7 @@ export default function DeveloperPunchOutPage() {
             
             {/* Progress Steps */}
             <div className="space-y-6 mb-8">
-              {Object.entries(progressSteps).map(([key, step]: [string, any]) => (
+              {Object.entries(progressSteps).map(([key, step]) => (
                 <div key={key} className="flex items-center gap-4">
                   <div className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center ${
                     step.status === 'success' ? 'bg-green-500' : 
