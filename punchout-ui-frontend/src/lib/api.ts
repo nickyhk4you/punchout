@@ -5,8 +5,11 @@ import { PunchOutSession, OrderObject, GatewayRequest, SessionFilter, CxmlTempla
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
 const GATEWAY_BASE_URL = process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:9090/api';
 
-console.log('API Base URL:', API_BASE_URL);
-console.log('Gateway Base URL:', GATEWAY_BASE_URL);
+// Log only in development
+if (process.env.NODE_ENV === 'development') {
+  console.debug('API Base URL:', API_BASE_URL);
+  console.debug('Gateway Base URL:', GATEWAY_BASE_URL);
+}
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
