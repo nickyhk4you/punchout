@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { sessionAPI, orderAPIv2 } from '@/lib/api';
+import { sessionAPI, orderAPI } from '@/lib/api';
 import { PunchOutSession, Order } from '@/types';
 import Link from 'next/link';
 
@@ -27,8 +27,8 @@ export default function HomePage() {
       setLoading(true);
       const [allSessions, orderStats, allOrders] = await Promise.all([
         sessionAPI.getAllSessions(),
-        orderAPIv2.getOrderStats().catch(() => ({ totalOrders: 0, totalValue: 0 })),
-        orderAPIv2.getAllOrders().catch(() => [])
+        orderAPI.getOrderStats().catch(() => ({ totalOrders: 0, totalValue: 0 })),
+        orderAPI.getAllOrders().catch(() => [])
       ]);
       
       const devSessions = allSessions.filter(s => s.environment === 'DEVELOPMENT');

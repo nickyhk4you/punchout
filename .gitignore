@@ -41,3 +41,7 @@ bin/
 /punchout-mock-service/target
 /punchout-mock-service/target
 /punchout-mock-service/target
+/punchout-mock-service/target/classes/com/waters/punchout/mock/service
+punchout-mock-service/target/classes/com/waters/punchout/mock/service/TokenService$TokenInfo.class
+/punchout-mock-service/target
+/data

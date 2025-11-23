@@ -21,12 +21,14 @@
 
     <modules>
         <module>punchout-common</module>
-        <module>punchout-order</module>
-        <module>punchout-invoice</module>
         <module>punchout-gateway</module>
         <module>punchout-ui-backend</module>
         <module>punchout-ui-frontend</module>
         <module>punchout-mock-service</module>
+        <!-- Inactive modules (kept for future use)
+        <module>punchout-order</module>
+        <module>punchout-invoice</module>
+        -->
     </modules>
 
     <properties>

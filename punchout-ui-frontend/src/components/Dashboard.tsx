@@ -62,20 +62,16 @@ const Dashboard = () => {
     },
     scales: {
       x: {
-        type: 'category' as const,
         grid: {
           display: true,
           color: 'rgba(0, 0, 0, 0.05)',
         },
       },
       y: {
-        type: 'linear' as const,
+        beginAtZero: true,
         grid: {
           display: true,
           color: 'rgba(0, 0, 0, 0.05)',
-        },
-        ticks: {
-          beginAtZero: true,
         },
         title: {
           display: true,

@@ -1,10 +1,10 @@
 #!/bin/bash
 
-echo "🛑 Stopping All Punchout Backend Services..."
+echo "🛑 Stopping All Punchout Services (Backend + Frontend)..."
 echo ""
 
-PORTS=(9090 8080 8082)
-SERVICE_NAMES=("Gateway Service" "UI Backend Service" "Mock Service")
+PORTS=(9090 8080 8082 3000)
+SERVICE_NAMES=("Gateway Service" "UI Backend Service" "Mock Service" "Frontend UI")
 
 for i in "${!PORTS[@]}"; do
     port=${PORTS[$i]}

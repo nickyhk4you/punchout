@@ -1,0 +1,16 @@
+# Simple Dockerfile - Assumes JAR is already built
+FROM amazoncorretto:17
+
+WORKDIR /app
+
+# Copy pre-built JAR
+COPY target/*.jar app.jar
+
+# JVM configuration for containers
+ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75 -XX:InitialRAMPercentage=50 -XX:+UseContainerSupport -XX:+ExitOnOutOfMemoryError"
+
+# Expose port
+EXPOSE 8082
+
+# Run application
+ENTRYPOINT ["java", "-jar", "app.jar"]

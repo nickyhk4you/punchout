@@ -1,57 +1,24 @@
-import axios from 'axios';
 import { PunchOutSession, OrderObject, GatewayRequest, SessionFilter, CxmlTemplate, Order, NetworkRequest } from '@/types';
+import { createClient } from './http';
+import { buildParams } from './qs';
 
 // API Base URL - configurable via environment variable
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+const GATEWAY_BASE_URL = process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:9090/api';
 
-console.log('API Base URL:', API_BASE_URL);
+// Log only in development
+if (process.env.NODE_ENV === 'development') {
+  console.debug('API Base URL:', API_BASE_URL);
+  console.debug('Gateway Base URL:', GATEWAY_BASE_URL);
+}
 
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  timeout: 10000, // 10 second timeout
-});
-
-// Add request interceptor for logging (development only)
-apiClient.interceptors.request.use(
-  (config) => {
-    console.log(`API Request: ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// Add response interceptor for error handling
-apiClient.interceptors.response.use(
-  (response) => {
-    return response;
-  },
-  (error) => {
-    if (error.response) {
-      console.error('API Error:', error.response.status, error.response.data);
-    } else if (error.request) {
-      console.error('Network Error: No response received from server');
-    } else {
-      console.error('Error:', error.message);
-    }
-    return Promise.reject(error);
-  }
-);
+const apiClient = createClient(API_BASE_URL);
+const gatewayClient = createClient(GATEWAY_BASE_URL);
 
 export const sessionAPI = {
   // Get all sessions from MongoDB
   getAllSessions: async (filters?: SessionFilter): Promise<PunchOutSession[]> => {
-    const params = new URLSearchParams();
-    if (filters) {
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value) params.append(key, value);
-      });
-    }
-    // Use MongoDB endpoint /v1/sessions
+    const params = buildParams(filters as Record<string, string | undefined>);
     const response = await apiClient.get<PunchOutSession[]>('/v1/sessions', { params });
     return response.data;
   },
@@ -74,24 +41,7 @@ export const sessionAPI = {
   },
 };
 
-export const orderAPI = {
-  getOrderObject: async (sessionKey: string): Promise<OrderObject | null> => {
-    try {
-      const response = await apiClient.get<OrderObject>(`/punchout-sessions/${sessionKey}/order-object`);
-      return response.data;
-    } catch (error: any) {
-      if (error.response?.status === 404) {
-        return null;
-      }
-      throw error;
-    }
-  },
 
-  createOrderObject: async (sessionKey: string, order: Partial<OrderObject>): Promise<OrderObject> => {
-    const response = await apiClient.post<OrderObject>(`/punchout-sessions/${sessionKey}/order-object`, order);
-    return response.data;
-  },
-};
 
 export const gatewayAPI = {
   getGatewayRequests: async (sessionKey: string): Promise<GatewayRequest[]> => {
@@ -183,15 +133,28 @@ export const punchOutTestAPI = {
   },
 };
 
-export const orderAPIv2 = {
+export const orderAPI = {
+  // Session-specific order object methods (legacy endpoints)
+  getOrderObject: async (sessionKey: string): Promise<OrderObject | null> => {
+    try {
+      const response = await apiClient.get<OrderObject>(`/punchout-sessions/${sessionKey}/order-object`);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
+  },
+
+  createOrderObject: async (sessionKey: string, order: Partial<OrderObject>): Promise<OrderObject> => {
+    const response = await apiClient.post<OrderObject>(`/punchout-sessions/${sessionKey}/order-object`, order);
+    return response.data;
+  },
+
   // Get all orders
   getAllOrders: async (filters?: { status?: string; customerId?: string; environment?: string }): Promise<Order[]> => {
-    const params = new URLSearchParams();
-    if (filters) {
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value) params.append(key, value);
-      });
-    }
+    const params = buildParams(filters);
     const response = await apiClient.get<Order[]>('/v1/orders', { params });
     return response.data;
   },
@@ -257,6 +220,143 @@ export const cxmlTemplateAPI = {
   // Save template
   saveTemplate: async (template: Partial<CxmlTemplate>): Promise<CxmlTemplate> => {
     const response = await apiClient.post<CxmlTemplate>('/v1/cxml-templates', template);
+    return response.data;
+  },
+};
+
+export const invoiceAPI = {
+  // Get all invoices
+  getAllInvoices: async (filters?: { status?: string; environment?: string }): Promise<import('@/types').Invoice[]> => {
+    const params = buildParams(filters);
+    const response = await apiClient.get<import('@/types').Invoice[]>('/v1/invoices', { params });
+    return response.data;
+  },
+
+  // Get invoice by invoice number
+  getInvoiceByNumber: async (invoiceNumber: string): Promise<import('@/types').Invoice> => {
+    const response = await apiClient.get<import('@/types').Invoice>(`/v1/invoices/${invoiceNumber}`);
+    return response.data;
+  },
+
+  // Get network requests for invoice
+  getInvoiceNetworkRequests: async (invoiceNumber: string): Promise<NetworkRequest[]> => {
+    const response = await apiClient.get<NetworkRequest[]>(`/v1/invoices/${invoiceNumber}/network-requests`);
+    return response.data;
+  },
+};
+
+export const datastoreAPI = {
+  // Get all datastores
+  getAllDatastores: async (): Promise<import('@/types').CustomerDatastore[]> => {
+    const response = await gatewayClient.get<import('@/types').CustomerDatastore[]>('/datastore');
+    return response.data;
+  },
+
+  // Get datastore by ID
+  getDatastoreById: async (id: string): Promise<import('@/types').CustomerDatastore> => {
+    const response = await gatewayClient.get<import('@/types').CustomerDatastore>(`/datastore/${id}`);
+    return response.data;
+  },
+
+  // Get datastores by customer
+  getDatastoresByCustomer: async (customer: string): Promise<import('@/types').CustomerDatastore[]> => {
+    const response = await gatewayClient.get<import('@/types').CustomerDatastore[]>(`/datastore/customer/${customer}`);
+    return response.data;
+  },
+
+  // Get datastores by environment
+  getDatastoresByEnvironment: async (environment: string): Promise<import('@/types').CustomerDatastore[]> => {
+    const response = await gatewayClient.get<import('@/types').CustomerDatastore[]>(`/datastore/environment/${environment}`);
+    return response.data;
+  },
+
+  // Get datastore by customer and environment
+  getDatastoreByCustomerAndEnvironment: async (customer: string, environment: string): Promise<import('@/types').CustomerDatastore> => {
+    const response = await gatewayClient.get<import('@/types').CustomerDatastore>(`/datastore/customer/${customer}/environment/${environment}`);
+    return response.data;
+  },
+
+  // Create datastore
+  createDatastore: async (datastore: Partial<import('@/types').CustomerDatastore>): Promise<import('@/types').CustomerDatastore> => {
+    const response = await gatewayClient.post<import('@/types').CustomerDatastore>('/datastore', datastore);
+    return response.data;
+  },
+
+  // Update datastore
+  updateDatastore: async (id: string, datastore: Partial<import('@/types').CustomerDatastore>): Promise<import('@/types').CustomerDatastore> => {
+    const response = await gatewayClient.put<import('@/types').CustomerDatastore>(`/datastore/${id}`, datastore);
+    return response.data;
+  },
+
+  // Delete datastore
+  deleteDatastore: async (id: string): Promise<void> => {
+    await gatewayClient.delete(`/datastore/${id}`);
+  },
+
+  // Add or update key-value
+  addOrUpdateKeyValue: async (id: string, key: string, value: string): Promise<import('@/types').CustomerDatastore> => {
+    const response = await gatewayClient.put<import('@/types').CustomerDatastore>(`/datastore/${id}/key/${key}`, { value });
+    return response.data;
+  },
+
+  // Remove key
+  removeKey: async (id: string, key: string): Promise<import('@/types').CustomerDatastore> => {
+    const response = await gatewayClient.delete<import('@/types').CustomerDatastore>(`/datastore/${id}/key/${key}`);
+    return response.data;
+  },
+};
+
+export const onboardingAPI = {
+  // Get all onboardings
+  getAllOnboardings: async (): Promise<import('@/types').CustomerOnboarding[]> => {
+    const response = await gatewayClient.get<import('@/types').CustomerOnboarding[]>('/onboarding');
+    return response.data;
+  },
+
+  // Get onboarding by ID
+  getOnboardingById: async (id: string): Promise<import('@/types').CustomerOnboarding> => {
+    const response = await gatewayClient.get<import('@/types').CustomerOnboarding>(`/onboarding/${id}`);
+    return response.data;
+  },
+
+  // Get deployed onboardings
+  getDeployedOnboardings: async (): Promise<import('@/types').CustomerOnboarding[]> => {
+    const response = await gatewayClient.get<import('@/types').CustomerOnboarding[]>('/onboarding/deployed');
+    return response.data;
+  },
+
+  // Create onboarding
+  createOnboarding: async (onboarding: Partial<import('@/types').CustomerOnboarding>): Promise<import('@/types').CustomerOnboarding> => {
+    const response = await gatewayClient.post<import('@/types').CustomerOnboarding>('/onboarding', onboarding);
+    return response.data;
+  },
+
+  // Update onboarding
+  updateOnboarding: async (id: string, onboarding: Partial<import('@/types').CustomerOnboarding>): Promise<import('@/types').CustomerOnboarding> => {
+    const response = await gatewayClient.put<import('@/types').CustomerOnboarding>(`/onboarding/${id}`, onboarding);
+    return response.data;
+  },
+
+  // Deploy onboarding
+  deployOnboarding: async (id: string): Promise<import('@/types').CustomerOnboarding> => {
+    const response = await gatewayClient.post<import('@/types').CustomerOnboarding>(`/onboarding/${id}/deploy`);
+    return response.data;
+  },
+
+  // Generate converter
+  generateConverter: async (id: string): Promise<import('@/types').CustomerOnboarding> => {
+    const response = await gatewayClient.post<import('@/types').CustomerOnboarding>(`/onboarding/${id}/generate-converter`);
+    return response.data;
+  },
+
+  // Delete onboarding
+  deleteOnboarding: async (id: string): Promise<void> => {
+    await gatewayClient.delete(`/onboarding/${id}`);
+  },
+
+  // Test conversion
+  testConversion: async (id: string, testData: any): Promise<any> => {
+    const response = await gatewayClient.post(`/onboarding/${id}/test`, testData);
     return response.data;
   },
 };

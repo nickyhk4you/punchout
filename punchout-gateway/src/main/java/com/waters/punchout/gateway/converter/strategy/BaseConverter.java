@@ -113,16 +113,28 @@ public abstract class BaseConverter implements PunchOutConverterStrategy {
         if (extrinsicNode.isArray()) {
             extrinsicNode.forEach(ex -> {
                 String name = ex.path("name").asText(null);
-                String value = ex.asText(null);
-                if (name != null && value != null) {
+                // For XML: <Extrinsic name="Key">Value</Extrinsic>
+                // The value is in the text content, accessed via empty string key
+                String value = ex.path("").asText(null);
+                if (value == null || value.isEmpty()) {
+                    // Fallback: try getting as direct text
+                    value = ex.asText(null);
+                }
+                if (name != null && value != null && !value.isEmpty()) {
                     extrinsics.put(name, value);
+                    log.debug("Extracted extrinsic: {}={}", name, value);
                 }
             });
         } else if (!extrinsicNode.isMissingNode()) {
             String name = extrinsicNode.path("name").asText(null);
-            String value = extrinsicNode.asText(null);
-            if (name != null && value != null) {
+            // For XML: <Extrinsic name="Key">Value</Extrinsic>
+            String value = extrinsicNode.path("").asText(null);
+            if (value == null || value.isEmpty()) {
+                value = extrinsicNode.asText(null);
+            }
+            if (name != null && value != null && !value.isEmpty()) {
                 extrinsics.put(name, value);
+                log.debug("Extracted extrinsic: {}={}", name, value);
             }
         }
         

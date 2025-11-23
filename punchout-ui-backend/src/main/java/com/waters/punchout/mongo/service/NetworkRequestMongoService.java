@@ -50,6 +50,7 @@ public class NetworkRequestMongoService {
         dto.setId(document.getId());
         dto.setSessionKey(document.getSessionKey());
         dto.setOrderId(document.getOrderId());
+        dto.setInvoiceNumber(document.getInvoiceNumber());
         dto.setRequestId(document.getRequestId());
         dto.setTimestamp(document.getTimestamp());
         dto.setDirection(document.getDirection());

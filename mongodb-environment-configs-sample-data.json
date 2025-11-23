@@ -1,8 +1,10 @@
 [
   {
     "environment": "dev",
-    "authServiceUrl": "http://localhost:8081/api/auth/token",
-    "muleServiceUrl": "http://localhost:8082/api/catalog",
+    "authServiceUrl": "https://dev1-services.waters.com:443/api/waters/user/v2/login",
+    "authEmail": "USMulti2@yopmail.com",
+    "authPassword": "ENC(vqDr9X8KV6QGNY89cijxYLBznt8mMC9S)",
+    "muleServiceUrl": "https://api-sbox.waters.com:443/dev-waters-punchout-exp-api-v1/api/punchout/setup",
     "catalogBaseUrl": "http://localhost:3000",
     "description": "Local development environment",
     "enabled": true,
@@ -13,8 +15,10 @@
   },
   {
     "environment": "stage",
-    "authServiceUrl": "https://auth-stage.waters.com/api/auth/token",
-    "muleServiceUrl": "https://mule-stage.waters.com/api/catalog",
+    "authServiceUrl": "https://stgservices.waters.com:443/api/waters/user/v2/login",
+    "authEmail": "USMulti2@yopmail.com",
+    "authPassword": "ENC(DCGBHIsXSXaUvLkRe9khuqb5gFHctGCN)",
+    "muleServiceUrl": "https://api-sbox.waters.com:443/uat-waters-punchout-exp-api-v1/api/punchout/setup",
     "catalogBaseUrl": "https://punchout-stage.waters.com",
     "description": "Staging environment for testing",
     "enabled": true,
@@ -25,8 +29,10 @@
   },
   {
     "environment": "prod",
-    "authServiceUrl": "https://auth.waters.com/api/auth/token",
-    "muleServiceUrl": "https://mule.waters.com/api/catalog",
+    "authServiceUrl": "https://prodservices.waters.com/api/waters/user/v2/login",
+    "authEmail": "testProdSingle1@yopmail.com",
+    "authPassword": "ENC(bfrgniddfab8Ud+YQEG6EvPtYVBv4vA2)",
+    "muleServiceUrl": "https://api.waters.com/waters-punchout-exp-api-v1/api/punchout/setup",
     "catalogBaseUrl": "https://punchout.waters.com",
     "description": "Production environment",
     "enabled": true,
@@ -38,6 +44,8 @@
   {
     "environment": "s4-dev",
     "authServiceUrl": "https://auth-s4-dev.waters.com/api/auth/token",
+    "authEmail": "USMulti2@yopmail.com",
+    "authPassword": "ENC(9+7SfFr+2pEAPsI9XVBVdx4EsavTJN6n)",
     "muleServiceUrl": "https://mule-s4-dev.waters.com/api/catalog",
     "catalogBaseUrl": "https://punchout-s4-dev.waters.com",
     "description": "S4 HANA development environment",

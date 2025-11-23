@@ -199,23 +199,24 @@ export default function SessionsPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full divide-y divide-gray-200">
+            <table className="w-full divide-y divide-gray-200 table-fixed">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: "22%"}}>
                     Session Key
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: "12%"}}>
                     Operation
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: "13%"}}>
                     Environment
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: "23%"}}>
                     Contact Email
                   </th>
                   <th 
-                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none w-1/5"
+                    className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none" 
+                    style={{width: "20%"}}
                     onClick={toggleSort}
                   >
                     <div className="flex items-center space-x-1">
@@ -225,7 +226,7 @@ export default function SessionsPage() {
                       </span>
                     </div>
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: "10%"}}>
                     Actions
                   </th>
                 </tr>
@@ -233,15 +234,16 @@ export default function SessionsPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {paginatedSessions.map((session) => (
                   <tr key={session.sessionKey} className="hover:bg-blue-50 transition-colors">
-                    <td className="px-4 py-4 whitespace-nowrap">
+                    <td className="px-3 py-3 text-sm text-gray-900 truncate">
                       <Link
                         href={`/sessions/${session.sessionKey}`}
-                        className="text-sm font-semibold text-blue-600 hover:text-blue-900 hover:underline cursor-pointer"
+                        className="font-semibold text-blue-600 hover:text-blue-900 hover:underline cursor-pointer"
+                        title={session.sessionKey}
                       >
                         {session.sessionKey}
                       </Link>
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
+                    <td className="px-3 py-3 whitespace-nowrap">
                       <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                         session.operation === 'CREATE' ? 'bg-green-100 text-green-800' :
                         session.operation === 'EDIT' ? 'bg-yellow-100 text-yellow-800' :
@@ -250,7 +252,7 @@ export default function SessionsPage() {
                         {session.operation}
                       </span>
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
+                    <td className="px-3 py-3 whitespace-nowrap">
                       <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                         session.environment === 'PRODUCTION' ? 'bg-red-100 text-red-800' :
                         session.environment === 'STAGING' ? 'bg-orange-100 text-orange-800' :
@@ -259,13 +261,13 @@ export default function SessionsPage() {
                         {session.environment}
                       </span>
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-3 py-3 text-sm text-gray-900 truncate" title={session.contactEmail || '-'}>
                       {session.contactEmail || '-'}
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">
                       {formatDate(session.sessionDate)}
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
+                    <td className="px-3 py-3 whitespace-nowrap text-sm font-medium">
                       <Link
                         href={`/sessions/${session.sessionKey}`}
                         className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all font-semibold"

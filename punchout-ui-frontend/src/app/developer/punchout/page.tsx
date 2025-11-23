@@ -1,45 +1,62 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { sessionAPI, cxmlTemplateAPI } from '@/lib/api';
-import { PunchOutSession, CxmlTemplate } from '@/types';
+import { cxmlTemplateAPI, onboardingAPI } from '@/lib/api';
+import { CxmlTemplate } from '@/types';
 import Link from 'next/link';
 import Breadcrumb from '@/components/Breadcrumb';
 
-// Mock customer data - in real app, this would come from an API
-const CUSTOMERS = [
-  { id: 'CUST001', name: 'Acme Corporation', domain: 'acme.com', buyerId: 'buyer123' },
-  { id: 'CUST002', name: 'TechCorp Industries', domain: 'techcorp.com', buyerId: 'buyer456' },
-  { id: 'CUST003', name: 'Global Solutions Inc', domain: 'globalsolutions.com', buyerId: 'buyer789' },
-  { id: 'CUST004', name: 'Enterprise Partners', domain: 'enterprise.com', buyerId: 'buyer321' },
-  { id: 'CUST005', name: 'Innovation Labs', domain: 'innovationlabs.com', buyerId: 'buyer654' },
-];
-
 export default function DeveloperPunchOutPage() {
-  const [sessions, setSessions] = useState<PunchOutSession[]>([]);
   const [selectedEnvironment, setSelectedEnvironment] = useState<string>('dev');
-  const [loading, setLoading] = useState(false);
+  const [customers, setCustomers] = useState<any[]>([]);
   const [executing, setExecuting] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<any>(null);
+  const [catalogUrl, setCatalogUrl] = useState<string | null>(null);
+  const [redirectCountdown, setRedirectCountdown] = useState<number>(0);
   const [showPayloadModal, setShowPayloadModal] = useState(false);
+  const [showProgressModal, setShowProgressModal] = useState(false);
+  const [progressSteps, setProgressSteps] = useState({
+    parsing: { status: 'pending', label: 'Parsing PunchOut Request' },
+    auth: { status: 'pending', label: 'Authenticating with Waters' },
+    catalog: { status: 'pending', label: 'Fetching Catalog' },
+    complete: { status: 'pending', label: 'Complete' }
+  });
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [cxmlPayload, setCxmlPayload] = useState<string>('');
+  const [loading, setLoading] = useState(true);
 
+  // Load onboarded customers for selected environment
   useEffect(() => {
-    loadRecentSessions();
-  }, []);
-
-  const loadRecentSessions = async () => {
-    try {
+    const loadCustomers = async () => {
       setLoading(true);
-      const data = await sessionAPI.getAllSessions({});
-      setSessions(data.slice(0, 10));
-    } catch (err: any) {
-      console.error('Failed to load sessions:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+      try {
+        const allOnboardings = await onboardingAPI.getDeployedOnboardings();
+        
+        // Filter by selected environment and get unique customers
+        const customersForEnv = allOnboardings
+          .filter((onboarding: any) => onboarding.environment === selectedEnvironment)
+          .map((onboarding: any) => ({
+            id: onboarding.id,
+            name: onboarding.customerName,
+            domain: onboarding.network,
+            type: onboarding.customerType,
+            buyerId: `buyer_${onboarding.id.substring(0, 8)}`,
+            onboardingId: onboarding.id,
+            sampleCxml: onboarding.sampleCxml,
+            targetJson: onboarding.targetJson
+          }));
+        
+        setCustomers(customersForEnv);
+      } catch (error) {
+        console.error('Error loading customers:', error);
+        setCustomers([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCustomers();
+  }, [selectedEnvironment]);
 
   const generateCxmlPayload = async (customer: any, environment: string) => {
     const timestamp = new Date().toISOString();
@@ -115,6 +132,16 @@ export default function DeveloperPunchOutPage() {
   const handlePunchOut = async (customer: any, useCustomPayload = false) => {
     setExecuting(customer.id);
     setTestResult(null);
+    setCatalogUrl(null);
+    setShowProgressModal(true);
+    
+    // Reset progress steps
+    setProgressSteps({
+      parsing: { status: 'loading', label: 'Parsing PunchOut Request' },
+      auth: { status: 'pending', label: 'Authenticating with Waters' },
+      catalog: { status: 'pending', label: 'Fetching Catalog' },
+      complete: { status: 'pending', label: 'Complete' }
+    });
     
     try {
       const gatewayUrl = 'http://localhost:9090/punchout/setup';
@@ -133,15 +160,54 @@ export default function DeveloperPunchOutPage() {
       const sessionKeyMatch = responseText.match(/<BuyerCookie>([^<]+)<\/BuyerCookie>/);
       const sessionKey = sessionKeyMatch ? sessionKeyMatch[1] : null;
       
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Mark parsing complete
+      setProgressSteps(prev => ({
+        ...prev,
+        parsing: { ...prev.parsing, status: 'success' },
+        auth: { ...prev.auth, status: 'loading' }
+      }));
+      
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       let networkRequests = [];
+      let catalogRequest = null;
+      
+      // Poll for network requests until we get the catalog response (max 10 attempts)
       if (sessionKey) {
-        try {
-          const requestsResponse = await fetch(`http://localhost:8080/api/v1/sessions/${sessionKey}/network-requests`);
-          networkRequests = await requestsResponse.json();
-        } catch (err) {
-          console.error('Failed to fetch network requests:', err);
+        for (let attempt = 0; attempt < 10; attempt++) {
+          try {
+            const requestsResponse = await fetch(`http://localhost:8080/api/v1/sessions/${sessionKey}/network-requests`);
+            networkRequests = await requestsResponse.json();
+            
+            // Check for auth success
+            const authRequest = networkRequests.find((req: any) => req.destination === 'Auth Service');
+            if (authRequest && authRequest.success && progressSteps.auth.status !== 'success') {
+              setProgressSteps(prev => ({
+                ...prev,
+                auth: { ...prev.auth, status: 'success' },
+                catalog: { ...prev.catalog, status: 'loading' }
+              }));
+            }
+            
+            // Check for catalog/mule success
+            catalogRequest = networkRequests.find((req: any) => 
+              (req.destination === 'Mule Service' || req.destination === 'Catalog Service') && req.success
+            );
+            
+            if (catalogRequest) {
+              setProgressSteps(prev => ({
+                ...prev,
+                catalog: { ...prev.catalog, status: 'success' },
+                complete: { ...prev.complete, status: 'success' }
+              }));
+              break; // Found catalog response, stop polling
+            }
+            
+            // Wait before next poll
+            await new Promise(resolve => setTimeout(resolve, 800));
+          } catch (err) {
+            console.error('Failed to fetch network requests:', err);
+          }
         }
       }
       
@@ -156,7 +222,66 @@ export default function DeveloperPunchOutPage() {
         timestamp: new Date().toISOString(),
       });
       
-      await loadRecentSessions();
+      console.log('PunchOut response:', { ok: response.ok, status: response.status, sessionKey });
+      console.log('Network requests count:', networkRequests.length);
+      
+
+      
+      // If successful, try to extract catalog/start_url and open it
+      if (response.ok && sessionKey) {
+        let extractedCatalogUrl = null;
+        
+        // First, try to get from Mule/Catalog service response
+        if (networkRequests.length > 0) {
+          const muleResponse = networkRequests.find((req: any) => 
+            (req.destination === 'Mule Service' || req.destination === 'Catalog Service') && 
+            req.direction === 'OUTBOUND'
+          );
+          
+          if (muleResponse && muleResponse.responseBody) {
+            try {
+              const muleData = JSON.parse(muleResponse.responseBody);
+              extractedCatalogUrl = muleData.start_url || muleData.catalogUrl;
+              console.log('Extracted catalog URL from Mule response:', extractedCatalogUrl);
+            } catch (e) {
+              console.log('Could not parse Mule response for catalog URL', e);
+            }
+          }
+        }
+        
+        // Fallback: try to get from session catalog field
+        if (!extractedCatalogUrl) {
+          try {
+            const sessionResponse = await fetch(`http://localhost:8080/api/v1/sessions/${sessionKey}`);
+            const sessionData = await sessionResponse.json();
+            extractedCatalogUrl = sessionData.catalog;
+            console.log('Extracted catalog URL from session:', extractedCatalogUrl);
+          } catch (e) {
+            console.log('Could not fetch session catalog URL', e);
+          }
+        }
+        
+        // Set catalog URL for display and auto-redirect
+        if (extractedCatalogUrl && !extractedCatalogUrl.startsWith('FAILED')) {
+          console.log('Setting catalog URL for redirect:', extractedCatalogUrl);
+          setCatalogUrl(extractedCatalogUrl);
+          
+          // Start countdown from 3 seconds (since we already waited during polling)
+          let countdown = 3;
+          setRedirectCountdown(countdown);
+          
+          const countdownInterval = setInterval(() => {
+            countdown--;
+            setRedirectCountdown(countdown);
+            
+            if (countdown <= 0) {
+              clearInterval(countdownInterval);
+              console.log('Auto-redirecting to:', extractedCatalogUrl);
+              window.location.href = extractedCatalogUrl;
+            }
+          }, 1000);
+        }
+      }
       
     } catch (err: any) {
       console.error('Failed to execute punchout:', err);
@@ -165,11 +290,26 @@ export default function DeveloperPunchOutPage() {
         error: err.message,
         timestamp: new Date().toISOString(),
       });
+      setProgressSteps(prev => {
+        const failedStep = Object.entries(prev).find(([_, step]) => step.status === 'loading');
+        if (failedStep) {
+          return {
+            ...prev,
+            [failedStep[0]]: { ...failedStep[1], status: 'error' }
+          };
+        }
+        return prev;
+      });
     } finally {
       setExecuting(null);
       setShowPayloadModal(false);
       setSelectedCustomer(null);
       setCxmlPayload('');
+      
+      // Close progress modal after a delay if failed or no catalog URL
+      if (!catalogUrl) {
+        setTimeout(() => setShowProgressModal(false), 3000);
+      }
     }
   };
 
@@ -196,11 +336,6 @@ export default function DeveloperPunchOutPage() {
     { label: 'Developer', href: '/developer' },
     { label: 'PunchOut Testing' },
   ];
-
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return '-';
-    return new Date(dateString).toLocaleString();
-  };
 
 
 
@@ -241,10 +376,10 @@ export default function DeveloperPunchOutPage() {
             setSelectedEnvironment(env);
             setTestResult(null);
             }}
-            className={`px-6 py-3 rounded-lg font-semibold transition-all transform hover:scale-105 ${
+            className={`px-6 py-3 rounded-lg font-semibold transition-all ${
             selectedEnvironment === env
-            ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg'
-            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg transform hover:scale-105'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200 transform hover:scale-105'
             }`}
             >
             {env.toUpperCase()}
@@ -273,10 +408,40 @@ export default function DeveloperPunchOutPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {CUSTOMERS.map((customer) => (
+              {loading ? (
+                <tr>
+                  <td colSpan={4} className="px-6 py-12 text-center">
+                    <i className="fas fa-spinner fa-spin text-3xl text-gray-400 mb-2"></i>
+                    <p className="text-gray-500">Loading onboarded customers...</p>
+                  </td>
+                </tr>
+              ) : customers.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-6 py-12 text-center">
+                    <i className="fas fa-inbox text-5xl text-gray-300 mb-3"></i>
+                    <p className="text-gray-600 font-semibold mb-2">No customers onboarded for {selectedEnvironment.toUpperCase()}</p>
+                    <p className="text-sm text-gray-500 mb-4">Onboard a customer to start testing</p>
+                    <Link
+                      href="/onboarding"
+                      className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all"
+                    >
+                      <i className="fas fa-user-plus mr-2"></i>
+                      Onboard Customer
+                    </Link>
+                  </td>
+                </tr>
+              ) : (
+                customers.map((customer) => (
                 <tr key={customer.id} className="hover:bg-purple-50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="font-medium text-gray-900">{customer.name}</div>
+                    <div className="flex items-center gap-2">
+                      <div className="font-medium text-gray-900">{customer.name}</div>
+                      {customer.type && (
+                        <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-bold rounded">
+                          {customer.type}
+                        </span>
+                      )}
+                    </div>
                     <div className="text-xs text-gray-500">{customer.id}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
@@ -313,11 +478,89 @@ export default function DeveloperPunchOutPage() {
                     </button>
                   </td>
                 </tr>
-              ))}
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* Progress Modal */}
+      {showProgressModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8">
+            <h2 className="text-3xl font-bold text-center mb-8">
+              <i className="fas fa-rocket text-blue-600 mr-2"></i>
+              PunchOut in Progress
+            </h2>
+            
+            {/* Progress Steps */}
+            <div className="space-y-6 mb-8">
+              {Object.entries(progressSteps).map(([key, step]) => (
+                <div key={key} className="flex items-center gap-4">
+                  <div className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center ${
+                    step.status === 'success' ? 'bg-green-500' : 
+                    step.status === 'loading' ? 'bg-blue-500 animate-pulse' : 
+                    'bg-gray-300'
+                  }`}>
+                    {step.status === 'success' && <i className="fas fa-check text-white text-xl"></i>}
+                    {step.status === 'loading' && <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent"></div>}
+                    {step.status === 'pending' && <i className="fas fa-circle text-white text-xs"></i>}
+                  </div>
+                  <div className="flex-1">
+                    <p className={`font-semibold text-lg ${
+                      step.status === 'success' ? 'text-green-700' : 
+                      step.status === 'loading' ? 'text-blue-700' : 
+                      'text-gray-500'
+                    }`}>
+                      {step.label}
+                    </p>
+                  </div>
+                  {step.status === 'loading' && (
+                    <div className="flex-shrink-0">
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent"></div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            
+            {/* Redirect Countdown */}
+            {catalogUrl && redirectCountdown > 0 && (
+              <div className="text-center p-6 bg-gradient-to-r from-green-50 to-blue-50 rounded-xl border-2 border-green-400">
+                <div className="inline-flex items-center gap-4 mb-4">
+                  <div className="relative">
+                    <div className="w-16 h-16 rounded-full border-4 border-blue-200"></div>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-3xl font-bold text-blue-600">{redirectCountdown}</span>
+                    </div>
+                  </div>
+                  <div className="text-left">
+                    <p className="text-xl font-bold text-green-800">Success!</p>
+                    <p className="text-gray-700">Redirecting in {redirectCountdown}s...</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => window.location.href = catalogUrl}
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg hover:from-green-700 hover:to-blue-700 font-bold text-lg shadow-lg transform hover:scale-105 transition-all"
+                  >
+                    <i className="fas fa-shopping-cart mr-2"></i>
+                    Go Now
+                  </button>
+                  <button
+                    onClick={() => window.open(catalogUrl, '_blank')}
+                    className="px-6 py-3 bg-white border-2 border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 font-semibold transition-all"
+                  >
+                    <i className="fas fa-external-link-alt mr-2"></i>
+                    New Tab
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Payload Editor Modal */}
       {showPayloadModal && (
@@ -393,80 +636,14 @@ export default function DeveloperPunchOutPage() {
         </div>
       )}
 
-      {/* Test Results */}
-      {testResult && (
-        <div className={`rounded-xl shadow-lg p-6 mb-6 ${testResult.success ? 'bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300' : 'bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-300'}`}>
+      {/* Test Results - Only show for failures */}
+      {testResult && !testResult.success && (
+        <div className="rounded-xl shadow-lg p-6 mb-6 bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-300">
           <h2 className="text-xl font-semibold mb-4">
-            {testResult.success ? (
-              <><i className="fas fa-check-circle mr-2 text-green-600"></i>PunchOut Successful</>
-            ) : (
-              <><i className="fas fa-times-circle mr-2 text-red-600"></i>PunchOut Failed</>
-            )}
+            <i className="fas fa-times-circle mr-2 text-red-600"></i>PunchOut Failed
           </h2>
           
           <div className="space-y-4">
-            {testResult.sessionKey && (
-              <div className="bg-white rounded p-4">
-                <h3 className="font-semibold mb-2">Session Information</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-gray-600">Customer:</span>
-                    <p className="font-medium">{testResult.customer}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Environment:</span>
-                    <p className="font-medium uppercase">{testResult.environment}</p>
-                  </div>
-                  <div className="col-span-2">
-                    <span className="text-gray-600">Session Key:</span>
-                    <div className="flex items-center gap-2 mt-1">
-                      <code className="bg-gray-100 px-3 py-1 rounded flex-1">{testResult.sessionKey}</code>
-                      <Link
-                        href={`/sessions/${testResult.sessionKey}`}
-                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium"
-                      >
-                        <i className="fas fa-external-link-alt mr-1"></i>
-                        View Dashboard
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {testResult.networkRequests && testResult.networkRequests.length > 0 && (
-              <div className="bg-white rounded p-4">
-                <h3 className="font-semibold mb-3">
-                  Network Requests Logged ({testResult.networkRequests.length})
-                </h3>
-                <div className="space-y-2">
-                  {testResult.networkRequests.map((req: any, index: number) => (
-                    <div key={index} className="border-l-4 border-blue-500 pl-3 py-2 bg-gray-50">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <span className={`px-2 py-1 text-xs font-semibold rounded mr-2 ${
-                            req.direction === 'INBOUND' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
-                          }`}>
-                            {req.direction}
-                          </span>
-                          <span className="font-medium">{req.method}</span>
-                          <span className="text-gray-600 ml-2 text-sm">{req.url || req.endpoint}</span>
-                        </div>
-                        <span className={`px-2 py-1 text-xs font-semibold rounded ${
-                          req.statusCode === 200 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                        }`}>
-                          {req.statusCode}
-                        </span>
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        {req.source} → {req.destination} | {req.duration}ms
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {testResult.error && (
               <div className="bg-white rounded p-4">
                 <h3 className="font-semibold text-red-600 mb-2">Error</h3>
@@ -477,79 +654,18 @@ export default function DeveloperPunchOutPage() {
         </div>
       )}
 
-      {/* Recent Sessions */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
-        <h2 className="text-xl font-semibold mb-4">
-          <i className="fas fa-history text-blue-600 mr-2"></i>
-          Recent PunchOut Sessions
-        </h2>
-        {sessions.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Session Key
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Operation
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Environment
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Contact
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {sessions.map((session) => (
-                  <tr key={session.sessionKey} className="hover:bg-blue-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <code className="text-xs bg-gray-100 px-2 py-1 rounded">{session.sessionKey}</code>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                        {session.operation}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800 uppercase">
-                        {session.environment}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {session.contactEmail || '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {formatDate(session.sessionDate)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <Link
-                        href={`/sessions/${session.sessionKey}`}
-                        className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all font-semibold"
-                      >
-                        <i className="fas fa-eye mr-1"></i>
-                        View
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <i className="fas fa-rocket text-gray-300 text-4xl mb-3"></i>
-            <p className="text-gray-500">No sessions yet. Click PunchOut on a customer to start!</p>
-          </div>
-        )}
+      {/* Quick Link to All Sessions */}
+      <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl shadow-lg border border-gray-200 p-6 text-center">
+        <i className="fas fa-history text-blue-600 text-3xl mb-3"></i>
+        <h2 className="text-xl font-semibold mb-2">View All Sessions</h2>
+        <p className="text-gray-600 mb-4">Check all PunchOut sessions and network request logs</p>
+        <Link
+          href="/sessions"
+          className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all font-bold shadow-md transform hover:scale-105"
+        >
+          <i className="fas fa-list mr-2"></i>
+          Go to Sessions Dashboard
+        </Link>
       </div>
       </div>
     </div>

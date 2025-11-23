@@ -54,6 +54,7 @@ export interface NetworkRequest {
   id: string;
   sessionKey: string;
   orderId?: string;
+  invoiceNumber?: string;
   requestId: string;
   timestamp: string;
   direction: 'INBOUND' | 'OUTBOUND';
@@ -136,6 +137,20 @@ export interface EnvironmentConfig {
   notes?: string;
 }
 
+export interface SystemEnvironmentConfig {
+  id?: string;
+  environment: string;
+  authServiceUrl: string;
+  muleServiceUrl: string;
+  catalogBaseUrl: string;
+  description?: string;
+  enabled: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  createdBy?: string;
+  updatedBy?: string;
+}
+
 export interface CatalogRoute {
   id: string;
   routeName: string;
@@ -185,4 +200,68 @@ export interface CxmlTemplate {
   createdAt?: string;
   updatedAt?: string;
   createdBy?: string;
+}
+
+export interface Invoice {
+  id: string;
+  invoiceNumber: string;
+  orderId?: string;
+  sessionKey?: string;
+  poNumber: string;
+  routeName: string;
+  environment: string;
+  flags?: string;
+  invoiceTotal: number;
+  currency: string;
+  receivedDate: string;
+  invoiceDate: string;
+  dueDate?: string;
+  status: string;
+  customerId: string;
+  customerName: string;
+  supplierName?: string;
+  taxAmount?: number;
+  shippingAmount?: number;
+  subtotal?: number;
+  shipTo?: any;
+  billTo?: any;
+  lineItems?: any[];
+  paymentTerms?: string;
+  notes?: string;
+  processedAt?: string;
+  paidAt?: string;
+  source?: string;
+}
+
+export interface CustomerDatastore {
+  id?: string;
+  customer: string;
+  environment: string;
+  keyValuePairs: Record<string, string>;
+  description?: string;
+  enabled: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  createdBy?: string;
+  updatedBy?: string;
+}
+
+export interface CustomerOnboarding {
+  id?: string;
+  customerName: string;
+  customerType: string;
+  network: string;
+  environment: string;
+  sampleCxml: string;
+  targetJson: string;
+  fieldMappings: Record<string, string>;
+  notes?: string;
+  converterClass?: string;
+  status?: string;
+  deployed?: boolean;
+  deployedAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  createdBy?: string;
+  updatedBy?: string;
 }

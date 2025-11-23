@@ -1,6 +1,6 @@
 package com.waters.punchout.gateway.controller;
 
-import com.waters.punchout.gateway.dto.OrderResponse;
+import com.waters.punchout.common.dto.OrderResponse;
 import com.waters.punchout.gateway.service.OrderOrchestrationService;
 import com.waters.punchout.gateway.service.PunchOutOrchestrationService;
 import lombok.RequiredArgsConstructor;

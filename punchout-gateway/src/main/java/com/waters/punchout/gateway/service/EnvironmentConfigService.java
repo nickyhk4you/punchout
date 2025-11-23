@@ -4,6 +4,8 @@ import com.waters.punchout.gateway.entity.EnvironmentConfig;
 import com.waters.punchout.gateway.repository.EnvironmentConfigRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jasypt.encryption.StringEncryptor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -19,6 +21,10 @@ public class EnvironmentConfigService {
     
     private final EnvironmentConfigRepository repository;
     
+    @Autowired(required = false)
+    @org.springframework.beans.factory.annotation.Qualifier("jasyptStringEncryptor")
+    private StringEncryptor stringEncryptor;
+    
     @Value("${app.environment:dev}")
     private String currentEnvironment;
     
@@ -33,12 +39,18 @@ public class EnvironmentConfigService {
         log.info("Environment Config Service initialized. Current environment: {}", currentEnvironment);
         log.info("Fallback Auth URL: {}", fallbackAuthUrl);
         log.info("Fallback Mule URL: {}", fallbackMuleUrl);
+        log.info("Jasypt StringEncryptor available: {}", stringEncryptor != null);
+        if (stringEncryptor != null) {
+            log.info("Jasypt StringEncryptor class: {}", stringEncryptor.getClass().getName());
+        } else {
+            log.warn("Jasypt StringEncryptor is NULL - encrypted passwords will not work!");
+        }
     }
     
     /**
-     * Get configuration for current environment with caching
+     * Get configuration for current environment (caching disabled)
      */
-    @Cacheable(value = "environmentConfig", key = "#environment")
+    // @Cacheable(value = "environmentConfig", key = "#environment") - DISABLED to avoid cache issues
     public EnvironmentConfig getConfig(String environment) {
         log.info("Loading configuration for environment: {}", environment);
         
@@ -102,6 +114,64 @@ public class EnvironmentConfigService {
     }
     
     /**
+     * Get auth email for specific environment
+     */
+    public String getAuthEmail(String environment) {
+        EnvironmentConfig config = getConfig(environment);
+        return config.getAuthEmail();
+    }
+    
+    /**
+     * Get auth email for current environment
+     */
+    public String getAuthEmail() {
+        return getAuthEmail(currentEnvironment);
+    }
+    
+    /**
+     * Get auth password for specific environment (decrypts if encrypted)
+     */
+    public String getAuthPassword(String environment) {
+        EnvironmentConfig config = getConfig(environment);
+        String encryptedPassword = config.getAuthPassword();
+        
+        if (encryptedPassword == null) {
+            return null;
+        }
+        
+        // Check if password is encrypted (format: ENC(...))
+        if (encryptedPassword.startsWith("ENC(") && encryptedPassword.endsWith(")")) {
+            if (stringEncryptor != null) {
+                try {
+                    String encrypted = encryptedPassword.substring(4, encryptedPassword.length() - 1);
+                    String decrypted = stringEncryptor.decrypt(encrypted);
+                    log.info("Successfully decrypted password for environment: {}", environment);
+                    return decrypted;
+                } catch (Exception e) {
+                    log.error("Failed to decrypt password for environment: {}. Error: {}", environment, e.getMessage());
+                    log.error("Encrypted value: {}", encryptedPassword);
+                    log.error("Jasypt encryptor class: {}", stringEncryptor.getClass().getName());
+                    throw new RuntimeException("Failed to decrypt password for environment: " + environment, e);
+                }
+            } else {
+                log.warn("Password is encrypted but Jasypt encryptor not available for environment: {}", environment);
+                return encryptedPassword;
+            }
+        }
+        
+        // Password is plain text (not recommended, but supported for backward compatibility)
+        log.info("Using plain text password for environment: {} (consider encrypting)", environment);
+        return encryptedPassword;
+    }
+    
+    /**
+     * Get auth password for current environment
+     */
+    public String getAuthPassword() {
+        return getAuthPassword(currentEnvironment);
+    }
+    
+    /**
      * Get all configurations
      */
     public List<EnvironmentConfig> getAllConfigs() {
@@ -111,7 +181,7 @@ public class EnvironmentConfigService {
     /**
      * Save or update configuration
      */
-    @CacheEvict(value = "environmentConfig", key = "#config.environment")
+    // @CacheEvict(value = "environmentConfig", key = "#config.environment") - Cache disabled
     public EnvironmentConfig saveConfig(EnvironmentConfig config) {
         log.info("Saving configuration for environment: {}", config.getEnvironment());
         return repository.save(config);
@@ -120,7 +190,7 @@ public class EnvironmentConfigService {
     /**
      * Delete configuration
      */
-    @CacheEvict(value = "environmentConfig", key = "#environment")
+    // @CacheEvict(value = "environmentConfig", key = "#environment") - Cache disabled
     public void deleteConfig(String environment) {
         log.info("Deleting configuration for environment: {}", environment);
         repository.findByEnvironment(environment)
@@ -128,19 +198,19 @@ public class EnvironmentConfigService {
     }
     
     /**
-     * Clear cache for specific environment
+     * Clear cache for specific environment (no-op when cache disabled)
      */
-    @CacheEvict(value = "environmentConfig", key = "#environment")
+    // @CacheEvict(value = "environmentConfig", key = "#environment") - Cache disabled
     public void clearCache(String environment) {
-        log.info("Clearing cache for environment: {}", environment);
+        log.info("Cache clearing skipped - caching is disabled for environment: {}", environment);
     }
     
     /**
-     * Clear all caches
+     * Clear all caches (no-op when cache disabled)
      */
-    @CacheEvict(value = "environmentConfig", allEntries = true)
+    // @CacheEvict(value = "environmentConfig", allEntries = true) - Cache disabled
     public void clearAllCaches() {
-        log.info("Clearing all environment configuration caches");
+        log.info("Cache clearing skipped - caching is disabled");
     }
     
     /**

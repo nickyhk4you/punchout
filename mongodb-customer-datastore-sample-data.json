@@ -1,0 +1,172 @@
+[
+  {
+    "_id": "datastore_acme_dev_001",
+    "customer": "ACME",
+    "environment": "dev",
+    "keyValuePairs": {
+      "API_KEY": "acme_dev_api_key_12345",
+      "API_SECRET": "acme_dev_secret_xyz",
+      "ENDPOINT_URL": "https://dev.acme.com/api/v1",
+      "TIMEOUT_MS": "30000",
+      "MAX_RETRIES": "3",
+      "BUYER_COOKIE": "ACME_DEV_COOKIE"
+    },
+    "description": "ACME development environment configuration",
+    "enabled": true,
+    "createdAt": "2024-01-15T10:00:00Z",
+    "updatedAt": "2024-01-15T10:00:00Z",
+    "createdBy": "admin",
+    "updatedBy": "admin"
+  },
+  {
+    "_id": "datastore_acme_prod_001",
+    "customer": "ACME",
+    "environment": "prod",
+    "keyValuePairs": {
+      "API_KEY": "acme_prod_api_key_67890",
+      "API_SECRET": "acme_prod_secret_abc",
+      "ENDPOINT_URL": "https://api.acme.com/v1",
+      "TIMEOUT_MS": "60000",
+      "MAX_RETRIES": "5",
+      "BUYER_COOKIE": "ACME_PROD_COOKIE",
+      "SSL_VERIFY": "true"
+    },
+    "description": "ACME production environment configuration",
+    "enabled": true,
+    "createdAt": "2024-01-10T08:30:00Z",
+    "updatedAt": "2024-02-20T14:15:00Z",
+    "createdBy": "admin",
+    "updatedBy": "john.doe"
+  },
+  {
+    "_id": "datastore_coupa_dev_001",
+    "customer": "COUPA",
+    "environment": "dev",
+    "keyValuePairs": {
+      "CLIENT_ID": "coupa_dev_client_abc123",
+      "CLIENT_SECRET": "coupa_dev_secret_xyz789",
+      "OAUTH_URL": "https://dev-oauth.coupa.com/token",
+      "API_URL": "https://dev-api.coupa.com",
+      "SCOPE": "punchout.read punchout.write",
+      "IDENTITY_DOMAIN": "COUPADEV"
+    },
+    "description": "Coupa development environment OAuth and API configuration",
+    "enabled": true,
+    "createdAt": "2024-01-20T11:00:00Z",
+    "updatedAt": "2024-01-20T11:00:00Z",
+    "createdBy": "admin",
+    "updatedBy": "admin"
+  },
+  {
+    "_id": "datastore_coupa_prod_001",
+    "customer": "COUPA",
+    "environment": "prod",
+    "keyValuePairs": {
+      "CLIENT_ID": "coupa_prod_client_def456",
+      "CLIENT_SECRET": "coupa_prod_secret_uvw234",
+      "OAUTH_URL": "https://oauth.coupa.com/token",
+      "API_URL": "https://api.coupa.com",
+      "SCOPE": "punchout.read punchout.write order.create",
+      "IDENTITY_DOMAIN": "COUPA",
+      "WEBHOOK_SECRET": "coupa_webhook_secret_123"
+    },
+    "description": "Coupa production environment OAuth and API configuration",
+    "enabled": true,
+    "createdAt": "2024-01-12T09:45:00Z",
+    "updatedAt": "2024-03-05T16:20:00Z",
+    "createdBy": "admin",
+    "updatedBy": "jane.smith"
+  },
+  {
+    "_id": "datastore_ariba_stage_001",
+    "customer": "ARIBA",
+    "environment": "stage",
+    "keyValuePairs": {
+      "NETWORK_ID": "AN01000000001",
+      "SHARED_SECRET": "ariba_stage_shared_secret_xyz",
+      "CXML_URL": "https://stage-service.ariba.com/Buyer/Main/ad/setupRequest/operations",
+      "IDENTITY": "ariba_stage_identity",
+      "FROM_DOMAIN": "NetworkId",
+      "TO_DOMAIN": "DUNS"
+    },
+    "description": "Ariba staging environment cXML configuration",
+    "enabled": true,
+    "createdAt": "2024-02-01T13:00:00Z",
+    "updatedAt": "2024-02-15T10:30:00Z",
+    "createdBy": "admin",
+    "updatedBy": "bob.jones"
+  },
+  {
+    "_id": "datastore_oracle_dev_001",
+    "customer": "ORACLE",
+    "environment": "dev",
+    "keyValuePairs": {
+      "INSTANCE_URL": "https://dev-procurement.oracle.com",
+      "USERNAME": "oracle_dev_user",
+      "PASSWORD": "oracle_dev_pass_encrypted",
+      "COMPANY_CODE": "ORA_DEV_001",
+      "CATALOG_VERSION": "2.0",
+      "LOCALE": "en_US"
+    },
+    "description": "Oracle iProcurement development environment configuration",
+    "enabled": true,
+    "createdAt": "2024-01-25T14:20:00Z",
+    "updatedAt": "2024-01-25T14:20:00Z",
+    "createdBy": "admin",
+    "updatedBy": "admin"
+  },
+  {
+    "_id": "datastore_oracle_prod_001",
+    "customer": "ORACLE",
+    "environment": "prod",
+    "keyValuePairs": {
+      "INSTANCE_URL": "https://procurement.oracle.com",
+      "USERNAME": "oracle_prod_user",
+      "PASSWORD": "oracle_prod_pass_encrypted",
+      "COMPANY_CODE": "ORA_PROD_001",
+      "CATALOG_VERSION": "2.0",
+      "LOCALE": "en_US",
+      "BACKUP_URL": "https://backup-procurement.oracle.com"
+    },
+    "description": "Oracle iProcurement production environment configuration",
+    "enabled": true,
+    "createdAt": "2024-01-18T09:00:00Z",
+    "updatedAt": "2024-03-10T11:45:00Z",
+    "createdBy": "admin",
+    "updatedBy": "mary.wilson"
+  },
+  {
+    "_id": "datastore_sap_s4_dev_001",
+    "customer": "SAP",
+    "environment": "s4-dev",
+    "keyValuePairs": {
+      "S4_HOST": "https://s4dev.sap.com",
+      "S4_CLIENT": "100",
+      "S4_SYSTEM_ID": "S4D",
+      "USERNAME": "sap_dev_user",
+      "PLANT_CODE": "1000",
+      "COMPANY_CODE": "1000"
+    },
+    "description": "SAP S/4HANA development environment configuration",
+    "enabled": true,
+    "createdAt": "2024-02-10T15:30:00Z",
+    "updatedAt": "2024-02-10T15:30:00Z",
+    "createdBy": "admin",
+    "updatedBy": "admin"
+  },
+  {
+    "_id": "datastore_test_disabled_001",
+    "customer": "TEST_CUSTOMER",
+    "environment": "dev",
+    "keyValuePairs": {
+      "TEST_KEY": "test_value",
+      "DEBUG_MODE": "true"
+    },
+    "description": "Disabled test configuration for demonstration",
+    "enabled": false,
+    "createdAt": "2024-03-01T10:00:00Z",
+    "updatedAt": "2024-03-15T12:00:00Z",
+    "createdBy": "admin",
+    "updatedBy": "admin"
+  }
+]

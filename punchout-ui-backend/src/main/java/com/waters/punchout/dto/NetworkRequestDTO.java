@@ -15,6 +15,7 @@ public class NetworkRequestDTO {
     private String id;
     private String sessionKey;
     private String orderId;
+    private String invoiceNumber;
     private String requestId;
     private LocalDateTime timestamp;
     private String direction;

@@ -13,6 +13,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -40,7 +41,15 @@ public class AuthServiceClient {
     }
 
     public String getAuthToken(PunchOutRequest request) {
-        return getAuthToken(request, currentEnvironment);
+        // Extract environment from request extrinsics, fallback to current environment
+        String environment = currentEnvironment;
+        if (request.getExtrinsics() != null && request.getExtrinsics().containsKey("Environment")) {
+            environment = request.getExtrinsics().get("Environment");
+            log.info("Using environment from request extrinsics: {}", environment);
+        } else {
+            log.info("No environment in request extrinsics, using current environment: {}", environment);
+        }
+        return getAuthToken(request, environment);
     }
 
     public String getAuthToken(PunchOutRequest request, String environment) {
@@ -56,7 +65,7 @@ public class AuthServiceClient {
         String errorMessage = null;
         
         try {
-            Map<String, Object> payload = buildAuthPayload(request);
+            Map<String, Object> payload = buildAuthPayload(request, environment);
             requestBody = objectMapper.writeValueAsString(payload);
             
             Map<String, String> requestHeaders = new HashMap<>();
@@ -73,15 +82,36 @@ public class AuthServiceClient {
                     .toEntity(String.class)
                     .block();
             
-            String token = responseEntity.getBody();
             statusCode = responseEntity.getStatusCode().value();
+            responseBody = responseEntity.getBody(); // Keep original body for logging
             
             // Capture all response headers
             responseEntity.getHeaders().forEach((name, values) -> {
                 responseHeadersMap.put(name, String.join(", ", values));
             });
             
-            responseBody = token;
+            // Extract wuser_key from Set-Cookie header (for Waters auth service)
+            String token = null;
+            if (responseEntity.getHeaders().containsKey("Set-Cookie")) {
+                List<String> cookies = responseEntity.getHeaders().get("Set-Cookie");
+                if (cookies != null) {
+                    for (String cookie : cookies) {
+                        if (cookie.startsWith("wuser_key=")) {
+                            // Extract value: wuser_key=VALUE; Path=/; Domain=...
+                            token = cookie.substring("wuser_key=".length()).split(";")[0];
+                            log.info("Extracted wuser_key from Set-Cookie header for Waters auth");
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            if (token == null) {
+                // Fallback: use response body as token (for legacy/mock services)
+                token = responseBody;
+                log.info("Using response body as token (legacy mode)");
+            }
+            
             success = true;
             
             log.info("Successfully obtained auth token for sessionKey={}", request.getSessionKey());
@@ -175,14 +205,31 @@ public class AuthServiceClient {
         }
     }
 
-    private Map<String, Object> buildAuthPayload(PunchOutRequest request) {
+    private Map<String, Object> buildAuthPayload(PunchOutRequest request, String environment) {
         Map<String, Object> payload = new HashMap<>();
-        payload.put("sessionKey", request.getSessionKey());
-        payload.put("operation", request.getOperation());
-        payload.put("buyerCookie", request.getBuyerCookie());
-        payload.put("fromIdentity", request.getFromIdentity());
-        payload.put("toIdentity", request.getToIdentity());
-        payload.put("senderIdentity", request.getSenderIdentity());
+        
+        // Check if environment uses Waters auth service (dev/stage/prod)
+        String authUrl = environmentConfigService.getAuthServiceUrl(environment);
+        
+        if (authUrl != null && authUrl.contains("waters.com")) {
+            // Waters auth service format - use email/password from environment config
+            String email = environmentConfigService.getAuthEmail(environment);
+            String password = environmentConfigService.getAuthPassword(environment);
+            
+            payload.put("email", email);
+            payload.put("password", password);
+            
+            log.info("Using auth credentials from environment config for {}: email={}", environment, email);
+        } else {
+            // Legacy/local format - use session key
+            payload.put("sessionKey", request.getSessionKey());
+            payload.put("operation", request.getOperation());
+            payload.put("buyerCookie", request.getBuyerCookie());
+            payload.put("fromIdentity", request.getFromIdentity());
+            payload.put("toIdentity", request.getToIdentity());
+            payload.put("senderIdentity", request.getSenderIdentity());
+        }
+        
         return payload;
     }
 }
