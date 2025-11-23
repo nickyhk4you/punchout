@@ -2,6 +2,7 @@ package com.waters.punchout.gateway.logging;
 
 import com.waters.punchout.gateway.repository.NetworkRequestRepository;
 import com.waters.punchout.gateway.entity.NetworkRequestDocument;
+import com.waters.punchout.gateway.util.SecurityUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -52,8 +53,8 @@ public class NetworkRequestLogger {
         document.setDestination(destination);
         document.setMethod(method);
         document.setUrl(url);
-        document.setHeaders(headers);
-        document.setRequestBody(requestBody);
+        document.setHeaders(SecurityUtil.maskHeaders(headers));
+        document.setRequestBody(SecurityUtil.maskSecrets(requestBody));
         document.setRequestType(requestType);
 
         NetworkRequestDocument saved = networkRequestRepository.save(document);
@@ -88,11 +89,11 @@ public class NetworkRequestLogger {
         document.setDestination(destination);
         document.setMethod(method);
         document.setUrl(url);
-        document.setHeaders(headers);
-        document.setRequestBody(requestBody);
+        document.setHeaders(SecurityUtil.maskHeaders(headers));
+        document.setRequestBody(SecurityUtil.maskSecrets(requestBody));
         document.setStatusCode(statusCode);
-        document.setResponseHeaders(responseHeaders);
-        document.setResponseBody(responseBody);
+        document.setResponseHeaders(SecurityUtil.maskHeaders(responseHeaders));
+        document.setResponseBody(SecurityUtil.maskSecrets(responseBody));
         document.setDuration(duration);
         document.setRequestType(requestType);
         document.setSuccess(success);
@@ -115,8 +116,8 @@ public class NetworkRequestLogger {
     ) {
         networkRequestRepository.findById(requestId).ifPresent(document -> {
             document.setStatusCode(statusCode);
-            document.setResponseHeaders(responseHeaders);
-            document.setResponseBody(responseBody);
+            document.setResponseHeaders(SecurityUtil.maskHeaders(responseHeaders));
+            document.setResponseBody(SecurityUtil.maskSecrets(responseBody));
             document.setDuration(duration);
             document.setSuccess(success);
             document.setErrorMessage(errorMessage);
@@ -148,8 +149,8 @@ public class NetworkRequestLogger {
         document.setDestination(destination);
         document.setMethod(method);
         document.setUrl(url);
-        document.setHeaders(headers);
-        document.setRequestBody(requestBody);
+        document.setHeaders(SecurityUtil.maskHeaders(headers));
+        document.setRequestBody(SecurityUtil.maskSecrets(requestBody));
         document.setRequestType(requestType);
 
         NetworkRequestDocument saved = networkRequestRepository.save(document);

@@ -2,6 +2,7 @@ package com.waters.punchout.gateway.controller;
 
 import com.waters.punchout.gateway.entity.CustomerOnboarding;
 import com.waters.punchout.gateway.service.CustomerOnboardingService;
+import com.waters.punchout.gateway.util.EnvironmentUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -43,8 +44,9 @@ public class CustomerOnboardingController {
     
     @GetMapping("/environment/{environment}")
     public ResponseEntity<List<CustomerOnboarding>> getOnboardingsByEnvironment(@PathVariable String environment) {
-        log.info("GET /api/onboarding/environment/{} - Fetching onboardings", environment);
-        List<CustomerOnboarding> onboardings = onboardingService.getOnboardingsByEnvironment(environment);
+        String normalizedEnv = EnvironmentUtil.normalize(environment);
+        log.info("GET /api/onboarding/environment/{} (normalized: {}) - Fetching onboardings", environment, normalizedEnv);
+        List<CustomerOnboarding> onboardings = onboardingService.getOnboardingsByEnvironment(normalizedEnv);
         return ResponseEntity.ok(onboardings);
     }
     

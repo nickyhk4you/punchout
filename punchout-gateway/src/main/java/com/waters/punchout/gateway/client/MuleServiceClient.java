@@ -3,6 +3,8 @@ package com.waters.punchout.gateway.client;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.waters.punchout.gateway.logging.NetworkRequestLogger;
 import com.waters.punchout.gateway.service.EnvironmentConfigService;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -42,6 +44,8 @@ public class MuleServiceClient {
         return sendMuleRequest(payload, token, sessionKey, currentEnvironment);
     }
 
+    @Retry(name = "muleService")
+    @CircuitBreaker(name = "muleService")
     public Map<String, Object> sendMuleRequest(Map<String, Object> payload, String token, String sessionKey, String environment) {
         String muleUrl = environmentConfigService.getMuleServiceUrl(environment);
         log.info("Sending Mule request for sessionKey={}, environment={}, url={}", 

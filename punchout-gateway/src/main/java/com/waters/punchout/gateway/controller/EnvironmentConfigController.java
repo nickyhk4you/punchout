@@ -2,6 +2,7 @@ package com.waters.punchout.gateway.controller;
 
 import com.waters.punchout.gateway.entity.EnvironmentConfig;
 import com.waters.punchout.gateway.service.EnvironmentConfigService;
+import com.waters.punchout.gateway.util.EnvironmentUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -29,8 +30,9 @@ public class EnvironmentConfigController {
     
     @GetMapping("/{environment}")
     public ResponseEntity<EnvironmentConfig> getConfig(@PathVariable String environment) {
-        log.info("GET /api/environment-config/{} - Fetching configuration", environment);
-        EnvironmentConfig config = environmentConfigService.getConfig(environment);
+        String normalizedEnv = EnvironmentUtil.normalize(environment);
+        log.info("GET /api/environment-config/{} (normalized: {}) - Fetching configuration", environment, normalizedEnv);
+        EnvironmentConfig config = environmentConfigService.getConfig(normalizedEnv);
         return ResponseEntity.ok(config);
     }
     
@@ -56,9 +58,10 @@ public class EnvironmentConfigController {
     public ResponseEntity<EnvironmentConfig> updateConfig(
             @PathVariable String environment,
             @RequestBody EnvironmentConfig config) {
-        log.info("PUT /api/environment-config/{} - Updating configuration", environment);
+        String normalizedEnv = EnvironmentUtil.normalize(environment);
+        log.info("PUT /api/environment-config/{} (normalized: {}) - Updating configuration", environment, normalizedEnv);
         
-        config.setEnvironment(environment);
+        config.setEnvironment(normalizedEnv);
         config.setUpdatedAt(LocalDateTime.now());
         
         EnvironmentConfig saved = environmentConfigService.saveConfig(config);
@@ -67,17 +70,19 @@ public class EnvironmentConfigController {
     
     @DeleteMapping("/{environment}")
     public ResponseEntity<Void> deleteConfig(@PathVariable String environment) {
-        log.info("DELETE /api/environment-config/{} - Deleting configuration", environment);
-        environmentConfigService.deleteConfig(environment);
+        String normalizedEnv = EnvironmentUtil.normalize(environment);
+        log.info("DELETE /api/environment-config/{} (normalized: {}) - Deleting configuration", environment, normalizedEnv);
+        environmentConfigService.deleteConfig(normalizedEnv);
         return ResponseEntity.noContent().build();
     }
     
     @PostMapping("/cache/clear/{environment}")
     public ResponseEntity<Map<String, String>> clearCache(@PathVariable String environment) {
-        log.info("POST /api/environment-config/cache/clear/{} - Clearing cache", environment);
-        environmentConfigService.clearCache(environment);
+        String normalizedEnv = EnvironmentUtil.normalize(environment);
+        log.info("POST /api/environment-config/cache/clear/{} (normalized: {}) - Clearing cache", environment, normalizedEnv);
+        environmentConfigService.clearCache(normalizedEnv);
         return ResponseEntity.ok(Map.of(
-            "message", "Cache cleared for environment: " + environment,
+            "message", "Cache cleared for environment: " + normalizedEnv,
             "timestamp", LocalDateTime.now().toString()
         ));
     }
@@ -94,13 +99,14 @@ public class EnvironmentConfigController {
     
     @GetMapping("/urls/{environment}")
     public ResponseEntity<Map<String, String>> getUrls(@PathVariable String environment) {
-        log.info("GET /api/environment-config/urls/{} - Fetching URLs", environment);
+        String normalizedEnv = EnvironmentUtil.normalize(environment);
+        log.info("GET /api/environment-config/urls/{} (normalized: {}) - Fetching URLs", environment, normalizedEnv);
         
         return ResponseEntity.ok(Map.of(
-            "environment", environment,
-            "authServiceUrl", environmentConfigService.getAuthServiceUrl(environment),
-            "muleServiceUrl", environmentConfigService.getMuleServiceUrl(environment),
-            "catalogBaseUrl", environmentConfigService.getCatalogBaseUrl(environment)
+            "environment", normalizedEnv,
+            "authServiceUrl", environmentConfigService.getAuthServiceUrl(normalizedEnv),
+            "muleServiceUrl", environmentConfigService.getMuleServiceUrl(normalizedEnv),
+            "catalogBaseUrl", environmentConfigService.getCatalogBaseUrl(normalizedEnv)
         ));
     }
 }
