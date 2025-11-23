@@ -2,6 +2,7 @@ package com.waters.punchout.gateway.controller;
 
 import com.waters.punchout.gateway.entity.CustomerDatastore;
 import com.waters.punchout.gateway.service.CustomerDatastoreService;
+import com.waters.punchout.gateway.util.EnvironmentUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -44,8 +45,9 @@ public class CustomerDatastoreController {
     
     @GetMapping("/environment/{environment}")
     public ResponseEntity<List<CustomerDatastore>> getDatastoresByEnvironment(@PathVariable String environment) {
-        log.info("GET /api/datastore/environment/{} - Fetching datastores", environment);
-        List<CustomerDatastore> datastores = datastoreService.getDatastoresByEnvironment(environment);
+        String normalizedEnv = EnvironmentUtil.normalize(environment);
+        log.info("GET /api/datastore/environment/{} (normalized: {}) - Fetching datastores", environment, normalizedEnv);
+        List<CustomerDatastore> datastores = datastoreService.getDatastoresByEnvironment(normalizedEnv);
         return ResponseEntity.ok(datastores);
     }
     
@@ -53,8 +55,9 @@ public class CustomerDatastoreController {
     public ResponseEntity<CustomerDatastore> getDatastoreByCustomerAndEnvironment(
             @PathVariable String customer,
             @PathVariable String environment) {
-        log.info("GET /api/datastore/customer/{}/environment/{} - Fetching datastore", customer, environment);
-        return datastoreService.getDatastoreByCustomerAndEnvironment(customer, environment)
+        String normalizedEnv = EnvironmentUtil.normalize(environment);
+        log.info("GET /api/datastore/customer/{}/environment/{} (normalized: {}) - Fetching datastore", customer, environment, normalizedEnv);
+        return datastoreService.getDatastoreByCustomerAndEnvironment(customer, normalizedEnv)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -64,8 +67,9 @@ public class CustomerDatastoreController {
             @PathVariable String customer,
             @PathVariable String environment,
             @PathVariable String key) {
-        log.info("GET /api/datastore/customer/{}/environment/{}/key/{} - Fetching value", customer, environment, key);
-        String value = datastoreService.getValue(customer, environment, key);
+        String normalizedEnv = EnvironmentUtil.normalize(environment);
+        log.info("GET /api/datastore/customer/{}/environment/{} (normalized: {})/key/{} - Fetching value", customer, environment, normalizedEnv, key);
+        String value = datastoreService.getValue(customer, normalizedEnv, key);
         if (value != null) {
             return ResponseEntity.ok(Map.of("key", key, "value", value));
         }

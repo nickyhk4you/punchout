@@ -36,6 +36,15 @@ public class EnvironmentConfig {
     @Field("catalogBaseUrl")
     private String catalogBaseUrl;
     
+    @Field("timeout")
+    private Integer timeout;
+    
+    @Field("retryAttempts")
+    private Integer retryAttempts;
+    
+    @Field("healthCheckUrl")
+    private String healthCheckUrl;
+    
     @Field("description")
     private String description;
     

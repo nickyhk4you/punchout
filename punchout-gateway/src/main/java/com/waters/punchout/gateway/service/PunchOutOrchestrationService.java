@@ -10,6 +10,7 @@ import com.waters.punchout.gateway.logging.NetworkRequestLogger;
 import com.waters.punchout.gateway.model.PunchOutRequest;
 import com.waters.punchout.gateway.repository.PunchOutSessionRepository;
 import com.waters.punchout.gateway.service.CustomerOnboardingService;
+import com.waters.punchout.gateway.util.EnvironmentUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -295,25 +296,23 @@ public class PunchOutOrchestrationService {
     }
     
     private String extractEnvironmentFromRequest(PunchOutRequest request) {
+        String rawEnv = null;
+        
         // First try to get from extrinsics
         if (request.getExtrinsics() != null && request.getExtrinsics().containsKey("Environment")) {
-            String env = request.getExtrinsics().get("Environment");
-            log.debug("Extracted environment from extrinsics: {}", env);
-            return env;
+            rawEnv = request.getExtrinsics().get("Environment");
+            log.debug("Extracted environment from extrinsics: {}", rawEnv);
         }
-        
         // Fallback: Extract from session key (e.g., SESSION_DEV_CUST001_123456)
-        if (request.getSessionKey() != null && request.getSessionKey().contains("_")) {
+        else if (request.getSessionKey() != null && request.getSessionKey().contains("_")) {
             String[] parts = request.getSessionKey().split("_");
             if (parts.length > 1) {
-                String env = parts[1].toLowerCase();
-                log.debug("Extracted environment from session key: {}", env);
-                return env;
+                rawEnv = parts[1];
+                log.debug("Extracted environment from session key: {}", rawEnv);
             }
         }
         
-        log.debug("Using default environment: dev");
-        return "dev";
+        return EnvironmentUtil.normalize(rawEnv);
     }
 
     private void savePunchOutSession(PunchOutRequest request, Map<String, Object> muleResponse) {
@@ -353,21 +352,22 @@ public class PunchOutOrchestrationService {
     }
 
     private String extractEnvironment(PunchOutRequest request) {
+        String rawEnv = null;
+        
         // First try to get from extrinsics
         if (request.getExtrinsics() != null && request.getExtrinsics().containsKey("Environment")) {
-            String env = request.getExtrinsics().get("Environment");
-            return mapEnvironmentName(env);
+            rawEnv = request.getExtrinsics().get("Environment");
         }
-        
         // Fallback: Extract environment from session key if available (e.g., SESSION_DEV_CUST001_123456)
-        String environment = "DEVELOPMENT";
-        if (request.getSessionKey() != null) {
+        else if (request.getSessionKey() != null) {
             String[] parts = request.getSessionKey().split("_");
             if (parts.length > 1) {
-                return mapEnvironmentName(parts[1]);
+                rawEnv = parts[1];
             }
         }
-        return environment;
+        
+        String normalizedEnv = EnvironmentUtil.normalize(rawEnv);
+        return mapEnvironmentName(normalizedEnv);
     }
 
     private String mapEnvironmentName(String env) {

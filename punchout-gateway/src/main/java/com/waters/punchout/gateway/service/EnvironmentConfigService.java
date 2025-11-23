@@ -48,9 +48,9 @@ public class EnvironmentConfigService {
     }
     
     /**
-     * Get configuration for current environment (caching disabled)
+     * Get configuration for current environment
      */
-    // @Cacheable(value = "environmentConfig", key = "#environment") - DISABLED to avoid cache issues
+    @Cacheable(value = "environmentConfig", key = "#environment")
     public EnvironmentConfig getConfig(String environment) {
         log.info("Loading configuration for environment: {}", environment);
         
@@ -148,9 +148,7 @@ public class EnvironmentConfigService {
                     log.info("Successfully decrypted password for environment: {}", environment);
                     return decrypted;
                 } catch (Exception e) {
-                    log.error("Failed to decrypt password for environment: {}. Error: {}", environment, e.getMessage());
-                    log.error("Encrypted value: {}", encryptedPassword);
-                    log.error("Jasypt encryptor class: {}", stringEncryptor.getClass().getName());
+                    log.error("Failed to decrypt password for environment: {}", environment);
                     throw new RuntimeException("Failed to decrypt password for environment: " + environment, e);
                 }
             } else {
@@ -160,7 +158,7 @@ public class EnvironmentConfigService {
         }
         
         // Password is plain text (not recommended, but supported for backward compatibility)
-        log.info("Using plain text password for environment: {} (consider encrypting)", environment);
+        log.warn("Using plain text password for environment: {} (consider encrypting)", environment);
         return encryptedPassword;
     }
     
@@ -169,6 +167,30 @@ public class EnvironmentConfigService {
      */
     public String getAuthPassword() {
         return getAuthPassword(currentEnvironment);
+    }
+    
+    /**
+     * Get timeout for specific environment
+     */
+    public Integer getTimeout(String environment) {
+        EnvironmentConfig config = getConfig(environment);
+        return config.getTimeout() != null ? config.getTimeout() : 30000; // Default 30 seconds
+    }
+    
+    /**
+     * Get retry attempts for specific environment
+     */
+    public Integer getRetryAttempts(String environment) {
+        EnvironmentConfig config = getConfig(environment);
+        return config.getRetryAttempts() != null ? config.getRetryAttempts() : 3; // Default 3 retries
+    }
+    
+    /**
+     * Get health check URL for specific environment
+     */
+    public String getHealthCheckUrl(String environment) {
+        EnvironmentConfig config = getConfig(environment);
+        return config.getHealthCheckUrl();
     }
     
     /**
@@ -181,7 +203,7 @@ public class EnvironmentConfigService {
     /**
      * Save or update configuration
      */
-    // @CacheEvict(value = "environmentConfig", key = "#config.environment") - Cache disabled
+    @CacheEvict(value = "environmentConfig", key = "#config.environment")
     public EnvironmentConfig saveConfig(EnvironmentConfig config) {
         log.info("Saving configuration for environment: {}", config.getEnvironment());
         return repository.save(config);
@@ -190,7 +212,7 @@ public class EnvironmentConfigService {
     /**
      * Delete configuration
      */
-    // @CacheEvict(value = "environmentConfig", key = "#environment") - Cache disabled
+    @CacheEvict(value = "environmentConfig", key = "#environment")
     public void deleteConfig(String environment) {
         log.info("Deleting configuration for environment: {}", environment);
         repository.findByEnvironment(environment)
@@ -198,19 +220,19 @@ public class EnvironmentConfigService {
     }
     
     /**
-     * Clear cache for specific environment (no-op when cache disabled)
+     * Clear cache for specific environment
      */
-    // @CacheEvict(value = "environmentConfig", key = "#environment") - Cache disabled
+    @CacheEvict(value = "environmentConfig", key = "#environment")
     public void clearCache(String environment) {
-        log.info("Cache clearing skipped - caching is disabled for environment: {}", environment);
+        log.info("Clearing cache for environment: {}", environment);
     }
     
     /**
-     * Clear all caches (no-op when cache disabled)
+     * Clear all caches
      */
-    // @CacheEvict(value = "environmentConfig", allEntries = true) - Cache disabled
+    @CacheEvict(value = "environmentConfig", allEntries = true)
     public void clearAllCaches() {
-        log.info("Cache clearing skipped - caching is disabled");
+        log.info("Clearing all environment config caches");
     }
     
     /**

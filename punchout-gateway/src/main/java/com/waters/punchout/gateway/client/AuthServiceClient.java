@@ -2,8 +2,13 @@ package com.waters.punchout.gateway.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.waters.punchout.gateway.logging.NetworkRequestLogger;
+import com.waters.punchout.gateway.metrics.MetricsService;
 import com.waters.punchout.gateway.model.PunchOutRequest;
+import com.waters.punchout.gateway.service.AuthTokenCacheService;
 import com.waters.punchout.gateway.service.EnvironmentConfigService;
+import com.waters.punchout.gateway.util.EnvironmentUtil;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -24,6 +29,8 @@ public class AuthServiceClient {
     private final NetworkRequestLogger networkRequestLogger;
     private final ObjectMapper objectMapper;
     private final EnvironmentConfigService environmentConfigService;
+    private final AuthTokenCacheService authTokenCacheService;
+    private final MetricsService metricsService;
     
     @Value("${app.environment:dev}")
     private String currentEnvironment;
@@ -32,28 +39,53 @@ public class AuthServiceClient {
             WebClient.Builder webClientBuilder,
             NetworkRequestLogger networkRequestLogger,
             ObjectMapper objectMapper,
-            EnvironmentConfigService environmentConfigService
+            EnvironmentConfigService environmentConfigService,
+            AuthTokenCacheService authTokenCacheService,
+            MetricsService metricsService
     ) {
         this.webClient = webClientBuilder.build();
         this.networkRequestLogger = networkRequestLogger;
         this.objectMapper = objectMapper;
         this.environmentConfigService = environmentConfigService;
+        this.authTokenCacheService = authTokenCacheService;
+        this.metricsService = metricsService;
     }
 
     public String getAuthToken(PunchOutRequest request) {
-        // Extract environment from request extrinsics, fallback to current environment
-        String environment = currentEnvironment;
+        String rawEnvironment = currentEnvironment;
         if (request.getExtrinsics() != null && request.getExtrinsics().containsKey("Environment")) {
-            environment = request.getExtrinsics().get("Environment");
-            log.info("Using environment from request extrinsics: {}", environment);
+            rawEnvironment = request.getExtrinsics().get("Environment");
+            log.info("Using environment from request extrinsics: {}", rawEnvironment);
         } else {
-            log.info("No environment in request extrinsics, using current environment: {}", environment);
+            log.info("No environment in request extrinsics, using current environment: {}", rawEnvironment);
         }
+        String environment = EnvironmentUtil.normalize(rawEnvironment);
         return getAuthToken(request, environment);
     }
 
+    @Retry(name = "authService")
+    @CircuitBreaker(name = "authService")
     public String getAuthToken(PunchOutRequest request, String environment) {
         String authUrl = environmentConfigService.getAuthServiceUrl(environment);
+        
+        // Check if using Waters auth (email/password based) - only these can be cached
+        boolean isWatersAuth = authUrl != null && authUrl.contains("waters.com");
+        String cachedToken = null;
+        
+        if (isWatersAuth) {
+            String email = environmentConfigService.getAuthEmail(environment);
+            cachedToken = authTokenCacheService.getCachedToken(environment, email);
+            
+            if (cachedToken != null) {
+                log.info("Using cached auth token for sessionKey={}, environment={}", 
+                        request.getSessionKey(), environment);
+                metricsService.recordCacheAccess("authTokens", true);
+                return cachedToken;
+            } else {
+                metricsService.recordCacheAccess("authTokens", false);
+            }
+        }
+        
         log.info("Requesting auth token for sessionKey={}, environment={}, url={}", 
                 request.getSessionKey(), environment, authUrl);
         
@@ -116,6 +148,12 @@ public class AuthServiceClient {
             
             log.info("Successfully obtained auth token for sessionKey={}", request.getSessionKey());
             
+            // Cache token if using Waters auth
+            if (isWatersAuth && token != null) {
+                String email = environmentConfigService.getAuthEmail(environment);
+                authTokenCacheService.cacheToken(environment, email, token);
+            }
+            
             // Log successful request with complete headers
             long duration = System.currentTimeMillis() - startTime;
             networkRequestLogger.logOutboundRequest(
@@ -134,6 +172,9 @@ public class AuthServiceClient {
                     success,
                     errorMessage
             );
+            
+            // Record metrics
+            metricsService.recordAuthRequest(environment, duration, true);
             
             return token;
             
@@ -170,6 +211,9 @@ public class AuthServiceClient {
                     false,
                     errorMessage
             );
+            
+            // Record metrics
+            metricsService.recordAuthRequest(environment, duration, false);
             
             log.error("Failed to get auth token: statusCode={}, error={}", statusCode, errorMessage);
             throw new RuntimeException("Failed to get auth token: " + e.getMessage(), e);
@@ -219,7 +263,7 @@ public class AuthServiceClient {
             payload.put("email", email);
             payload.put("password", password);
             
-            log.info("Using auth credentials from environment config for {}: email={}", environment, email);
+            log.info("Using auth credentials from environment config for {}", environment);
         } else {
             // Legacy/local format - use session key
             payload.put("sessionKey", request.getSessionKey());
