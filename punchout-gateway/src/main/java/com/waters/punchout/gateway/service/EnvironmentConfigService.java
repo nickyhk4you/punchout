@@ -172,6 +172,30 @@ public class EnvironmentConfigService {
     }
     
     /**
+     * Get timeout for specific environment
+     */
+    public Integer getTimeout(String environment) {
+        EnvironmentConfig config = getConfig(environment);
+        return config.getTimeout() != null ? config.getTimeout() : 30000; // Default 30 seconds
+    }
+    
+    /**
+     * Get retry attempts for specific environment
+     */
+    public Integer getRetryAttempts(String environment) {
+        EnvironmentConfig config = getConfig(environment);
+        return config.getRetryAttempts() != null ? config.getRetryAttempts() : 3; // Default 3 retries
+    }
+    
+    /**
+     * Get health check URL for specific environment
+     */
+    public String getHealthCheckUrl(String environment) {
+        EnvironmentConfig config = getConfig(environment);
+        return config.getHealthCheckUrl();
+    }
+    
+    /**
      * Get all configurations
      */
     public List<EnvironmentConfig> getAllConfigs() {

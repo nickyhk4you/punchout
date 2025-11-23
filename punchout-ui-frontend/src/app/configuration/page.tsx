@@ -46,8 +46,13 @@ interface SystemEnvConfig {
   id?: string;
   environment: string;
   authServiceUrl: string;
+  authEmail?: string;
+  authPassword?: string;
   muleServiceUrl: string;
   catalogBaseUrl: string;
+  timeout?: number;
+  retryAttempts?: number;
+  healthCheckUrl?: string;
   description?: string;
   enabled: boolean;
   createdAt?: string;
@@ -101,6 +106,7 @@ export default function ConfigurationPage() {
   const [urlTestResults, setUrlTestResults] = useState<{[key: string]: {status: string, latency?: number}}>({});
   const [expandedEnvCard, setExpandedEnvCard] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [showPassword, setShowPassword] = useState(false);
   
   // Security states
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
@@ -454,8 +460,17 @@ export default function ConfigurationPage() {
                       </button>
                       <button
                         onClick={() => {
-                          setEditingEnv({ environment: '', authServiceUrl: '', muleServiceUrl: '', catalogBaseUrl: '', enabled: true });
+                          setEditingEnv({ 
+                            environment: '', 
+                            authServiceUrl: '', 
+                            muleServiceUrl: '', 
+                            catalogBaseUrl: '', 
+                            timeout: 30000,
+                            retryAttempts: 3,
+                            enabled: true 
+                          });
                           setShowEnvModal(true);
+                          setShowPassword(false);
                         }}
                         className="px-5 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all shadow-md font-semibold"
                       >
@@ -669,6 +684,7 @@ export default function ConfigurationPage() {
                                       onClick={() => {
                                         setEditingEnv(config);
                                         setShowEnvModal(true);
+                                        setShowPassword(false);
                                       }}
                                       className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-all font-semibold text-sm"
                                     >
@@ -697,19 +713,20 @@ export default function ConfigurationPage() {
                   <div className="bg-white rounded-lg border border-gray-200 overflow-hidden mb-6">
                     <table className="w-full">
                       <thead className="bg-gray-50 border-b border-gray-200">
-                        <tr>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Environment</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Auth Service</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Mule Service</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Catalog Base</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Actions</th>
-                        </tr>
+                       <tr>
+                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Environment</th>
+                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Auth Service</th>
+                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Auth Email</th>
+                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Timeout</th>
+                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Retries</th>
+                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
+                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Actions</th>
+                       </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200">
                         {envConfigs.length === 0 ? (
                           <tr>
-                            <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                            <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
                               <i className="fas fa-inbox text-3xl mb-2 block text-gray-300"></i>
                               No environment configurations found
                             </td>
@@ -745,31 +762,15 @@ export default function ConfigurationPage() {
                                   )}
                                 </div>
                               </td>
-                              <td className="px-4 py-3">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm text-gray-600 truncate max-w-xs">{config.muleServiceUrl}</span>
-                                  <button
-                                    onClick={() => testUrl(config.muleServiceUrl, `mule-${config.environment}`)}
-                                    disabled={testingUrl === `mule-${config.environment}`}
-                                    className="text-blue-600 hover:text-blue-700 disabled:opacity-50"
-                                    title="Test URL"
-                                  >
-                                    {testingUrl === `mule-${config.environment}` ? (
-                                      <i className="fas fa-spinner fa-spin text-xs"></i>
-                                    ) : (
-                                      <i className="fas fa-vial text-xs"></i>
-                                    )}
-                                  </button>
-                                  {urlTestResults[`mule-${config.environment}`] && (
-                                    <span className={`text-xs ${urlTestResults[`mule-${config.environment}`].status === 'success' ? 'text-green-600' : 'text-red-600'}`}>
-                                      {urlTestResults[`mule-${config.environment}`].status === 'success' 
-                                        ? `✓ ${urlTestResults[`mule-${config.environment}`].latency}ms` 
-                                        : '✗'}
-                                    </span>
-                                  )}
-                                </div>
+                              <td className="px-4 py-3 text-sm text-gray-600">
+                                {config.authEmail || '-'}
                               </td>
-                              <td className="px-4 py-3 text-sm text-gray-600 truncate max-w-xs">{config.catalogBaseUrl}</td>
+                              <td className="px-4 py-3 text-sm text-gray-600">
+                                {config.timeout ? `${config.timeout}ms` : '-'}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-600">
+                                {config.retryAttempts ?? '-'}
+                              </td>
                               <td className="px-4 py-3">
                                 <span className={`px-2 py-1 rounded text-xs font-semibold ${
                                   config.enabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
@@ -783,6 +784,7 @@ export default function ConfigurationPage() {
                                     onClick={() => {
                                       setEditingEnv(config);
                                       setShowEnvModal(true);
+                                      setShowPassword(false);
                                     }}
                                     className="text-blue-600 hover:text-blue-700"
                                     title="Edit"
@@ -868,6 +870,94 @@ export default function ConfigurationPage() {
                               onChange={(e) => setEditingEnv({...editingEnv, catalogBaseUrl: e.target.value})}
                               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                               placeholder="http://localhost:3000/catalog"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Auth Email
+                            </label>
+                            <input
+                              type="text"
+                              value={editingEnv.authEmail || ''}
+                              onChange={(e) => setEditingEnv({...editingEnv, authEmail: e.target.value})}
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="auth-email@example.com"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Auth Password
+                            </label>
+                            <div className="relative">
+                              <input
+                                type={showPassword && editingEnv.authPassword?.startsWith('ENC(') ? 'text' : 'password'}
+                                value={editingEnv.authPassword || ''}
+                                onChange={(e) => setEditingEnv({...editingEnv, authPassword: e.target.value})}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder={editingEnv.authPassword?.startsWith('ENC(') ? '•••••••• (encrypted)' : 'Enter password'}
+                              />
+                              {editingEnv.authPassword?.startsWith('ENC(') && (
+                                <button
+                                  type="button"
+                                  onClick={() => setShowPassword(!showPassword)}
+                                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-800"
+                                  title={showPassword ? 'Hide password' : 'Show password'}
+                                >
+                                  <i className={`fas fa-${showPassword ? 'eye-slash' : 'eye'}`}></i>
+                                </button>
+                              )}
+                            </div>
+                            {editingEnv.authPassword?.startsWith('ENC(') && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                <i className="fas fa-lock mr-1"></i>
+                                Password is encrypted
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Timeout (ms)
+                              </label>
+                              <input
+                                type="number"
+                                value={editingEnv.timeout ?? 30000}
+                                onChange={(e) => setEditingEnv({...editingEnv, timeout: parseInt(e.target.value) || 30000})}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="30000"
+                                min="1000"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Retry Attempts
+                              </label>
+                              <input
+                                type="number"
+                                value={editingEnv.retryAttempts ?? 3}
+                                onChange={(e) => setEditingEnv({...editingEnv, retryAttempts: parseInt(e.target.value) || 3})}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="3"
+                                min="0"
+                                max="10"
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Health Check URL
+                            </label>
+                            <input
+                              type="text"
+                              value={editingEnv.healthCheckUrl || ''}
+                              onChange={(e) => setEditingEnv({...editingEnv, healthCheckUrl: e.target.value})}
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="http://localhost:8082/health (optional)"
                             />
                           </div>
 
