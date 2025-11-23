@@ -13,6 +13,13 @@ server:
 app:
   environment: ${APP_ENVIRONMENT:dev}
 
+# Jasypt encryption configuration
+jasypt:
+  encryptor:
+    password: ${JASYPT_ENCRYPTOR_PASSWORD:punchout-secret-key}
+    algorithm: PBEWithMD5AndDES
+    iv-generator-classname: org.jasypt.iv.NoIvGenerator
+
 logging:
   level:
     com.waters.punchout.gateway: DEBUG

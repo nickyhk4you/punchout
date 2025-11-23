@@ -24,6 +24,12 @@ public class EnvironmentConfig {
     @Field("authServiceUrl")
     private String authServiceUrl;
     
+    @Field("authEmail")
+    private String authEmail;
+    
+    @Field("authPassword")
+    private String authPassword;
+    
     @Field("muleServiceUrl")
     private String muleServiceUrl;
     

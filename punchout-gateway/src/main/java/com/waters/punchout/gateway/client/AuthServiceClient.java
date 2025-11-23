@@ -65,7 +65,7 @@ public class AuthServiceClient {
         String errorMessage = null;
         
         try {
-            Map<String, Object> payload = buildAuthPayload(request);
+            Map<String, Object> payload = buildAuthPayload(request, environment);
             requestBody = objectMapper.writeValueAsString(payload);
             
             Map<String, String> requestHeaders = new HashMap<>();
@@ -205,16 +205,21 @@ public class AuthServiceClient {
         }
     }
 
-    private Map<String, Object> buildAuthPayload(PunchOutRequest request) {
+    private Map<String, Object> buildAuthPayload(PunchOutRequest request, String environment) {
         Map<String, Object> payload = new HashMap<>();
         
         // Check if environment uses Waters auth service (dev/stage/prod)
-        String authUrl = environmentConfigService.getAuthServiceUrl(currentEnvironment);
+        String authUrl = environmentConfigService.getAuthServiceUrl(environment);
         
         if (authUrl != null && authUrl.contains("waters.com")) {
-            // Waters auth service format - use email/password
-            payload.put("email", "USMulti2@yopmail.com");
-            payload.put("password", "Password1!");
+            // Waters auth service format - use email/password from environment config
+            String email = environmentConfigService.getAuthEmail(environment);
+            String password = environmentConfigService.getAuthPassword(environment);
+            
+            payload.put("email", email);
+            payload.put("password", password);
+            
+            log.info("Using auth credentials from environment config for {}: email={}", environment, email);
         } else {
             // Legacy/local format - use session key
             payload.put("sessionKey", request.getSessionKey());
