@@ -5,8 +5,10 @@ import { useEffect } from 'react';
 const StylesLoader = () => {
   useEffect(() => {
     // Import CSS files on the client side
-    import('bootstrap/dist/css/bootstrap.min.css');
-    import('@fortawesome/fontawesome-free/css/all.min.css');
+    // @ts-ignore - CSS imports
+    import('bootstrap/dist/css/bootstrap.min.css').catch(() => {});
+    // @ts-ignore - CSS imports
+    import('@fortawesome/fontawesome-free/css/all.min.css').catch(() => {});
   }, []);
 
   return null;

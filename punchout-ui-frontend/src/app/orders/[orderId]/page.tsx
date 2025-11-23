@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { Order, NetworkRequest } from '@/types';
-import { orderAPIv2 } from '@/lib/api';
+import { orderAPI } from '@/lib/api';
 import Link from 'next/link';
 import Breadcrumb from '@/components/Breadcrumb';
 
@@ -24,8 +24,8 @@ export default function OrderDetailPage() {
     try {
       setLoading(true);
       const [orderData, requestsData] = await Promise.all([
-        orderAPIv2.getOrderById(orderId),
-        orderAPIv2.getOrderNetworkRequests(orderId)
+        orderAPI.getOrderById(orderId),
+        orderAPI.getOrderNetworkRequests(orderId)
       ]);
       setOrder(orderData);
       setNetworkRequests(requestsData);

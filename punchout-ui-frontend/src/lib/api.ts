@@ -1,5 +1,6 @@
-import axios from 'axios';
 import { PunchOutSession, OrderObject, GatewayRequest, SessionFilter, CxmlTemplate, Order, NetworkRequest } from '@/types';
+import { createClient } from './http';
+import { buildParams } from './qs';
 
 // API Base URL - configurable via environment variable
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
@@ -11,60 +12,13 @@ if (process.env.NODE_ENV === 'development') {
   console.debug('Gateway Base URL:', GATEWAY_BASE_URL);
 }
 
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  timeout: 10000, // 10 second timeout
-});
-
-const gatewayClient = axios.create({
-  baseURL: GATEWAY_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  timeout: 10000, // 10 second timeout
-});
-
-// Add request interceptor for logging (development only)
-apiClient.interceptors.request.use(
-  (config) => {
-    console.log(`API Request: ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// Add response interceptor for error handling
-apiClient.interceptors.response.use(
-  (response) => {
-    return response;
-  },
-  (error) => {
-    if (error.response) {
-      console.error('API Error:', error.response.status, error.response.data);
-    } else if (error.request) {
-      console.error('Network Error: No response received from server');
-    } else {
-      console.error('Error:', error.message);
-    }
-    return Promise.reject(error);
-  }
-);
+const apiClient = createClient(API_BASE_URL);
+const gatewayClient = createClient(GATEWAY_BASE_URL);
 
 export const sessionAPI = {
   // Get all sessions from MongoDB
   getAllSessions: async (filters?: SessionFilter): Promise<PunchOutSession[]> => {
-    const params = new URLSearchParams();
-    if (filters) {
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value) params.append(key, value);
-      });
-    }
-    // Use MongoDB endpoint /v1/sessions
+    const params = buildParams(filters as Record<string, string | undefined>);
     const response = await apiClient.get<PunchOutSession[]>('/v1/sessions', { params });
     return response.data;
   },
@@ -87,24 +41,7 @@ export const sessionAPI = {
   },
 };
 
-export const orderAPI = {
-  getOrderObject: async (sessionKey: string): Promise<OrderObject | null> => {
-    try {
-      const response = await apiClient.get<OrderObject>(`/punchout-sessions/${sessionKey}/order-object`);
-      return response.data;
-    } catch (error: any) {
-      if (error.response?.status === 404) {
-        return null;
-      }
-      throw error;
-    }
-  },
 
-  createOrderObject: async (sessionKey: string, order: Partial<OrderObject>): Promise<OrderObject> => {
-    const response = await apiClient.post<OrderObject>(`/punchout-sessions/${sessionKey}/order-object`, order);
-    return response.data;
-  },
-};
 
 export const gatewayAPI = {
   getGatewayRequests: async (sessionKey: string): Promise<GatewayRequest[]> => {
@@ -196,15 +133,28 @@ export const punchOutTestAPI = {
   },
 };
 
-export const orderAPIv2 = {
+export const orderAPI = {
+  // Session-specific order object methods (legacy endpoints)
+  getOrderObject: async (sessionKey: string): Promise<OrderObject | null> => {
+    try {
+      const response = await apiClient.get<OrderObject>(`/punchout-sessions/${sessionKey}/order-object`);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
+  },
+
+  createOrderObject: async (sessionKey: string, order: Partial<OrderObject>): Promise<OrderObject> => {
+    const response = await apiClient.post<OrderObject>(`/punchout-sessions/${sessionKey}/order-object`, order);
+    return response.data;
+  },
+
   // Get all orders
   getAllOrders: async (filters?: { status?: string; customerId?: string; environment?: string }): Promise<Order[]> => {
-    const params = new URLSearchParams();
-    if (filters) {
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value) params.append(key, value);
-      });
-    }
+    const params = buildParams(filters);
     const response = await apiClient.get<Order[]>('/v1/orders', { params });
     return response.data;
   },
@@ -277,12 +227,7 @@ export const cxmlTemplateAPI = {
 export const invoiceAPI = {
   // Get all invoices
   getAllInvoices: async (filters?: { status?: string; environment?: string }): Promise<import('@/types').Invoice[]> => {
-    const params = new URLSearchParams();
-    if (filters) {
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value) params.append(key, value);
-      });
-    }
+    const params = buildParams(filters);
     const response = await apiClient.get<import('@/types').Invoice[]>('/v1/invoices', { params });
     return response.data;
   },

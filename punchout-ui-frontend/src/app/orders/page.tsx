@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Order } from '@/types';
-import { orderAPIv2 } from '@/lib/api';
+import { orderAPI } from '@/lib/api';
 import Link from 'next/link';
 import Pagination from '@/components/Pagination';
 
@@ -24,7 +24,7 @@ export default function OrdersPage() {
   const loadOrders = async () => {
     try {
       setLoading(true);
-      const data = await orderAPIv2.getAllOrders(filters);
+      const data = await orderAPI.getAllOrders(filters);
       setOrders(data);
     } catch (error) {
       console.error('Failed to load orders:', error);
