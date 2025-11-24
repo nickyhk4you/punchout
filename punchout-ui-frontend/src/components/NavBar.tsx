@@ -41,6 +41,11 @@ const NavBar = () => {
     { href: '/onboarding', icon: 'user-plus', label: 'Customer Onboarding' },
   ];
 
+  const adminMenuItems = [
+    { href: '/users', icon: 'users', label: 'User Management' },
+    { href: '/configuration', icon: 'cog', label: 'Configuration' },
+  ];
+
   const DropdownMenu = ({ title, icon, items, menuKey }: any) => {
     const isOpen = openDropdown === menuKey;
     const isMenuActive = isGroupActive(items);
@@ -129,17 +134,12 @@ const NavBar = () => {
               menuKey="dev"
             />
 
-            <Link
-              href="/configuration"
-              className={`px-3 lg:px-4 py-2 rounded-lg font-semibold text-sm transition-all whitespace-nowrap ${
-                isActive('/configuration')
-                  ? 'bg-white text-blue-600 shadow-lg scale-105'
-                  : 'text-white hover:bg-white hover:bg-opacity-20'
-              }`}
-            >
-              <i className="fas fa-cog mr-2"></i>
-              Config
-            </Link>
+            <DropdownMenu 
+              title="Admin" 
+              icon="shield-alt"
+              items={adminMenuItems}
+              menuKey="admin"
+            />
           </div>
 
           {/* Mobile - Simplified */}
@@ -150,8 +150,8 @@ const NavBar = () => {
             <Link href="/sessions" className={`p-2 rounded-lg ${isActive('/sessions') ? 'bg-white text-blue-600' : 'text-white'}`} title="Sessions">
               <i className="fas fa-tasks"></i>
             </Link>
-            <Link href="/orders" className={`p-2 rounded-lg ${isActive('/orders') ? 'bg-white text-blue-600' : 'text-white'}`} title="Orders">
-              <i className="fas fa-shopping-cart"></i>
+            <Link href="/users" className={`p-2 rounded-lg ${isActive('/users') ? 'bg-white text-blue-600' : 'text-white'}`} title="Users">
+              <i className="fas fa-users"></i>
             </Link>
           </div>
         </div>
