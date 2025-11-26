@@ -18,7 +18,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.LocalDateTime;
 import java.util.HashMap;
-import java.util.HexFormat;
 import java.util.Map;
 import java.util.Optional;
 
@@ -121,7 +120,7 @@ public class OrderOrchestrationService {
             // Generate SHA-256 hash
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hash = digest.digest(content.toString().getBytes(StandardCharsets.UTF_8));
-            String hexHash = HexFormat.of().formatHex(hash);
+            String hexHash = bytesToHex(hash);
             
             // Return first 16 characters for readability
             return "ORD_" + hexHash.substring(0, 16).toUpperCase();
@@ -131,6 +130,18 @@ public class OrderOrchestrationService {
             // Fallback to original orderId or timestamp-based ID
             return order.getOrderId() != null ? order.getOrderId() : "ORD_" + System.currentTimeMillis();
         }
+    }
+    
+    /**
+     * Convert byte array to hex string (Java 11 compatible).
+     * Replacement for Java 17's HexFormat.
+     */
+    private String bytesToHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
     }
     
     private void logInboundOrderRequest(String cxmlContent, String orderId, String sessionKey) {
