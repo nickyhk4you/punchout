@@ -9,9 +9,11 @@ COPY punchout-common ./punchout-common
 COPY punchout-gateway ./punchout-gateway
 COPY punchout-ui-backend ./punchout-ui-backend
 COPY punchout-mock-service ./punchout-mock-service
+COPY punchout-order ./punchout-order
+COPY punchout-invoice ./punchout-invoice
 
-# Build all modules
-RUN mvn clean package -DskipTests -B -pl punchout-common,punchout-gateway,punchout-ui-backend
+# Build all modules (order and invoice are dependencies of ui-backend)
+RUN mvn clean package -DskipTests -B -pl punchout-common,punchout-order,punchout-invoice,punchout-gateway,punchout-ui-backend
 
 # Runtime stage
 FROM eclipse-temurin:17-jre
