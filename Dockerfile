@@ -31,8 +31,8 @@ COPY --from=build /build/punchout-ui-backend/target/*.jar ui-backend.jar
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY nginx.conf /etc/nginx/nginx.conf
 
-# JVM configuration for containers
-ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=35 -XX:InitialRAMPercentage=20 -XX:+UseContainerSupport -XX:+ExitOnOutOfMemoryError -Djava.security.egd=file:/dev/./urandom"
+# JVM configuration for containers - optimized for limited RAM
+ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=30 -XX:InitialRAMPercentage=15 -XX:+UseContainerSupport -XX:+ExitOnOutOfMemoryError -XX:+UseSerialGC -Djava.security.egd=file:/dev/./urandom"
 
 # Expose nginx port (single entry point)
 EXPOSE 80
