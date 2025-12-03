@@ -8,6 +8,7 @@ COPY pom.xml ./
 COPY punchout-common ./punchout-common
 COPY punchout-gateway ./punchout-gateway
 COPY punchout-ui-backend ./punchout-ui-backend
+COPY punchout-mock-service ./punchout-mock-service
 
 # Build all modules
 RUN mvn clean package -DskipTests -B -pl punchout-common,punchout-gateway,punchout-ui-backend
