@@ -3,9 +3,10 @@ FROM maven:3.9-eclipse-temurin-17 AS build
 
 WORKDIR /build
 
-# Copy parent POM and required modules
+# Copy parent POM and all modules (Maven requires all modules listed in parent pom)
 COPY pom.xml ./
 COPY punchout-common ./punchout-common
+COPY punchout-gateway ./punchout-gateway
 COPY punchout-ui-backend ./punchout-ui-backend
 COPY punchout-mock-service ./punchout-mock-service
 COPY punchout-order ./punchout-order
