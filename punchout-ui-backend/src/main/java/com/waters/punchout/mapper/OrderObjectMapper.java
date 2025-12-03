@@ -2,9 +2,11 @@ package com.waters.punchout.mapper;
 
 import com.waters.punchout.dto.OrderObjectDTO;
 import com.waters.punchout.entity.OrderObject;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component
+@Profile("local")
 public class OrderObjectMapper {
     
     public OrderObjectDTO toDTO(OrderObject entity) {
