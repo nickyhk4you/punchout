@@ -18,8 +18,8 @@ RUN mvn clean package -DskipTests -B -pl punchout-common,punchout-order,punchout
 # Runtime stage
 FROM eclipse-temurin:17-jre
 
-# Install supervisor to manage multiple processes
-RUN apt-get update && apt-get install -y supervisor wget && rm -rf /var/lib/apt/lists/*
+# Install supervisor, nginx, and wget
+RUN apt-get update && apt-get install -y supervisor nginx wget && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -27,18 +27,19 @@ WORKDIR /app
 COPY --from=build /build/punchout-gateway/target/*.jar gateway.jar
 COPY --from=build /build/punchout-ui-backend/target/*.jar ui-backend.jar
 
-# Copy supervisor configuration
+# Copy configuration files
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY nginx.conf /etc/nginx/nginx.conf
 
 # JVM configuration for containers
-ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=40 -XX:InitialRAMPercentage=25 -XX:+UseContainerSupport -XX:+ExitOnOutOfMemoryError -Djava.security.egd=file:/dev/./urandom"
+ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=35 -XX:InitialRAMPercentage=20 -XX:+UseContainerSupport -XX:+ExitOnOutOfMemoryError -Djava.security.egd=file:/dev/./urandom"
 
-# Expose both ports
-EXPOSE 9090 8080
+# Expose nginx port (single entry point)
+EXPOSE 80
 
-# Health check on gateway
-HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:9090/actuator/health || exit 1
+# Health check via nginx
+HEALTHCHECK --interval=30s --timeout=3s --start-period=90s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:80/health || exit 1
 
 # Run supervisor
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
