@@ -23,8 +23,10 @@
         <module>punchout-common</module>
         <module>punchout-gateway</module>
         <module>punchout-ui-backend</module>
-        <module>punchout-ui-frontend</module>
         <module>punchout-mock-service</module>
+        <!-- Moved to separate repository:
+        <module>punchout-ui-frontend</module>
+        -->
         <!-- Inactive modules (kept for future use)
         <module>punchout-order</module>
         <module>punchout-invoice</module>
@@ -59,11 +61,13 @@
                 <artifactId>punchout-ui-backend</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <!-- Moved to separate repository
             <dependency>
                 <groupId>com.waters</groupId>
                 <artifactId>punchout-ui-frontend</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            -->
         </dependencies>
     </dependencyManagement>
 
