@@ -21,9 +21,6 @@ FROM eclipse-temurin:17-jre
 # Install supervisor to manage multiple processes
 RUN apt-get update && apt-get install -y supervisor wget && rm -rf /var/lib/apt/lists/*
 
-# Create non-root user
-RUN groupadd -r app && useradd -r -g app app
-
 WORKDIR /app
 
 # Copy JARs from build stage
