@@ -14,12 +14,11 @@ This starts:
 - **UI Backend** (port 8080) - REST APIs for frontend
 - **Mock Service** (port 8082) - Mock auth & catalog services
 
-### Start Frontend
-```bash
-cd punchout-ui-frontend
-npm run dev
-```
-Frontend runs on **port 3000**: http://localhost:3000
+### Frontend Application
+The frontend has been moved to a **separate repository** for independent deployment.
+
+**Frontend Repository:** See separate `punchout-ui-frontend` repository  
+**API Base URL:** http://localhost:8080
 
 ### Stop All Services
 ```bash
