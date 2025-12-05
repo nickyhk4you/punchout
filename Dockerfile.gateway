@@ -3,13 +3,14 @@ FROM maven:3.9-eclipse-temurin-17 AS build
 
 WORKDIR /build
 
-# Copy parent POM and required modules
+# Copy parent POM and all modules (Maven needs all modules declared in parent pom)
 COPY pom.xml ./
 COPY punchout-common ./punchout-common
 COPY punchout-gateway ./punchout-gateway
 COPY punchout-mock-service ./punchout-mock-service
 COPY punchout-order ./punchout-order
 COPY punchout-invoice ./punchout-invoice
+COPY punchout-ui-backend ./punchout-ui-backend
 
 # Build gateway and its dependencies
 RUN mvn clean package -DskipTests -B -pl punchout-common,punchout-gateway -am
