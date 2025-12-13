@@ -28,10 +28,10 @@ else
 fi
 
 # Stop containers
-docker stop punchout-ui-frontend punchout-ui-backend punchout-gateway punchout-mongodb 2>/dev/null || true
+docker stop punchout-ui-backend punchout-gateway punchout-mongodb 2>/dev/null || true
 
 # Remove containers
-docker rm $REMOVE_VOLUMES punchout-ui-frontend punchout-ui-backend punchout-gateway punchout-mongodb 2>/dev/null || true
+docker rm $REMOVE_VOLUMES punchout-ui-backend punchout-gateway punchout-mongodb 2>/dev/null || true
 
 # Remove network
 docker network rm punchout-prod-network 2>/dev/null || true

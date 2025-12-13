@@ -26,9 +26,6 @@
         <module>punchout-mock-service</module>
         <module>punchout-order</module>
         <module>punchout-invoice</module>
-        <!-- Moved to separate repository:
-        <module>punchout-ui-frontend</module>
-        -->
     </modules>
 
     <properties>
@@ -59,13 +56,6 @@
                 <artifactId>punchout-ui-backend</artifactId>
                 <version>${project.version}</version>
             </dependency>
-            <!-- Moved to separate repository
-            <dependency>
-                <groupId>com.waters</groupId>
-                <artifactId>punchout-ui-frontend</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            -->
         </dependencies>
     </dependencyManagement>
 

@@ -2,6 +2,7 @@ package com.waters.punchout.gateway.logging;
 
 import com.waters.punchout.gateway.repository.NetworkRequestRepository;
 import com.waters.punchout.gateway.entity.NetworkRequestDocument;
+import com.waters.punchout.gateway.service.EnvironmentConfigService;
 import com.waters.punchout.gateway.util.SecurityUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -15,9 +16,39 @@ import java.util.UUID;
 public class NetworkRequestLogger {
 
     private final NetworkRequestRepository networkRequestRepository;
+    private final EnvironmentConfigService environmentConfigService;
 
-    public NetworkRequestLogger(NetworkRequestRepository networkRequestRepository) {
+    public NetworkRequestLogger(NetworkRequestRepository networkRequestRepository,
+                                EnvironmentConfigService environmentConfigService) {
         this.networkRequestRepository = networkRequestRepository;
+        this.environmentConfigService = environmentConfigService;
+    }
+    
+    private String maskIfRequired(String body, String environment) {
+        if (environment != null && !environmentConfigService.shouldMaskSensitiveData(environment)) {
+            return body;
+        }
+        return SecurityUtil.maskSecrets(body);
+    }
+    
+    private Map<String, String> maskHeadersIfRequired(Map<String, String> headers, String environment) {
+        if (environment != null && !environmentConfigService.shouldMaskSensitiveData(environment)) {
+            return headers;
+        }
+        return SecurityUtil.maskHeaders(headers);
+    }
+    
+    private String extractEnvironmentFromSessionKey(String sessionKey) {
+        if (sessionKey == null || !sessionKey.startsWith("SESSION_")) {
+            return null;
+        }
+        // Format: SESSION_{ENV}_{customer}_{env}_{id}_{timestamp}
+        // e.g., SESSION_PROD_tradecentric_prod_IC692112fbc6691_1765630061164
+        String[] parts = sessionKey.split("_");
+        if (parts.length >= 2) {
+            return parts[1].toLowerCase();
+        }
+        return null;
     }
     
     public static class OrderContext {
@@ -43,6 +74,8 @@ public class NetworkRequestLogger {
             String requestType
     ) {
         log.debug("Logging inbound request for sessionKey={}", sessionKey);
+        
+        String environment = extractEnvironmentFromSessionKey(sessionKey);
 
         NetworkRequestDocument document = new NetworkRequestDocument();
         document.setRequestId(generateRequestId());
@@ -53,8 +86,8 @@ public class NetworkRequestLogger {
         document.setDestination(destination);
         document.setMethod(method);
         document.setUrl(url);
-        document.setHeaders(SecurityUtil.maskHeaders(headers));
-        document.setRequestBody(SecurityUtil.maskSecrets(requestBody));
+        document.setHeaders(maskHeadersIfRequired(headers, environment));
+        document.setRequestBody(maskIfRequired(requestBody, environment));
         document.setRequestType(requestType);
 
         NetworkRequestDocument saved = networkRequestRepository.save(document);
@@ -79,6 +112,8 @@ public class NetworkRequestLogger {
             String errorMessage
     ) {
         log.debug("Logging outbound request for sessionKey={}", sessionKey);
+        
+        String environment = extractEnvironmentFromSessionKey(sessionKey);
 
         NetworkRequestDocument document = new NetworkRequestDocument();
         document.setRequestId(generateRequestId());
@@ -89,11 +124,11 @@ public class NetworkRequestLogger {
         document.setDestination(destination);
         document.setMethod(method);
         document.setUrl(url);
-        document.setHeaders(SecurityUtil.maskHeaders(headers));
-        document.setRequestBody(SecurityUtil.maskSecrets(requestBody));
+        document.setHeaders(maskHeadersIfRequired(headers, environment));
+        document.setRequestBody(maskIfRequired(requestBody, environment));
         document.setStatusCode(statusCode);
-        document.setResponseHeaders(SecurityUtil.maskHeaders(responseHeaders));
-        document.setResponseBody(SecurityUtil.maskSecrets(responseBody));
+        document.setResponseHeaders(maskHeadersIfRequired(responseHeaders, environment));
+        document.setResponseBody(maskIfRequired(responseBody, environment));
         document.setDuration(duration);
         document.setRequestType(requestType);
         document.setSuccess(success);
@@ -115,9 +150,10 @@ public class NetworkRequestLogger {
             String errorMessage
     ) {
         networkRequestRepository.findById(requestId).ifPresent(document -> {
+            String environment = extractEnvironmentFromSessionKey(document.getSessionKey());
             document.setStatusCode(statusCode);
-            document.setResponseHeaders(SecurityUtil.maskHeaders(responseHeaders));
-            document.setResponseBody(SecurityUtil.maskSecrets(responseBody));
+            document.setResponseHeaders(maskHeadersIfRequired(responseHeaders, environment));
+            document.setResponseBody(maskIfRequired(responseBody, environment));
             document.setDuration(duration);
             document.setSuccess(success);
             document.setErrorMessage(errorMessage);
@@ -138,6 +174,8 @@ public class NetworkRequestLogger {
             String requestType
     ) {
         log.debug("Logging inbound order request for orderId={}", orderId);
+        
+        String environment = extractEnvironmentFromSessionKey(sessionKey);
 
         NetworkRequestDocument document = new NetworkRequestDocument();
         document.setRequestId(generateRequestId());
@@ -149,8 +187,8 @@ public class NetworkRequestLogger {
         document.setDestination(destination);
         document.setMethod(method);
         document.setUrl(url);
-        document.setHeaders(SecurityUtil.maskHeaders(headers));
-        document.setRequestBody(SecurityUtil.maskSecrets(requestBody));
+        document.setHeaders(maskHeadersIfRequired(headers, environment));
+        document.setRequestBody(maskIfRequired(requestBody, environment));
         document.setRequestType(requestType);
 
         NetworkRequestDocument saved = networkRequestRepository.save(document);

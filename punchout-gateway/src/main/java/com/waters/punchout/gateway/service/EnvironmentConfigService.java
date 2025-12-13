@@ -194,6 +194,21 @@ public class EnvironmentConfigService {
     }
     
     /**
+     * Check if sensitive data should be masked for specific environment
+     */
+    public boolean shouldMaskSensitiveData(String environment) {
+        EnvironmentConfig config = getConfig(environment);
+        return config.getMaskSensitiveData() != null ? config.getMaskSensitiveData() : true;
+    }
+    
+    /**
+     * Check if sensitive data should be masked for current environment
+     */
+    public boolean shouldMaskSensitiveData() {
+        return shouldMaskSensitiveData(currentEnvironment);
+    }
+    
+    /**
      * Get all configurations
      */
     public List<EnvironmentConfig> getAllConfigs() {

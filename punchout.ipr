@@ -104,7 +104,6 @@ under the License.
       <module filepath="$PROJECT_DIR$/punchout-invoice/punchout-invoice.iml"/>
       <module filepath="$PROJECT_DIR$/punchout-gateway/punchout-gateway.iml"/>
       <module filepath="$PROJECT_DIR$/punchout-ui-backend/punchout-ui-backend.iml"/>
-      <module filepath="$PROJECT_DIR$/punchout-ui-frontend/punchout-ui-frontend.iml"/>
     </modules> 
   </component>  
   <UsedPathMacros> 

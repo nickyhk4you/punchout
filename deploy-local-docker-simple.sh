@@ -58,8 +58,8 @@ echo ""
 
 # Step 1: Clean up existing containers
 echo -e "${YELLOW}Step 1: Cleaning up existing containers...${NC}"
-docker stop punchout-ui-frontend punchout-ui-backend punchout-gateway punchout-mongodb 2>/dev/null || true
-docker rm punchout-ui-frontend punchout-ui-backend punchout-gateway punchout-mongodb 2>/dev/null || true
+docker stop punchout-ui-backend punchout-gateway punchout-mongodb 2>/dev/null || true
+docker rm punchout-ui-backend punchout-gateway punchout-mongodb 2>/dev/null || true
 docker network create $NETWORK_NAME 2>/dev/null || echo "Network already exists"
 echo -e "${GREEN}✓ Cleanup complete${NC}"
 echo ""
@@ -83,17 +83,6 @@ docker build \
   -f punchout-ui-backend/Dockerfile.simple \
   ./punchout-ui-backend
 echo -e "${GREEN}✓ UI Backend image built${NC}"
-
-echo "Building punchout-ui-frontend image..."
-cd punchout-ui-frontend
-docker build \
-  -t $REGISTRY/punchout-ui-frontend:$VERSION \
-  -t $REGISTRY/punchout-ui-frontend:latest \
-  -f Dockerfile \
-  .
-cd ..
-echo -e "${GREEN}✓ Frontend image built${NC}"
-echo ""
 
 # Step 3: Start MongoDB
 echo -e "${YELLOW}Step 3: Starting MongoDB...${NC}"
@@ -237,29 +226,8 @@ for i in {1..60}; do
 done
 echo ""
 
-# Step 7: Start Frontend
-echo -e "${YELLOW}Step 7: Starting Frontend...${NC}"
-docker run -d \
-  --name punchout-ui-frontend \
-  --network $NETWORK_NAME \
-  -p 3000:3000 \
-  -e NODE_ENV=production \
-  -e NEXT_PUBLIC_API_URL=http://localhost:8080/api \
-  $REGISTRY/punchout-ui-frontend:latest
-
-echo "Waiting for Frontend to be ready..."
-for i in {1..60}; do
-  if curl -sf http://localhost:3000 > /dev/null 2>&1; then
-    echo -e "${GREEN}✓ Frontend is ready${NC}"
-    break
-  fi
-  echo -n "."
-  sleep 2
-done
-echo ""
-
-# Step 8: Verify deployment
-echo -e "${YELLOW}Step 8: Verifying deployment...${NC}"
+# Step 7: Verify deployment
+echo -e "${YELLOW}Step 7: Verifying deployment...${NC}"
 echo ""
 
 # Check Gateway
@@ -276,13 +244,6 @@ else
   echo -e "${RED}✗ UI Backend health check failed${NC}"
 fi
 
-# Check Frontend
-if curl -sf http://localhost:3000 > /dev/null; then
-  echo -e "${GREEN}✓ Frontend health check passed${NC}"
-else
-  echo -e "${RED}✗ Frontend health check failed${NC}"
-fi
-
 # Check MongoDB
 MONGO_STATUS=$(docker exec punchout-mongodb mongosh --quiet --eval "db.adminCommand('ping').ok" 2>/dev/null || echo "0")
 if [ "$MONGO_STATUS" == "1" ]; then
@@ -293,7 +254,7 @@ fi
 
 echo ""
 
-# Step 9: Show status
+# Step 8: Show status
 echo -e "${BLUE}=========================================${NC}"
 echo -e "${BLUE}Deployment Complete!${NC}"
 echo -e "${BLUE}=========================================${NC}"
@@ -303,7 +264,6 @@ docker ps --filter "name=punchout-" --format "table {{.Names}}\t{{.Status}}\t{{.
 echo ""
 
 echo -e "${GREEN}Access URLs:${NC}"
-echo -e "  ${BLUE}Frontend:${NC}       http://localhost:3000"
 echo -e "  ${BLUE}UI Backend API:${NC} http://localhost:8080/api"
 echo -e "  ${BLUE}Gateway:${NC}        http://localhost:9090/punchout"
 echo -e "  ${BLUE}Gateway Health:${NC} http://localhost:9090/actuator/health"
@@ -331,5 +291,5 @@ echo -e "${BLUE}=========================================${NC}"
 echo -e "${GREEN}🎉 Deployment Successful!${NC}"
 echo -e "${BLUE}=========================================${NC}"
 echo ""
-echo -e "Open your browser to: ${BLUE}http://localhost:3000${NC}"
+echo -e "Note: Frontend is now in a separate repository"
 echo ""
