@@ -233,8 +233,27 @@ jobs:
           TARGET_BRANCH: ${{ needs.validate-branch.outputs.target_branch }}
           IS_HOTFIX: ${{ needs.validate-branch.outputs.is_hotfix }}
         run: |
-          chmod +x scripts/amp-pr-prepare.sh
-          ./scripts/amp-pr-prepare.sh
+          chmod +x .github/scripts/amp-pr-prepare.sh
+          ./.github/scripts/amp-pr-prepare.sh
+          
+          # Verify PR_TITLE was set
+          if [ -z "$PR_TITLE" ]; then
+            echo "PR_TITLE not set in env, reading from GITHUB_ENV"
+            source "$GITHUB_ENV" 2>/dev/null || true
+          fi
+          
+          # Fallback if still empty
+          if [ -z "$PR_TITLE" ]; then
+            BRANCH_NAME="${{ github.ref_name }}"
+            PR_TITLE="PR: ${BRANCH_NAME}"
+            echo "PR_TITLE=$PR_TITLE" >> "$GITHUB_ENV"
+            echo "Using fallback PR_TITLE: $PR_TITLE"
+          fi
+
+      - name: Debug PR Title
+        run: |
+          echo "PR_TITLE from env: ${{ env.PR_TITLE }}"
+          echo "PR_REVIEWERS from env: ${{ env.PR_REVIEWERS }}"
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5
