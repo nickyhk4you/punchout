@@ -8,6 +8,7 @@ import com.waters.punchout.mapper.PunchOutSessionMapper;
 import com.waters.punchout.repository.PunchOutSessionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Profile("local")
 public class PunchOutSessionService {
     
     private final PunchOutSessionRepository sessionRepository;

@@ -2,9 +2,11 @@ package com.waters.punchout.mapper;
 
 import com.waters.punchout.dto.PunchOutSessionDTO;
 import com.waters.punchout.entity.PunchOutSession;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component
+@Profile("local")
 public class PunchOutSessionMapper {
     
     public PunchOutSessionDTO toDTO(PunchOutSession entity) {

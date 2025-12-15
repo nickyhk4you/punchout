@@ -15,15 +15,20 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 
-@Component
-@RequiredArgsConstructor
 @Slf4j
-@org.springframework.context.annotation.Profile("!test")
 public class DataInitializer implements CommandLineRunner {
 
     private final PunchOutSessionRepository sessionRepository;
     private final OrderObjectRepository orderObjectRepository;
     private final GatewayRequestRepository gatewayRequestRepository;
+
+    public DataInitializer(PunchOutSessionRepository sessionRepository,
+                          OrderObjectRepository orderObjectRepository,
+                          GatewayRequestRepository gatewayRequestRepository) {
+        this.sessionRepository = sessionRepository;
+        this.orderObjectRepository = orderObjectRepository;
+        this.gatewayRequestRepository = gatewayRequestRepository;
+    }
 
     @Override
     public void run(String... args) {

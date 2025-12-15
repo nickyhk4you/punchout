@@ -40,16 +40,6 @@ docker build \
 echo "✓ punchout-ui-backend built successfully"
 echo ""
 
-# Build Frontend
-echo "Building punchout-ui-frontend..."
-docker build \
-  -t $REGISTRY/punchout-ui-frontend:$TAG \
-  -t $REGISTRY/punchout-ui-frontend:latest \
-  -f punchout-ui-frontend/Dockerfile \
-  ./punchout-ui-frontend
-echo "✓ punchout-ui-frontend built successfully"
-echo ""
-
 echo "========================================="
 echo "Build Complete!"
 echo "========================================="
@@ -57,12 +47,10 @@ echo ""
 echo "Images built:"
 echo "  - $REGISTRY/punchout-gateway:$TAG"
 echo "  - $REGISTRY/punchout-ui-backend:$TAG"
-echo "  - $REGISTRY/punchout-ui-frontend:$TAG"
 echo ""
 echo "To push to registry:"
 echo "  docker push $REGISTRY/punchout-gateway:$TAG"
 echo "  docker push $REGISTRY/punchout-ui-backend:$TAG"
-echo "  docker push $REGISTRY/punchout-ui-frontend:$TAG"
 echo ""
 echo "To run locally with docker-compose:"
 echo "  TAG=$TAG docker-compose up"

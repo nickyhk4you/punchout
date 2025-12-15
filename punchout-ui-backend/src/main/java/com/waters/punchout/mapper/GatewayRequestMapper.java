@@ -2,9 +2,11 @@ package com.waters.punchout.mapper;
 
 import com.waters.punchout.dto.GatewayRequestDTO;
 import com.waters.punchout.entity.GatewayRequest;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component
+@Profile("local")
 public class GatewayRequestMapper {
     
     public GatewayRequestDTO toDTO(GatewayRequest entity) {

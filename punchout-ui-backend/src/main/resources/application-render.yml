@@ -1,0 +1,34 @@
+# Render.com Environment - MongoDB only (no JPA/PostgreSQL)
+spring:
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/punchout}
+  
+  # Disable JPA/PostgreSQL completely
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration
+  
+  jpa:
+    enabled: false
+
+server:
+  port: 8080
+
+logging:
+  level:
+    com.waters.punchout: INFO
+    org.springframework.web: WARN
+    org.springframework.data.mongodb: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always

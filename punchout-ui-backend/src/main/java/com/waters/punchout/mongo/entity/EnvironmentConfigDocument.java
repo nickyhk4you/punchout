@@ -1,9 +1,10 @@
-package com.waters.punchout.gateway.entity;
+package com.waters.punchout.mongo.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
@@ -13,13 +14,14 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class EnvironmentConfig {
+public class EnvironmentConfigDocument {
     
     @Id
     private String id;
     
+    @Indexed(unique = true)
     @Field("environment")
-    private String environment; // dev, stage, prod, s4-dev
+    private String environment;
     
     @Field("authServiceUrl")
     private String authServiceUrl;
