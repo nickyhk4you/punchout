@@ -233,8 +233,8 @@ jobs:
           TARGET_BRANCH: ${{ needs.validate-branch.outputs.target_branch }}
           IS_HOTFIX: ${{ needs.validate-branch.outputs.is_hotfix }}
         run: |
-          chmod +x scripts/amp-pr-prepare.sh
-          ./scripts/amp-pr-prepare.sh
+          chmod +x .github/scripts/amp-pr-prepare.sh
+          ./.github/scripts/amp-pr-prepare.sh
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5
