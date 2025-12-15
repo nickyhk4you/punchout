@@ -301,11 +301,27 @@ main() {
     
     PR_TITLE=$(generate_pr_title)
     log_info "Generated PR Title: $PR_TITLE"
-    echo "PR_TITLE=$PR_TITLE" >> $GITHUB_ENV 2>/dev/null || export PR_TITLE
+    
+    # Write to GITHUB_ENV if available (GitHub Actions)
+    if [ -n "$GITHUB_ENV" ] && [ -f "$GITHUB_ENV" ]; then
+        echo "PR_TITLE=$PR_TITLE" >> "$GITHUB_ENV"
+        log_info "Set PR_TITLE in GITHUB_ENV"
+    else
+        log_warn "GITHUB_ENV not available, exporting locally"
+        export PR_TITLE
+    fi
     
     PR_REVIEWERS=$(get_reviewers)
     log_info "Reviewers: $PR_REVIEWERS"
-    echo "PR_REVIEWERS=$PR_REVIEWERS" >> $GITHUB_ENV 2>/dev/null || export PR_REVIEWERS
+    
+    # Write to GITHUB_ENV if available (GitHub Actions)
+    if [ -n "$GITHUB_ENV" ] && [ -f "$GITHUB_ENV" ]; then
+        echo "PR_REVIEWERS=$PR_REVIEWERS" >> "$GITHUB_ENV"
+        log_info "Set PR_REVIEWERS in GITHUB_ENV"
+    else
+        log_warn "GITHUB_ENV not available, exporting locally"
+        export PR_REVIEWERS
+    fi
     
     generate_pr_body
     
