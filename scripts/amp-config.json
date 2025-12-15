@@ -1,0 +1,154 @@
+{
+  "version": "1.0.0",
+  "project": "punchout",
+  "description": "Sourcegraph AMP SDK Configuration for PR Automation",
+  "sdk": "@sourcegraph/amp-sdk",
+  
+  "reviewSettings": {
+    "enabled": true,
+    "categories": [
+      "security",
+      "testing", 
+      "code_quality",
+      "patterns",
+      "logic"
+    ],
+    "severityLevels": ["critical", "warning", "info"],
+    "maxCommentsPerFile": 5,
+    "maxTotalComments": 50
+  },
+  
+  "securityPatterns": {
+    "secrets": [
+      "password\\s*=\\s*['\"][^'\"]+['\"]",
+      "api[_-]?key\\s*=\\s*['\"][^'\"]+['\"]",
+      "secret\\s*=\\s*['\"][^'\"]+['\"]",
+      "token\\s*=\\s*['\"][^'\"]+['\"]",
+      "-----BEGIN.*PRIVATE KEY-----",
+      "aws_access_key_id",
+      "aws_secret_access_key"
+    ],
+    "excludePatterns": [
+      "ENC\\(",
+      "REDACTED",
+      "example",
+      "placeholder",
+      "\\$\\{.*\\}"
+    ]
+  },
+  
+  "restrictedFiles": {
+    "patterns": [
+      "^\\.github/workflows/",
+      "secrets?\\.",
+      "credentials?\\.",
+      "\\.env$",
+      "application-prod\\.(yml|properties)$"
+    ],
+    "action": "warn",
+    "requireApproval": true
+  },
+  
+  "modules": {
+    "punchout-gateway": {
+      "path": "punchout-gateway/",
+      "reviewers": ["nickyhk4you"],
+      "priority": "high"
+    },
+    "punchout-ui-backend": {
+      "path": "punchout-ui-backend/",
+      "reviewers": ["nickyhk4you"],
+      "priority": "high"
+    },
+    "punchout-common": {
+      "path": "punchout-common/",
+      "reviewers": ["nickyhk4you"],
+      "priority": "medium"
+    },
+    "punchout-order": {
+      "path": "punchout-order/",
+      "reviewers": ["nickyhk4you"],
+      "priority": "medium"
+    },
+    "punchout-invoice": {
+      "path": "punchout-invoice/",
+      "reviewers": ["nickyhk4you"],
+      "priority": "medium"
+    },
+    "punchout-mock-service": {
+      "path": "punchout-mock-service/",
+      "reviewers": ["nickyhk4you"],
+      "priority": "low"
+    }
+  },
+  
+  "branchStrategy": {
+    "defaultTarget": "develop",
+    "patterns": {
+      "feature/*": "develop",
+      "bugfix/*": "develop",
+      "hotfix/*": "main",
+      "release/*": "main"
+    },
+    "requireJustification": ["hotfix/*"]
+  },
+  
+  "codeQualityRules": {
+    "java": {
+      "maxFileLines": 500,
+      "maxMethodLines": 50,
+      "forbiddenPatterns": [
+        "System\\.out\\.print",
+        "System\\.err\\.print",
+        "e\\.printStackTrace\\(\\)",
+        "@SuppressWarnings\\(\"all\"\\)"
+      ],
+      "requiredAnnotations": {
+        "controllers": ["@Slf4j", "@RestController"],
+        "services": ["@Slf4j", "@Service"],
+        "repositories": ["@Repository"]
+      }
+    }
+  },
+  
+  "testingRequirements": {
+    "minCoverage": 60,
+    "warnCoverage": 80,
+    "requireTestsForNewClasses": true,
+    "testFilePattern": ".*Test\\.java$"
+  },
+  
+  "prTemplate": {
+    "useEnterpriseTemplate": true,
+    "requiredSections": [
+      "Summary",
+      "Story/Ticket Reference",
+      "Type of Change",
+      "Testing"
+    ],
+    "autoPopulate": {
+      "storyId": true,
+      "affectedModules": true,
+      "testSummary": true,
+      "changeImpact": true
+    }
+  },
+  
+  "guardrails": {
+    "preventMerge": true,
+    "preventSensitiveFileChanges": false,
+    "requireHumanApproval": true,
+    "logAllActions": true,
+    "auditRetentionDays": 90
+  },
+  
+  "notifications": {
+    "slack": {
+      "enabled": false,
+      "channel": "#pr-reviews"
+    },
+    "email": {
+      "enabled": false
+    }
+  }
+}

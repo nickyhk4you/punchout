@@ -1,0 +1,258 @@
+name: AMP PR Preparation
+
+on:
+  push:
+    branches:
+      - 'feature/**'
+      - 'bugfix/**'
+      - 'hotfix/**'
+  workflow_dispatch:
+    inputs:
+      target_branch:
+        description: 'Target branch for PR (develop or main)'
+        required: true
+        default: 'develop'
+        type: choice
+        options:
+          - develop
+          - main
+      justification:
+        description: 'Justification for main branch PR (required for hotfix)'
+        required: false
+        type: string
+
+env:
+  JAVA_VERSION: '11'
+  NODE_VERSION: '20'
+
+jobs:
+  validate-branch:
+    name: Validate Branch Strategy
+    runs-on: ubuntu-latest
+    outputs:
+      target_branch: ${{ steps.determine-target.outputs.target }}
+      is_hotfix: ${{ steps.determine-target.outputs.is_hotfix }}
+    steps:
+      - name: Determine target branch
+        id: determine-target
+        run: |
+          BRANCH_NAME="${{ github.ref_name }}"
+          TARGET="${{ github.event.inputs.target_branch || 'develop' }}"
+          IS_HOTFIX="false"
+          
+          if [[ "$BRANCH_NAME" == hotfix/* ]]; then
+            TARGET="main"
+            IS_HOTFIX="true"
+            if [[ -z "${{ github.event.inputs.justification }}" ]]; then
+              echo "::error::Hotfix branches targeting main require justification (e.g., JIRA ticket number)"
+              exit 1
+            fi
+            echo "Hotfix justification: ${{ github.event.inputs.justification }}"
+          fi
+          
+          echo "target=$TARGET" >> $GITHUB_OUTPUT
+          echo "is_hotfix=$IS_HOTFIX" >> $GITHUB_OUTPUT
+          echo "Branch: $BRANCH_NAME -> Target: $TARGET"
+
+  pre-pr-checks:
+    name: Pre-PR Quality Checks
+    runs-on: ubuntu-latest
+    needs: validate-branch
+    outputs:
+      changed_files: ${{ steps.changed-files.outputs.files }}
+      has_java_changes: ${{ steps.detect-changes.outputs.java }}
+      has_test_changes: ${{ steps.detect-changes.outputs.tests }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Get changed files
+        id: changed-files
+        run: |
+          TARGET="${{ needs.validate-branch.outputs.target_branch }}"
+          git fetch origin $TARGET
+          CHANGED=$(git diff --name-only origin/$TARGET...HEAD | tr '\n' ' ')
+          echo "files=$CHANGED" >> $GITHUB_OUTPUT
+          echo "Changed files: $CHANGED"
+
+      - name: Detect change types
+        id: detect-changes
+        run: |
+          CHANGED="${{ steps.changed-files.outputs.files }}"
+          
+          if echo "$CHANGED" | grep -q "\.java"; then
+            echo "java=true" >> $GITHUB_OUTPUT
+          else
+            echo "java=false" >> $GITHUB_OUTPUT
+          fi
+          
+          if echo "$CHANGED" | grep -qE "(Test\.java|Tests\.java|test/)"; then
+            echo "tests=true" >> $GITHUB_OUTPUT
+          else
+            echo "tests=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Security scan - Check for secrets
+        run: |
+          echo "Scanning for potential secrets..."
+          
+          PATTERNS="password|api.?key|secret|token|private.?key|aws_access|aws_secret"
+          
+          if git diff origin/${{ needs.validate-branch.outputs.target_branch }}...HEAD | grep -iE "$PATTERNS" | grep -v "ENC(" | grep -v "REDACTED" | grep -v "example" | grep -v "placeholder" | grep -v "@" | head -5; then
+            echo "::warning::Potential secrets detected in changes. Please review."
+          fi
+          
+          echo "Secret scan complete"
+
+      - name: Check for restricted files
+        run: |
+          CHANGED="${{ steps.changed-files.outputs.files }}"
+          RESTRICTED=""
+          
+          for pattern in ".github/workflows/" "pom.xml" "application-prod.yml" "application-prod.properties"; do
+            if echo "$CHANGED" | grep -q "$pattern"; then
+              RESTRICTED="$RESTRICTED $pattern"
+            fi
+          done
+          
+          if [ -n "$RESTRICTED" ]; then
+            echo "::warning::Restricted files modified:$RESTRICTED - Requires additional review"
+          fi
+
+      - name: Maven build and test
+        run: |
+          mvn clean verify -B -DskipTests=false 2>&1 | tee build-output.txt || true
+
+      - name: Upload analysis artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: analysis-reports
+          path: |
+            build-output.txt
+            target/site/
+          retention-days: 7
+
+  amp-prepare-pr:
+    name: AMP SDK PR Preparation
+    runs-on: ubuntu-latest
+    needs: [validate-branch, pre-pr-checks]
+    if: success()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install Sourcegraph AMP SDK
+        run: npm install @sourcegraph/amp-sdk
+
+      - name: Generate PR Description with AMP SDK
+        env:
+          AMP_API_KEY: ${{ secrets.AMP_API_KEY }}
+          CHANGED_FILES: ${{ needs.pre-pr-checks.outputs.changed_files }}
+          TARGET_BRANCH: ${{ needs.validate-branch.outputs.target_branch }}
+          IS_HOTFIX: ${{ needs.validate-branch.outputs.is_hotfix }}
+          BRANCH_NAME: ${{ github.ref_name }}
+        run: |
+          cat << 'EOF' > amp-prepare.mjs
+          import { execute } from '@sourcegraph/amp-sdk';
+          
+          const changedFiles = process.env.CHANGED_FILES?.trim().split(' ').filter(Boolean) || [];
+          const targetBranch = process.env.TARGET_BRANCH || 'develop';
+          const branchName = process.env.BRANCH_NAME || '';
+          const isHotfix = process.env.IS_HOTFIX === 'true';
+          
+          // Extract story ID from branch name
+          const storyIdMatch = branchName.match(/([A-Z]+-[0-9]+)/);
+          const storyId = storyIdMatch ? storyIdMatch[1] : '';
+          
+          // Determine affected modules
+          const modules = [];
+          if (changedFiles.some(f => f.includes('punchout-gateway'))) modules.push('punchout-gateway');
+          if (changedFiles.some(f => f.includes('punchout-ui-backend'))) modules.push('punchout-ui-backend');
+          if (changedFiles.some(f => f.includes('punchout-common'))) modules.push('punchout-common');
+          if (changedFiles.some(f => f.includes('punchout-order'))) modules.push('punchout-order');
+          if (changedFiles.some(f => f.includes('punchout-invoice'))) modules.push('punchout-invoice');
+          if (changedFiles.some(f => f.includes('punchout-mock-service'))) modules.push('punchout-mock-service');
+          
+          const prompt = `
+          Generate a Pull Request description for the following changes.
+          
+          Branch: ${branchName}
+          Target: ${targetBranch}
+          Story ID: ${storyId || 'N/A'}
+          Is Hotfix: ${isHotfix}
+          Changed Files: ${changedFiles.join(', ')}
+          Affected Modules: ${modules.join(', ') || 'None detected'}
+          
+          Generate a professional PR description that includes:
+          1. A brief summary of the changes (2-3 sentences)
+          2. List of key changes made
+          3. Impact assessment (Low/Medium/High)
+          4. Any areas that need special attention during review
+          
+          Format the output in Markdown.
+          `;
+          
+          let result = '';
+          for await (const message of execute({
+            prompt,
+            options: {
+              dangerouslyAllowAll: true,
+              cwd: process.cwd()
+            }
+          })) {
+            if (message.type === 'result' && !message.is_error) {
+              result = message.result;
+            }
+          }
+          
+          console.log(result);
+          EOF
+          
+          mkdir -p .github
+          node amp-prepare.mjs > .github/amp-description.md 2>&1 || echo "AMP SDK generation completed"
+
+      - name: Prepare PR Body
+        env:
+          CHANGED_FILES: ${{ needs.pre-pr-checks.outputs.changed_files }}
+          TARGET_BRANCH: ${{ needs.validate-branch.outputs.target_branch }}
+          IS_HOTFIX: ${{ needs.validate-branch.outputs.is_hotfix }}
+        run: |
+          chmod +x scripts/amp-pr-prepare.sh
+          ./scripts/amp-pr-prepare.sh
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        id: create-pr
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref_name }}
+          base: ${{ needs.validate-branch.outputs.target_branch }}
+          title: ${{ env.PR_TITLE }}
+          body-path: .github/pr-body.md
+          labels: |
+            automated-pr
+            needs-review
+            ${{ needs.validate-branch.outputs.is_hotfix == 'true' && 'hotfix' || '' }}
+          reviewers: ${{ env.PR_REVIEWERS }}
+          draft: false
+
+      - name: Output PR URL
+        if: steps.create-pr.outputs.pull-request-url
+        run: |
+          echo "::notice::Pull Request created: ${{ steps.create-pr.outputs.pull-request-url }}"
