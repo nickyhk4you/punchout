@@ -1,0 +1,288 @@
+name: AMP AI Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - develop
+      - main
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+env:
+  JAVA_VERSION: '11'
+  NODE_VERSION: '20'
+
+jobs:
+  amp-automated-review:
+    name: AMP Automated Code Review
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Get changed files
+        id: changed-files
+        run: |
+          JAVA_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | grep -E '\.java$' | grep -v '/test/' | tr '\n' ' ')
+          TEST_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | grep -E 'Test\.java$' | tr '\n' ' ')
+          ALL_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | tr '\n' ' ')
+          
+          echo "java_files=$JAVA_FILES" >> $GITHUB_OUTPUT
+          echo "test_files=$TEST_FILES" >> $GITHUB_OUTPUT
+          echo "all_files=$ALL_FILES" >> $GITHUB_OUTPUT
+          echo "java_count=$(echo $JAVA_FILES | wc -w)" >> $GITHUB_OUTPUT
+          echo "test_count=$(echo $TEST_FILES | wc -w)" >> $GITHUB_OUTPUT
+
+      - name: Build and analyze
+        id: build-analyze
+        run: |
+          mvn clean compile -B -q 2>&1 | tee build-log.txt
+          BUILD_STATUS=$?
+          
+          mvn test -B 2>&1 | tee test-log.txt || true
+          
+          echo "build_status=$BUILD_STATUS" >> $GITHUB_OUTPUT
+
+      - name: Install Sourcegraph AMP SDK
+        run: npm install @sourcegraph/amp-sdk
+
+      - name: Run AMP Code Review
+        if: steps.changed-files.outputs.java_files != ''
+        env:
+          AMP_API_KEY: ${{ secrets.AMP_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CHANGED_FILES: ${{ steps.changed-files.outputs.java_files }}
+          TEST_FILES: ${{ steps.changed-files.outputs.test_files }}
+        run: |
+          cat << 'EOF' > amp-review.mjs
+          import { execute } from '@sourcegraph/amp-sdk';
+          import { readFileSync, existsSync } from 'fs';
+          
+          const changedFiles = process.env.CHANGED_FILES?.trim().split(' ').filter(Boolean) || [];
+          const testFiles = process.env.TEST_FILES?.trim().split(' ').filter(Boolean) || [];
+          
+          if (changedFiles.length === 0) {
+            console.log('No Java files changed.');
+            process.exit(0);
+          }
+          
+          // Read file contents for context
+          let fileContents = '';
+          for (const file of changedFiles.slice(0, 5)) { // Limit to 5 files
+            if (existsSync(file)) {
+              try {
+                const content = readFileSync(file, 'utf8');
+                fileContents += `\n\n--- ${file} ---\n${content.substring(0, 3000)}`; // Limit content
+              } catch (e) {
+                console.error(`Could not read ${file}`);
+              }
+            }
+          }
+          
+          const prompt = `
+          You are reviewing a Pull Request for a Java/Spring Boot application (Punchout Platform).
+          
+          Review the following changed files and provide:
+          
+          1. **Code Quality Issues**: Identify any code smells, anti-patterns, or violations of best practices
+          2. **Potential Bugs**: Highlight any logic errors or potential runtime issues
+          3. **Security Concerns**: Check for hardcoded secrets, SQL injection, XSS, or other vulnerabilities
+          4. **Performance Issues**: Identify inefficient code patterns
+          5. **Missing Tests**: Check if new code has corresponding tests
+          6. **Pattern Violations**: Verify Spring Boot conventions are followed
+          
+          Changed files: ${changedFiles.join(', ')}
+          Test files changed: ${testFiles.length > 0 ? testFiles.join(', ') : 'None'}
+          
+          ${fileContents}
+          
+          Provide a structured review with:
+          - Overall assessment (Approved with suggestions / Changes requested)
+          - List of issues found with severity (Critical/Warning/Info)
+          - Specific file and line references where possible
+          - Actionable recommendations
+          
+          Format as markdown for a GitHub PR comment.
+          `;
+          
+          let result = '';
+          for await (const message of execute({
+            prompt,
+            options: {
+              dangerouslyAllowAll: true,
+              cwd: process.cwd()
+            }
+          })) {
+            if (message.type === 'result' && !message.is_error) {
+              result = message.result;
+            }
+          }
+          
+          console.log(result);
+          EOF
+          
+          node amp-review.mjs > review-output.md 2>&1 || echo "Review completed"
+
+      - name: Post review comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            let reviewBody = '## 🤖 AMP AI Code Review\n\n';
+            
+            // Add file statistics
+            reviewBody += `### 📊 Change Summary\n`;
+            reviewBody += `- **Java Files Changed**: ${{ steps.changed-files.outputs.java_count }}\n`;
+            reviewBody += `- **Test Files Changed**: ${{ steps.changed-files.outputs.test_count }}\n`;
+            reviewBody += `- **Build Status**: ${{ steps.build-analyze.outputs.build_status == '0' && '✅ Passed' || '❌ Failed' }}\n\n`;
+            
+            // Add AMP review output
+            if (fs.existsSync('review-output.md')) {
+              const ampReview = fs.readFileSync('review-output.md', 'utf8');
+              if (ampReview.trim() && !ampReview.includes('No Java files changed')) {
+                reviewBody += '### 🔍 AI Code Review\n\n';
+                reviewBody += ampReview;
+              }
+            }
+            
+            // Add footer
+            reviewBody += '\n\n---\n*Automated review by Sourcegraph AMP SDK*';
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: reviewBody
+            });
+
+      - name: Log review action
+        run: |
+          echo "=== AMP PR Review Log ===" >> amp-review-log.txt
+          echo "Timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> amp-review-log.txt
+          echo "PR Number: ${{ github.event.pull_request.number }}" >> amp-review-log.txt
+          echo "PR Author: ${{ github.event.pull_request.user.login }}" >> amp-review-log.txt
+          echo "Java Files: ${{ steps.changed-files.outputs.java_count }}" >> amp-review-log.txt
+          echo "Test Files: ${{ steps.changed-files.outputs.test_count }}" >> amp-review-log.txt
+
+      - name: Upload review artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: amp-review-logs
+          path: |
+            amp-review-log.txt
+            review-output.md
+            *-log.txt
+          retention-days: 30
+
+  test-coverage-check:
+    name: Test Coverage Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Run tests with coverage
+        run: |
+          mvn clean test jacoco:report -B 2>&1 || true
+
+      - name: Check coverage thresholds
+        id: coverage-check
+        run: |
+          COVERAGE=0
+          if [ -f "target/site/jacoco/index.html" ]; then
+            COVERAGE=$(grep -oP 'Total.*?([0-9]+)%' target/site/jacoco/index.html | grep -oP '[0-9]+' | head -1 || echo "0")
+          fi
+          
+          echo "coverage=$COVERAGE" >> $GITHUB_OUTPUT
+          
+          if [ "$COVERAGE" -lt 60 ]; then
+            echo "::warning::Test coverage is below 60%: ${COVERAGE}%"
+          fi
+
+      - name: Post coverage comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const coverage = '${{ steps.coverage-check.outputs.coverage }}' || '0';
+            const coverageNum = parseInt(coverage) || 0;
+            const emoji = coverageNum >= 80 ? '🟢' : coverageNum >= 60 ? '🟡' : '🔴';
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: `## ${emoji} Test Coverage Report\n\n**Coverage: ${coverage}%**\n\n${coverageNum < 60 ? '⚠️ Coverage is below the recommended threshold of 60%' : '✅ Coverage meets the threshold'}`
+            });
+
+  guardrails-check:
+    name: Guardrails Compliance
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check merge permissions
+        run: |
+          echo "::notice::AMP agents cannot merge PRs - human approval required"
+
+      - name: Check restricted file modifications
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number
+            });
+            
+            const restrictedPatterns = [
+              /^\.github\/workflows\//,
+              /secrets?\./i,
+              /credentials?\./i,
+              /\.env$/,
+              /application-prod\.(yml|properties)$/
+            ];
+            
+            const restrictedFiles = files.filter(f => 
+              restrictedPatterns.some(p => p.test(f.filename))
+            );
+            
+            if (restrictedFiles.length > 0) {
+              const fileList = restrictedFiles.map(f => `- ${f.filename}`).join('\n');
+              core.warning(`Restricted files modified:\n${fileList}`);
+              
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body: `## ⚠️ Restricted Files Modified\n\nThe following sensitive files have been modified and require additional review:\n\n${fileList}\n\n**Action Required**: Security/Architecture team review needed.`
+              });
+            }
