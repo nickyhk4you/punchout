@@ -74,23 +74,25 @@ jobs:
         run: |
           cat << 'EOF' > amp-review.mjs
           import { execute } from '@sourcegraph/amp-sdk';
-          import { readFileSync, existsSync } from 'fs';
+          import { readFileSync, existsSync, writeFileSync } from 'fs';
           
           const changedFiles = process.env.CHANGED_FILES?.trim().split(' ').filter(Boolean) || [];
           const testFiles = process.env.TEST_FILES?.trim().split(' ').filter(Boolean) || [];
           
           if (changedFiles.length === 0) {
             console.log('No Java files changed.');
+            writeFileSync('review-comments.json', JSON.stringify({ summary: '', comments: [] }));
             process.exit(0);
           }
           
-          // Read file contents for context
+          // Read file contents for context with line numbers
           let fileContents = '';
-          for (const file of changedFiles.slice(0, 5)) { // Limit to 5 files
+          for (const file of changedFiles.slice(0, 5)) {
             if (existsSync(file)) {
               try {
                 const content = readFileSync(file, 'utf8');
-                fileContents += `\n\n--- ${file} ---\n${content.substring(0, 3000)}`; // Limit content
+                const lines = content.split('\n').map((line, i) => `${i + 1}: ${line}`).join('\n');
+                fileContents += `\n\n--- ${file} ---\n${lines.substring(0, 4000)}`;
               } catch (e) {
                 console.error(`Could not read ${file}`);
               }
@@ -100,27 +102,42 @@ jobs:
           const prompt = `
           You are reviewing a Pull Request for a Java/Spring Boot application (Punchout Platform).
           
-          Review the following changed files and provide:
+          Review the following changed files and provide BOTH:
           
-          1. **Code Quality Issues**: Identify any code smells, anti-patterns, or violations of best practices
-          2. **Potential Bugs**: Highlight any logic errors or potential runtime issues
-          3. **Security Concerns**: Check for hardcoded secrets, SQL injection, XSS, or other vulnerabilities
-          4. **Performance Issues**: Identify inefficient code patterns
-          5. **Missing Tests**: Check if new code has corresponding tests
-          6. **Pattern Violations**: Verify Spring Boot conventions are followed
+          1. A summary review with overall assessment
+          2. Specific inline comments with EXACT file paths and line numbers
           
           Changed files: ${changedFiles.join(', ')}
           Test files changed: ${testFiles.length > 0 ? testFiles.join(', ') : 'None'}
           
           ${fileContents}
           
-          Provide a structured review with:
-          - Overall assessment (Approved with suggestions / Changes requested)
-          - List of issues found with severity (Critical/Warning/Info)
-          - Specific file and line references where possible
-          - Actionable recommendations
+          IMPORTANT: Return your review as a JSON object with this EXACT structure:
+          {
+            "summary": "Your overall review summary in markdown format",
+            "decision": "APPROVE" or "REQUEST_CHANGES" or "COMMENT",
+            "comments": [
+              {
+                "path": "exact/file/path.java",
+                "line": 42,
+                "body": "Your comment about this specific line"
+              }
+            ]
+          }
           
-          Format as markdown for a GitHub PR comment.
+          For each comment:
+          - "path" must match exactly one of the changed files
+          - "line" must be a valid line number from the file
+          - "body" should include emoji: ⚠️ for warnings, 🔴 for critical, 💡 for suggestions, ✅ for praise
+          
+          Focus on:
+          - Security issues (SQL injection, XSS, hardcoded secrets)
+          - Potential bugs and logic errors
+          - Code quality and best practices
+          - Performance concerns
+          - Missing error handling
+          
+          Return ONLY valid JSON, no markdown code blocks.
           `;
           
           let result = '';
@@ -136,43 +153,128 @@ jobs:
             }
           }
           
-          console.log(result);
+          // Parse the JSON result
+          try {
+            // Clean up result - remove markdown code blocks if present
+            let cleanResult = result.trim();
+            if (cleanResult.startsWith('```json')) {
+              cleanResult = cleanResult.replace(/^```json\n?/, '').replace(/\n?```$/, '');
+            } else if (cleanResult.startsWith('```')) {
+              cleanResult = cleanResult.replace(/^```\n?/, '').replace(/\n?```$/, '');
+            }
+            
+            const reviewData = JSON.parse(cleanResult);
+            writeFileSync('review-comments.json', JSON.stringify(reviewData, null, 2));
+            console.log('Review generated with', reviewData.comments?.length || 0, 'inline comments');
+          } catch (e) {
+            console.error('Failed to parse review JSON:', e.message);
+            // Fallback: save as summary only
+            writeFileSync('review-comments.json', JSON.stringify({
+              summary: result,
+              decision: 'COMMENT',
+              comments: []
+            }));
+          }
           EOF
           
-          node amp-review.mjs > review-output.md 2>&1 || echo "Review completed"
+          node amp-review.mjs 2>&1 || echo "Review completed"
 
-      - name: Post review comment
+      - name: Post inline review comments
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
             
-            let reviewBody = '## 🤖 AMP AI Code Review\n\n';
-            
-            // Add file statistics
-            reviewBody += `### 📊 Change Summary\n`;
-            reviewBody += `- **Java Files Changed**: ${{ steps.changed-files.outputs.java_count }}\n`;
-            reviewBody += `- **Test Files Changed**: ${{ steps.changed-files.outputs.test_count }}\n`;
-            reviewBody += `- **Build Status**: ${{ steps.build-analyze.outputs.build_status == '0' && '✅ Passed' || '❌ Failed' }}\n\n`;
-            
-            // Add AMP review output
-            if (fs.existsSync('review-output.md')) {
-              const ampReview = fs.readFileSync('review-output.md', 'utf8');
-              if (ampReview.trim() && !ampReview.includes('No Java files changed')) {
-                reviewBody += '### 🔍 AI Code Review\n\n';
-                reviewBody += ampReview;
+            // Read the review data
+            let reviewData = { summary: '', decision: 'COMMENT', comments: [] };
+            if (fs.existsSync('review-comments.json')) {
+              try {
+                reviewData = JSON.parse(fs.readFileSync('review-comments.json', 'utf8'));
+              } catch (e) {
+                console.log('Could not parse review JSON:', e.message);
               }
             }
             
-            // Add footer
-            reviewBody += '\n\n---\n*Automated review by Sourcegraph AMP SDK*';
-            
-            await github.rest.issues.createComment({
+            // Get the list of files in this PR to validate paths
+            const { data: prFiles } = await github.rest.pulls.listFiles({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: context.payload.pull_request.number,
-              body: reviewBody
+              pull_number: context.payload.pull_request.number
             });
+            
+            const validPaths = new Set(prFiles.map(f => f.filename));
+            
+            // Filter comments to only include valid file paths
+            const validComments = (reviewData.comments || []).filter(comment => {
+              if (!validPaths.has(comment.path)) {
+                console.log(`Skipping comment for invalid path: ${comment.path}`);
+                return false;
+              }
+              if (!comment.line || comment.line < 1) {
+                console.log(`Skipping comment with invalid line number: ${comment.line}`);
+                return false;
+              }
+              return true;
+            });
+            
+            // Build the review summary
+            let summaryBody = '## 🤖 AMP AI Code Review\n\n';
+            summaryBody += `### 📊 Change Summary\n`;
+            summaryBody += `- **Java Files Changed**: ${{ steps.changed-files.outputs.java_count }}\n`;
+            summaryBody += `- **Test Files Changed**: ${{ steps.changed-files.outputs.test_count }}\n`;
+            summaryBody += `- **Build Status**: ${{ steps.build-analyze.outputs.build_status == '0' && '✅ Passed' || '❌ Failed' }}\n`;
+            summaryBody += `- **Inline Comments**: ${validComments.length}\n\n`;
+            
+            if (reviewData.summary) {
+              summaryBody += '### 🔍 Review Summary\n\n';
+              summaryBody += reviewData.summary;
+            }
+            
+            summaryBody += '\n\n---\n*Automated review by Sourcegraph AMP SDK*';
+            
+            // Map decision to GitHub review event
+            const eventMap = {
+              'APPROVE': 'APPROVE',
+              'REQUEST_CHANGES': 'REQUEST_CHANGES',
+              'COMMENT': 'COMMENT'
+            };
+            const event = eventMap[reviewData.decision] || 'COMMENT';
+            
+            // Create the review with inline comments
+            if (validComments.length > 0) {
+              try {
+                await github.rest.pulls.createReview({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: context.payload.pull_request.number,
+                  body: summaryBody,
+                  event: event,
+                  comments: validComments.map(c => ({
+                    path: c.path,
+                    line: c.line,
+                    body: c.body
+                  }))
+                });
+                console.log(`Created review with ${validComments.length} inline comments`);
+              } catch (e) {
+                console.log('Failed to create review with inline comments:', e.message);
+                // Fallback: post as regular comment
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.payload.pull_request.number,
+                  body: summaryBody
+                });
+              }
+            } else {
+              // No inline comments, just post summary
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body: summaryBody
+              });
+            }
 
       - name: Log review action
         run: |
