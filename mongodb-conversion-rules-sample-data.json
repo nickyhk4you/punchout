@@ -1,0 +1,322 @@
+[
+  {
+    "customerId": "TRADECENTRIC",
+    "documentType": "ORDER",
+    "version": "1.0",
+    "active": true,
+    "priority": 100,
+    "description": "TradeCentric order conversion rules - maps cXML OrderRequest to JSON",
+    "fieldMappings": [
+      {
+        "sourceXPath": "//OrderRequestHeader/@orderID",
+        "targetJsonPath": "orderId",
+        "dataType": "STRING",
+        "required": true
+      },
+      {
+        "sourceXPath": "//OrderRequestHeader/@orderDate",
+        "targetJsonPath": "orderDate",
+        "dataType": "DATE",
+        "dateFormat": "yyyy-MM-dd'T'HH:mm:ssXXX",
+        "required": true
+      },
+      {
+        "sourceXPath": "//OrderRequestHeader/@type",
+        "targetJsonPath": "orderType",
+        "dataType": "STRING",
+        "defaultValue": "new"
+      },
+      {
+        "sourceXPath": "//BuyerCookie",
+        "targetJsonPath": "buyerCookie",
+        "dataType": "STRING"
+      },
+      {
+        "sourceXPath": "//Total/Money",
+        "targetJsonPath": "total.amount",
+        "dataType": "DOUBLE",
+        "required": true
+      },
+      {
+        "sourceXPath": "//Total/Money/@currency",
+        "targetJsonPath": "total.currency",
+        "dataType": "STRING",
+        "defaultValue": "USD"
+      },
+      {
+        "sourceXPath": "//ShipTo/Address/Name",
+        "targetJsonPath": "shipTo.name",
+        "dataType": "STRING"
+      },
+      {
+        "sourceXPath": "//ShipTo/Address/PostalAddress/Street",
+        "targetJsonPath": "shipTo.street",
+        "dataType": "STRING"
+      },
+      {
+        "sourceXPath": "//ShipTo/Address/PostalAddress/City",
+        "targetJsonPath": "shipTo.city",
+        "dataType": "STRING"
+      },
+      {
+        "sourceXPath": "//ShipTo/Address/PostalAddress/State",
+        "targetJsonPath": "shipTo.state",
+        "dataType": "STRING"
+      },
+      {
+        "sourceXPath": "//ShipTo/Address/PostalAddress/PostalCode",
+        "targetJsonPath": "shipTo.postalCode",
+        "dataType": "STRING"
+      },
+      {
+        "sourceXPath": "//ShipTo/Address/PostalAddress/Country/@isoCountryCode",
+        "targetJsonPath": "shipTo.country",
+        "dataType": "STRING"
+      },
+      {
+        "sourceXPath": "//BillTo/Address/Name",
+        "targetJsonPath": "billTo.name",
+        "dataType": "STRING"
+      },
+      {
+        "sourceXPath": "//BillTo/Address/PostalAddress/Street",
+        "targetJsonPath": "billTo.street",
+        "dataType": "STRING"
+      }
+    ],
+    "defaultValues": {
+      "source": "TRADECENTRIC",
+      "dialect": "cXML",
+      "processingStatus": "PENDING"
+    },
+    "transformations": [
+      {
+        "type": "UPPERCASE",
+        "targetField": "shipTo.country",
+        "parameters": {}
+      },
+      {
+        "type": "TRIM",
+        "targetField": "orderId",
+        "parameters": {}
+      }
+    ],
+    "createdBy": "system",
+    "createdAt": { "$date": "2025-01-01T00:00:00Z" },
+    "updatedAt": { "$date": "2025-01-01T00:00:00Z" }
+  },
+  {
+    "customerId": "ARIBA",
+    "documentType": "ORDER",
+    "version": "1.0",
+    "active": true,
+    "priority": 100,
+    "description": "Ariba order conversion rules - maps Ariba-specific cXML format",
+    "fieldMappings": [
+      {
+        "sourceXPath": "//OrderRequestHeader/@orderID",
+        "targetJsonPath": "orderId",
+        "dataType": "STRING",
+        "required": true
+      },
+      {
+        "sourceXPath": "//OrderRequestHeader/@orderDate",
+        "targetJsonPath": "orderDate",
+        "dataType": "DATE",
+        "dateFormat": "yyyy-MM-dd",
+        "required": true
+      },
+      {
+        "sourceXPath": "//Extrinsic[@name='AribaNetworkId']",
+        "targetJsonPath": "aribaNetworkId",
+        "dataType": "STRING"
+      },
+      {
+        "sourceXPath": "//Extrinsic[@name='UniqueName']",
+        "targetJsonPath": "requisitionerName",
+        "dataType": "STRING"
+      },
+      {
+        "sourceXPath": "//Total/Money",
+        "targetJsonPath": "total.amount",
+        "dataType": "DOUBLE"
+      },
+      {
+        "sourceXPath": "//Total/Money/@currency",
+        "targetJsonPath": "total.currency",
+        "dataType": "STRING",
+        "defaultValue": "USD"
+      }
+    ],
+    "defaultValues": {
+      "source": "ARIBA",
+      "dialect": "cXML",
+      "processingStatus": "PENDING"
+    },
+    "transformations": [
+      {
+        "type": "CONCAT",
+        "targetField": "orderId",
+        "parameters": {
+          "prefix": "ARIBA-",
+          "suffix": ""
+        }
+      }
+    ],
+    "createdBy": "system",
+    "createdAt": { "$date": "2025-01-01T00:00:00Z" },
+    "updatedAt": { "$date": "2025-01-01T00:00:00Z" }
+  },
+  {
+    "customerId": "COUPA",
+    "documentType": "ORDER",
+    "version": "1.0",
+    "active": true,
+    "priority": 100,
+    "description": "Coupa order conversion rules",
+    "fieldMappings": [
+      {
+        "sourceXPath": "//OrderRequestHeader/@orderID",
+        "targetJsonPath": "orderId",
+        "dataType": "STRING",
+        "required": true
+      },
+      {
+        "sourceXPath": "//OrderRequestHeader/@orderDate",
+        "targetJsonPath": "orderDate",
+        "dataType": "STRING"
+      },
+      {
+        "sourceXPath": "//Extrinsic[@name='CoupaTrackingId']",
+        "targetJsonPath": "coupaTrackingId",
+        "dataType": "STRING"
+      },
+      {
+        "sourceXPath": "//Total/Money",
+        "targetJsonPath": "total.amount",
+        "dataType": "DOUBLE"
+      },
+      {
+        "sourceXPath": "//Total/Money/@currency",
+        "targetJsonPath": "total.currency",
+        "dataType": "STRING",
+        "defaultValue": "USD"
+      }
+    ],
+    "defaultValues": {
+      "source": "COUPA",
+      "dialect": "cXML"
+    },
+    "transformations": [],
+    "createdBy": "system",
+    "createdAt": { "$date": "2025-01-01T00:00:00Z" },
+    "updatedAt": { "$date": "2025-01-01T00:00:00Z" }
+  },
+  {
+    "customerId": "DEFAULT",
+    "documentType": "ORDER",
+    "version": "1.0",
+    "active": true,
+    "priority": 1,
+    "description": "Default order conversion rules - fallback for unknown customers",
+    "fieldMappings": [
+      {
+        "sourceXPath": "//OrderRequestHeader/@orderID",
+        "targetJsonPath": "orderId",
+        "dataType": "STRING",
+        "required": true
+      },
+      {
+        "sourceXPath": "//OrderRequestHeader/@orderDate",
+        "targetJsonPath": "orderDate",
+        "dataType": "STRING"
+      },
+      {
+        "sourceXPath": "//BuyerCookie",
+        "targetJsonPath": "buyerCookie",
+        "dataType": "STRING"
+      },
+      {
+        "sourceXPath": "//Total/Money",
+        "targetJsonPath": "total.amount",
+        "dataType": "DOUBLE"
+      },
+      {
+        "sourceXPath": "//Total/Money/@currency",
+        "targetJsonPath": "total.currency",
+        "dataType": "STRING",
+        "defaultValue": "USD"
+      }
+    ],
+    "defaultValues": {
+      "source": "UNKNOWN",
+      "dialect": "cXML"
+    },
+    "transformations": [],
+    "createdBy": "system",
+    "createdAt": { "$date": "2025-01-01T00:00:00Z" },
+    "updatedAt": { "$date": "2025-01-01T00:00:00Z" }
+  },
+  {
+    "customerId": "TRADECENTRIC",
+    "documentType": "INVOICE",
+    "version": "1.0",
+    "active": true,
+    "priority": 100,
+    "description": "TradeCentric invoice conversion rules",
+    "fieldMappings": [
+      {
+        "sourceXPath": "//InvoiceDetailRequestHeader/@invoiceID",
+        "targetJsonPath": "invoiceId",
+        "dataType": "STRING",
+        "required": true
+      },
+      {
+        "sourceXPath": "//InvoiceDetailRequestHeader/@invoiceDate",
+        "targetJsonPath": "invoiceDate",
+        "dataType": "DATE",
+        "dateFormat": "yyyy-MM-dd"
+      },
+      {
+        "sourceXPath": "//InvoiceDetailRequestHeader/@purpose",
+        "targetJsonPath": "purpose",
+        "dataType": "STRING",
+        "defaultValue": "standard"
+      },
+      {
+        "sourceXPath": "//InvoiceDetailOrder/InvoiceDetailOrderInfo/OrderReference/@orderID",
+        "targetJsonPath": "relatedOrderId",
+        "dataType": "STRING"
+      },
+      {
+        "sourceXPath": "//InvoiceDetailSummary/SubtotalAmount/Money",
+        "targetJsonPath": "subtotal",
+        "dataType": "DOUBLE"
+      },
+      {
+        "sourceXPath": "//InvoiceDetailSummary/Tax/Money",
+        "targetJsonPath": "taxAmount",
+        "dataType": "DOUBLE",
+        "defaultValue": "0"
+      },
+      {
+        "sourceXPath": "//InvoiceDetailSummary/GrossAmount/Money",
+        "targetJsonPath": "grossAmount",
+        "dataType": "DOUBLE"
+      },
+      {
+        "sourceXPath": "//InvoiceDetailSummary/NetAmount/Money",
+        "targetJsonPath": "netAmount",
+        "dataType": "DOUBLE"
+      }
+    ],
+    "defaultValues": {
+      "source": "TRADECENTRIC",
+      "documentType": "INVOICE"
+    },
+    "transformations": [],
+    "createdBy": "system",
+    "createdAt": { "$date": "2025-01-01T00:00:00Z" },
+    "updatedAt": { "$date": "2025-01-01T00:00:00Z" }
+  }
+]
