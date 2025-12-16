@@ -190,32 +190,88 @@ jobs:
             if (fs.existsSync('review-comments.json')) {
               try {
                 reviewData = JSON.parse(fs.readFileSync('review-comments.json', 'utf8'));
+                console.log('Loaded review data:', JSON.stringify(reviewData, null, 2));
               } catch (e) {
                 console.log('Could not parse review JSON:', e.message);
               }
+            } else {
+              console.log('review-comments.json not found');
             }
             
-            // Get the list of files in this PR to validate paths
+            // Get the list of files in this PR with their diff information
             const { data: prFiles } = await github.rest.pulls.listFiles({
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: context.payload.pull_request.number
             });
             
-            const validPaths = new Set(prFiles.map(f => f.filename));
+            console.log('PR files:', prFiles.map(f => f.filename));
             
-            // Filter comments to only include valid file paths
-            const validComments = (reviewData.comments || []).filter(comment => {
-              if (!validPaths.has(comment.path)) {
-                console.log(`Skipping comment for invalid path: ${comment.path}`);
-                return false;
+            // Build a map of valid paths and their changed line ranges
+            const fileLineMap = new Map();
+            for (const file of prFiles) {
+              const addedLines = new Set();
+              if (file.patch) {
+                // Parse the patch to find added/modified line numbers
+                const lines = file.patch.split('\n');
+                let currentLine = 0;
+                for (const line of lines) {
+                  // Match @@ -start,count +start,count @@ format
+                  const hunkMatch = line.match(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
+                  if (hunkMatch) {
+                    currentLine = parseInt(hunkMatch[1], 10);
+                  } else if (line.startsWith('+') && !line.startsWith('+++')) {
+                    addedLines.add(currentLine);
+                    currentLine++;
+                  } else if (line.startsWith('-') && !line.startsWith('---')) {
+                    // Deleted line, don't increment currentLine
+                  } else if (!line.startsWith('\\')) {
+                    // Context line
+                    currentLine++;
+                  }
+                }
+              }
+              fileLineMap.set(file.filename, addedLines);
+            }
+            
+            // Filter comments to only include valid file paths AND lines in the diff
+            const validComments = [];
+            const skippedComments = [];
+            
+            for (const comment of (reviewData.comments || [])) {
+              if (!fileLineMap.has(comment.path)) {
+                skippedComments.push({ reason: 'invalid path', ...comment });
+                continue;
               }
               if (!comment.line || comment.line < 1) {
-                console.log(`Skipping comment with invalid line number: ${comment.line}`);
-                return false;
+                skippedComments.push({ reason: 'invalid line number', ...comment });
+                continue;
               }
-              return true;
-            });
+              
+              const addedLines = fileLineMap.get(comment.path);
+              if (addedLines.size === 0 || addedLines.has(comment.line)) {
+                // Either we couldn't parse the patch, or the line is in the diff
+                validComments.push(comment);
+              } else {
+                // Try to find the nearest valid line
+                const sortedLines = Array.from(addedLines).sort((a, b) => a - b);
+                const nearestLine = sortedLines.reduce((prev, curr) => 
+                  Math.abs(curr - comment.line) < Math.abs(prev - comment.line) ? curr : prev
+                , sortedLines[0]);
+                
+                if (nearestLine && Math.abs(nearestLine - comment.line) <= 10) {
+                  // Use nearest line if within 10 lines
+                  validComments.push({ ...comment, line: nearestLine, body: `${comment.body}\n\n*(Originally for line ${comment.line})*` });
+                } else {
+                  skippedComments.push({ reason: `line ${comment.line} not in diff`, ...comment });
+                }
+              }
+            }
+            
+            console.log(`Valid comments: ${validComments.length}, Skipped: ${skippedComments.length}`);
+            if (skippedComments.length > 0) {
+              console.log('Skipped comments:', JSON.stringify(skippedComments, null, 2));
+            }
             
             // Build the review summary
             let summaryBody = '## 🤖 AMP AI Code Review\n\n';
@@ -228,6 +284,18 @@ jobs:
             if (reviewData.summary) {
               summaryBody += '### 🔍 Review Summary\n\n';
               summaryBody += reviewData.summary;
+            }
+            
+            // Add skipped comments as a list in the summary
+            if (skippedComments.length > 0) {
+              summaryBody += '\n\n### 📝 Additional Notes\n\n';
+              summaryBody += 'The following comments could not be added inline:\n\n';
+              for (const c of skippedComments.slice(0, 5)) {
+                summaryBody += `- **${c.path}** (line ${c.line}): ${c.body.substring(0, 100)}${c.body.length > 100 ? '...' : ''}\n`;
+              }
+              if (skippedComments.length > 5) {
+                summaryBody += `- ...and ${skippedComments.length - 5} more\n`;
+              }
             }
             
             summaryBody += '\n\n---\n*Automated review by Sourcegraph AMP SDK*';
@@ -247,23 +315,26 @@ jobs:
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   pull_number: context.payload.pull_request.number,
+                  commit_id: context.payload.pull_request.head.sha,
                   body: summaryBody,
                   event: event,
                   comments: validComments.map(c => ({
                     path: c.path,
                     line: c.line,
+                    side: 'RIGHT',
                     body: c.body
                   }))
                 });
                 console.log(`Created review with ${validComments.length} inline comments`);
               } catch (e) {
                 console.log('Failed to create review with inline comments:', e.message);
+                console.log('Error details:', JSON.stringify(e, null, 2));
                 // Fallback: post as regular comment
                 await github.rest.issues.createComment({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   issue_number: context.payload.pull_request.number,
-                  body: summaryBody
+                  body: summaryBody + '\n\n*Note: Inline comments failed to post. Error: ' + e.message + '*'
                 });
               }
             } else {
@@ -287,11 +358,12 @@ jobs:
 
       - name: Upload review artifacts
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: amp-review-logs
           path: |
             amp-review-log.txt
-            review-output.md
+            review-comments.json
             *-log.txt
           retention-days: 30
 
