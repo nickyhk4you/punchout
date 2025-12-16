@@ -4,10 +4,14 @@ import com.waters.punchout.mongo.entity.UserDocument;
 import com.waters.punchout.mongo.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
@@ -184,5 +188,105 @@ public class UserController {
         log.info("GET /api/users/statistics - Fetching user statistics");
         Map<String, Object> stats = userService.getUserStatistics();
         return ResponseEntity.ok(stats);
+    }
+    
+    /**
+     * Export users to CSV
+     * GET /api/users/export
+     */
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> exportUsers(
+            @RequestParam(required = false) String role,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String department) {
+        log.info("GET /api/users/export - role={}, status={}, department={}", role, status, department);
+        
+        String csvContent = userService.generateExportCsv(role, status, department);
+        byte[] csvBytes = csvContent.getBytes();
+        
+        String filename = "users_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".csv";
+        
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType("text/csv"));
+        headers.setContentDispositionFormData("attachment", filename);
+        headers.setCacheControl("no-cache, no-store, must-revalidate");
+        
+        log.info("Exporting users as CSV");
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(csvBytes);
+    }
+    
+    /**
+     * Bulk status update
+     * POST /api/users/bulk/status
+     */
+    @PostMapping("/bulk/status")
+    public ResponseEntity<List<UserDocument>> bulkUpdateStatus(@RequestBody Map<String, Object> request) {
+        log.info("POST /api/users/bulk/status - Bulk updating user status");
+        try {
+            @SuppressWarnings("unchecked")
+            List<String> userIds = (List<String>) request.get("userIds");
+            String status = (String) request.get("status");
+            
+            if (userIds == null || userIds.isEmpty() || status == null) {
+                return ResponseEntity.badRequest().build();
+            }
+            
+            List<UserDocument> updatedUsers = userService.bulkUpdateStatus(userIds, status);
+            return ResponseEntity.ok(updatedUsers);
+        } catch (Exception e) {
+            log.error("Failed to bulk update status: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
+    }
+    
+    /**
+     * Reset password
+     * POST /api/users/{id}/reset-password
+     */
+    @PostMapping("/{id}/reset-password")
+    public ResponseEntity<Map<String, String>> resetPassword(@PathVariable String id) {
+        log.info("POST /api/users/{}/reset-password - Resetting password", id);
+        try {
+            userService.resetPassword(id);
+            return ResponseEntity.ok(Map.of("message", "Password reset successfully. User will receive a new temporary password."));
+        } catch (IllegalArgumentException e) {
+            log.error("Failed to reset password: {}", e.getMessage());
+            return ResponseEntity.notFound().build();
+        }
+    }
+    
+    /**
+     * Get all departments
+     * GET /api/users/departments
+     */
+    @GetMapping("/departments")
+    public ResponseEntity<List<String>> getAllDepartments() {
+        log.info("GET /api/users/departments - Fetching all departments");
+        List<String> departments = userService.getAllDepartments();
+        return ResponseEntity.ok(departments);
+    }
+    
+    /**
+     * Toggle 2FA
+     * PATCH /api/users/{id}/two-factor
+     */
+    @PatchMapping("/{id}/two-factor")
+    public ResponseEntity<UserDocument> toggleTwoFactor(
+            @PathVariable String id,
+            @RequestBody Map<String, Boolean> request) {
+        log.info("PATCH /api/users/{}/two-factor - Toggling 2FA", id);
+        try {
+            Boolean enabled = request.get("enabled");
+            if (enabled == null) {
+                return ResponseEntity.badRequest().build();
+            }
+            UserDocument updatedUser = userService.toggleTwoFactor(id, enabled);
+            return ResponseEntity.ok(updatedUser);
+        } catch (IllegalArgumentException e) {
+            log.error("Failed to toggle 2FA: {}", e.getMessage());
+            return ResponseEntity.notFound().build();
+        }
     }
 }

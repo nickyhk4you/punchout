@@ -7,10 +7,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -240,5 +244,128 @@ public class UserService {
         prefs.put("emailNotifications", true);
         prefs.put("theme", "light");
         return prefs;
+    }
+    
+    /**
+     * Generate CSV export of users with optional filters
+     */
+    public String generateExportCsv(String role, String status, String department) {
+        log.debug("Generating CSV export - role={}, status={}, department={}", role, status, department);
+        
+        List<UserDocument> users = getAllUsers();
+        
+        if (role != null && !role.isEmpty()) {
+            users = users.stream()
+                    .filter(u -> role.equals(u.getRole()))
+                    .collect(Collectors.toList());
+        }
+        if (status != null && !status.isEmpty()) {
+            users = users.stream()
+                    .filter(u -> status.equals(u.getStatus()))
+                    .collect(Collectors.toList());
+        }
+        if (department != null && !department.isEmpty()) {
+            users = users.stream()
+                    .filter(u -> department.equals(u.getDepartment()))
+                    .collect(Collectors.toList());
+        }
+        
+        StringBuilder csv = new StringBuilder();
+        csv.append("userId,username,email,firstName,lastName,role,status,department,jobTitle,createdAt,lastLoginAt\n");
+        
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        
+        for (UserDocument user : users) {
+            csv.append(escapeCsv(user.getUserId())).append(",");
+            csv.append(escapeCsv(user.getUsername())).append(",");
+            csv.append(escapeCsv(user.getEmail())).append(",");
+            csv.append(escapeCsv(user.getFirstName())).append(",");
+            csv.append(escapeCsv(user.getLastName())).append(",");
+            csv.append(escapeCsv(user.getRole())).append(",");
+            csv.append(escapeCsv(user.getStatus())).append(",");
+            csv.append(escapeCsv(user.getDepartment())).append(",");
+            csv.append(escapeCsv(user.getJobTitle())).append(",");
+            csv.append(user.getCreatedAt() != null ? user.getCreatedAt().format(formatter) : "").append(",");
+            csv.append(user.getLastLoginAt() != null ? user.getLastLoginAt().format(formatter) : "");
+            csv.append("\n");
+        }
+        
+        return csv.toString();
+    }
+    
+    private String escapeCsv(String value) {
+        if (value == null) {
+            return "";
+        }
+        if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
+            return "\"" + value.replace("\"", "\"\"") + "\"";
+        }
+        return value;
+    }
+    
+    /**
+     * Bulk update status for multiple users
+     */
+    public List<UserDocument> bulkUpdateStatus(List<String> userIds, String status) {
+        log.info("Bulk updating status to {} for {} users", status, userIds.size());
+        
+        List<UserDocument> updatedUsers = new ArrayList<>();
+        
+        for (String id : userIds) {
+            try {
+                UserDocument updatedUser = updateUserStatus(id, status);
+                updatedUsers.add(updatedUser);
+            } catch (IllegalArgumentException e) {
+                log.warn("User not found for bulk update: {}", id);
+            }
+        }
+        
+        return updatedUsers;
+    }
+    
+    /**
+     * Reset password for a user
+     */
+    public void resetPassword(String id) {
+        log.info("Resetting password for user: {}", id);
+        
+        userRepository.findById(id)
+                .map(user -> {
+                    String tempPasswordHash = UUID.randomUUID().toString().substring(0, 8);
+                    user.setPasswordHash(tempPasswordHash);
+                    user.setPasswordChangedAt(LocalDateTime.now());
+                    user.setUpdatedAt(LocalDateTime.now());
+                    return userRepository.save(user);
+                })
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + id));
+    }
+    
+    /**
+     * Get all distinct departments
+     */
+    public List<String> getAllDepartments() {
+        log.debug("Fetching all departments");
+        
+        return getAllUsers().stream()
+                .map(UserDocument::getDepartment)
+                .filter(dept -> dept != null && !dept.isEmpty())
+                .distinct()
+                .sorted()
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * Toggle two-factor authentication for a user
+     */
+    public UserDocument toggleTwoFactor(String id, boolean enabled) {
+        log.info("Toggling 2FA for user {} to {}", id, enabled);
+        
+        return userRepository.findById(id)
+                .map(user -> {
+                    user.setIsTwoFactorEnabled(enabled);
+                    user.setUpdatedAt(LocalDateTime.now());
+                    return userRepository.save(user);
+                })
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + id));
     }
 }
